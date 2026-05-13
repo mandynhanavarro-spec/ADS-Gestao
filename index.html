@@ -1290,7 +1290,7 @@ function emitirDoc(){
       '<span style="font-size:20px;font-weight:900;color:var(--green2)">'+fmtVal(f.valor)+'</span></div></div>'+
       '<div class="doc-ft">'+
       '<button class="btn btn-primary" onclick="gerarPDFRecibo(0)">📄 Baixar PDF Recibo</button>'+
-      '<button class="btn btn-green" onclick="alert('📲 Enviando para WhatsApp...')">📲 WhatsApp</button>'+
+      '<button class="btn btn-green" onclick="enviarWpp()">📲 WhatsApp</button>'+
       '<button class="btn btn-ghost" style="margin-left:auto" onclick="resetFlow()">⚡ Novo orçamento</button>'+
       '</div></div>';
     showBlock('doc');setStep(5);
@@ -1324,7 +1324,7 @@ function emitirDoc(){
       '<div class="doc-total"><span style="font-size:12px;color:var(--silver2);font-weight:700">VALOR TOTAL</span>'+
       '<span style="font-size:20px;font-weight:900;color:var(--green2)">'+fmtVal(f.valor)+'</span></div></div>'+
       '<div class="doc-ft">'+
-      '<button class="btn btn-ghost" onclick="alert('📲 Enviando...')">📲 WhatsApp</button>'+
+      '<button class="btn btn-ghost" onclick="enviarWpp()">📲 WhatsApp</button>'+
       '<button class="btn btn-ghost" style="margin-left:auto" onclick="resetFlow()">⚡ Novo orçamento</button>'+
       '</div></div>';
     showBlock('doc');setStep(5);
@@ -1870,6 +1870,8 @@ function fecharMenu(){
   var o=document.getElementById('sidebar-overlay');
   s.classList.remove('open');o.classList.remove('open');
 }
+
+function enviarWpp(){alert('📲 Funcionalidade de WhatsApp em desenvolvimento!');}
 function irFinanceiro(){goPage('financeiro');}
 
 // ════════════ LOGIN ════════════
