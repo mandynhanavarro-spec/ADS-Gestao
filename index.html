@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ADS Gestão</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -256,8 +259,12 @@ td.bold{color:var(--white);font-weight:700}
     <div class="login-logo">ADS</div>
     <div class="login-title">ADS Gestão</div>
     <div class="login-sub">Portões Automáticos</div>
-    <input class="login-field" type="text" id="login-user" placeholder="Usuário" autocomplete="off"/>
-    <input class="login-field" type="password" id="login-pass" placeholder="Senha" onkeydown="if(event.key==='Enter')fazerLogin()"/>
+    <input class="login-field" type="text" id="login-user" placeholder="Usuário" autocomplete="username"/>
+    <input class="login-field" type="password" id="login-pass" placeholder="Senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()"/>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;text-align:left">
+      <input type="checkbox" id="lembrar-me" style="width:15px;height:15px;accent-color:var(--blue);cursor:pointer">
+      <label for="lembrar-me" style="font-size:12px;color:var(--silver2);cursor:pointer">Lembrar meu acesso</label>
+    </div>
     <button class="login-btn" onclick="fazerLogin()">Entrar</button>
     <div class="login-err" id="login-err">Usuário ou senha incorretos</div>
   </div>
@@ -1401,22 +1408,48 @@ var USUARIOS = [
   { user: 'amanda',  pass: 'La20Yu31', nome: 'Amanda',  role: 'Administrador', avatar: 'AM' }
 ];
 
+function aplicarUsuario(found) {
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('user-name').textContent = found.nome;
+  document.getElementById('user-role').textContent = found.role;
+  document.getElementById('user-avatar').textContent = found.avatar;
+}
+
 function fazerLogin() {
   var u = document.getElementById('login-user').value.trim().toLowerCase();
   var p = document.getElementById('login-pass').value;
+  var lembrar = document.getElementById('lembrar-me').checked;
   var err = document.getElementById('login-err');
   var found = USUARIOS.find(function(x){ return x.user === u && x.pass === p; });
   if (found) {
     err.style.display = 'none';
-    document.getElementById('login-screen').classList.add('hide');
-    document.getElementById('user-name').textContent = found.nome;
-    document.getElementById('user-role').textContent = found.role;
-    document.getElementById('user-avatar').textContent = found.avatar;
+    if (lembrar) {
+      sessionStorage.setItem('ads_user', JSON.stringify({user:found.user, pass:found.pass}));
+    } else {
+      sessionStorage.removeItem('ads_user');
+    }
+    aplicarUsuario(found);
   } else {
     err.style.display = 'block';
     document.getElementById('login-pass').value = '';
   }
 }
+
+// Verificar sessão salva ao carregar
+(function verificarSessao() {
+  try {
+    var salvo = sessionStorage.getItem('ads_user');
+    if (salvo) {
+      var dados = JSON.parse(salvo);
+      var found = USUARIOS.find(function(x){ return x.user === dados.user && x.pass === dados.pass; });
+      if (found) {
+        document.getElementById('login-user').value = found.user;
+        document.getElementById('lembrar-me').checked = true;
+        aplicarUsuario(found);
+      }
+    }
+  } catch(e) {}
+})();
 
 document.getElementById('modal-tpl').addEventListener('click',function(e){if(e.target===this)closeTplModal();});
 renderTemplates();
