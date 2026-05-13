@@ -286,10 +286,10 @@ td.bold{color:var(--white);font-weight:700}
     <div class="ni active" onclick="goPage('rapido')"><span class="ic">⚡</span>Acesso Rápido</div>
     <div class="ni" onclick="goPage('orcamentos')"><span class="ic">📋</span>Orçamentos<span class="nb">3</span></div>
     <div class="ni" onclick="goPage('clientes')"><span class="ic">👥</span>Clientes</div>
-    <div class="ni" onclick="goPage('templates')"><span class="ic">🔧</span>Meus Templates</div>
+    <div class="ni" onclick="goPage('servicos')"><span class="ic">🔧</span>Serviços</div>
     <div class="nlabel">Documentos</div>
     <div class="ni" onclick="goPage('recibos')"><span class="ic">🧾</span>Recibos<span class="ng">18</span></div>
-    <div class="ni"><span class="ic">📑</span>Nota Fiscal</div>
+    <div class="ni" onclick="goPage('notafiscal')"><span class="ic">📑</span>Nota Fiscal</div>
     <div class="nlabel">Gestão</div>
     <div class="ni" onclick="goPage('financeiro')"><span class="ic">💰</span>Financeiro</div>
     <div class="ni"><span class="ic">📊</span>Relatórios</div>
@@ -454,21 +454,21 @@ td.bold{color:var(--white);font-weight:700}
   <div class="panel">
     <div class="panel-bd" style="padding:0 16px">
       <table>
-        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status</th><th width="160">Ações</th></tr></thead>
+        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status</th><th width="200">Ações</th></tr></thead>
         <tbody id="orc-table-body"></tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════ PAGE: TEMPLATES ══════════════════ -->
-<div id="page-templates" class="page">
+<!-- ══════════════════ PAGE: SERVIÇOS ══════════════════ -->
+<div id="page-servicos" class="page">
   <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
     <div>
-      <div style="font-weight:800;font-size:15px">🔧 Meus Templates de Serviço</div>
+      <div style="font-weight:800;font-size:15px">🔧 Serviços</div>
       <div style="font-size:11px;color:var(--silver);margin-top:2px">Edite, crie e organize seus serviços mais usados</div>
     </div>
-    <button class="btn btn-primary" style="margin-left:auto" onclick="openTplModal()">+ Novo template</button>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="openTplModal()">+ Novo serviço</button>
   </div>
   <div class="tpl-grid" id="tpl-manage-render"></div>
 </div>
@@ -482,12 +482,12 @@ td.bold{color:var(--white);font-weight:700}
   <div class="panel">
     <div class="panel-bd" style="padding:0 16px">
       <table>
-        <thead><tr><th>Cliente</th><th>Telefone</th><th>Serviços</th><th>Total</th><th>Última visita</th><th>Ação</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Telefone</th><th>Serviços</th><th>Total</th><th>Última visita</th><th>Ações</th></tr></thead>
         <tbody>
-          <tr><td class="bold">Roberto Alves</td><td>(11) 98765-4321</td><td>4</td><td style="color:var(--green2);font-weight:700">R$4.250</td><td>hoje</td><td><button class="btn btn-ghost btn-sm">Ver histórico</button></td></tr>
-          <tr><td class="bold">Maria Santos</td><td>(11) 97654-3210</td><td>2</td><td style="color:var(--green2);font-weight:700">R$950</td><td>ontem</td><td><button class="btn btn-ghost btn-sm">Ver histórico</button></td></tr>
-          <tr><td class="bold">Carlos Lima</td><td>(11) 96543-2109</td><td>1</td><td style="color:var(--amber);font-weight:700">Pendente</td><td>09/05</td><td><button class="btn btn-ghost btn-sm">Ver histórico</button></td></tr>
-          <tr><td class="bold">Ana Paula Costa</td><td>(11) 95432-1098</td><td>3</td><td style="color:var(--green2);font-weight:700">R$3.100</td><td>08/05</td><td><button class="btn btn-ghost btn-sm">Ver histórico</button></td></tr>
+          <tr><td class="bold">Roberto Alves</td><td>(11) 98765-4321</td><td>4</td><td style="color:var(--green2);font-weight:700">R$4.250</td><td>hoje</td><td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('✏️ Editando: Roberto Alves')">✏️ Editar</button> <button class="btn btn-red btn-sm" onclick="if(confirm('Excluir cliente Roberto Alves?')){alert('🗑 Cliente excluído!');}">🗑 Excluir</button></td></tr>
+          <tr><td class="bold">Maria Santos</td><td>(11) 97654-3210</td><td>2</td><td style="color:var(--green2);font-weight:700">R$950</td><td>ontem</td><td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('✏️ Editando: Maria Santos')">✏️ Editar</button> <button class="btn btn-red btn-sm" onclick="if(confirm('Excluir cliente Maria Santos?')){alert('🗑 Cliente excluído!');}">🗑 Excluir</button></td></tr>
+          <tr><td class="bold">Carlos Lima</td><td>(11) 96543-2109</td><td>1</td><td style="color:var(--amber);font-weight:700">Pendente</td><td>09/05</td><td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('✏️ Editando: Carlos Lima')">✏️ Editar</button> <button class="btn btn-red btn-sm" onclick="if(confirm('Excluir cliente Carlos Lima?')){alert('🗑 Cliente excluído!');}">🗑 Excluir</button></td></tr>
+          <tr><td class="bold">Ana Paula Costa</td><td>(11) 95432-1098</td><td>3</td><td style="color:var(--green2);font-weight:700">R$3.100</td><td>08/05</td><td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('✏️ Editando: Ana Paula Costa')">✏️ Editar</button> <button class="btn btn-red btn-sm" onclick="if(confirm('Excluir cliente Ana Paula Costa?')){alert('🗑 Cliente excluído!');}">🗑 Excluir</button></td></tr>
         </tbody>
       </table>
     </div>
@@ -502,10 +502,10 @@ td.bold{color:var(--white);font-weight:700}
   </div>
   <div class="panel"><div class="panel-bd" style="padding:0 16px">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Referente a</th><th>Valor</th><th>Pgto</th><th>Data</th><th>PDF</th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Referente a</th><th>Valor</th><th>Pgto</th><th>Data</th><th>Ações</th></tr></thead>
       <tbody>
-        <tr><td class="bold" style="color:var(--blue3)">#R018</td><td class="bold">Roberto Alves</td><td>Motor Basculante PPA</td><td style="color:var(--green2);font-weight:700">R$1.200</td><td>Pix</td><td>11/05</td><td><button class="btn btn-ghost btn-sm">📄 PDF</button></td></tr>
-        <tr><td class="bold" style="color:var(--blue3)">#R017</td><td class="bold">Maria Santos</td><td>Manutenção Preventiva</td><td style="color:var(--green2);font-weight:700">R$350</td><td>Dinheiro</td><td>10/05</td><td><button class="btn btn-ghost btn-sm">📄 PDF</button></td></tr>
+        <tr><td class="bold" style="color:var(--blue3)">#R018</td><td class="bold">Roberto Alves</td><td>Motor Basculante PPA</td><td style="color:var(--green2);font-weight:700">R$1.200</td><td>Pix</td><td>11/05</td><td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm">📄 PDF</button> <button class="btn btn-red btn-sm" onclick="alert('🗑 Recibo #R018 excluído!')">🗑</button></td></tr>
+        <tr><td class="bold" style="color:var(--blue3)">#R017</td><td class="bold">Maria Santos</td><td>Manutenção Preventiva</td><td style="color:var(--green2);font-weight:700">R$350</td><td>Dinheiro</td><td>10/05</td><td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm">📄 PDF</button> <button class="btn btn-red btn-sm" onclick="alert('🗑 Recibo #R017 excluído!')">🗑</button></td></tr>
       </tbody>
     </table>
   </div></div>
@@ -530,6 +530,122 @@ td.bold{color:var(--white);font-weight:700}
       </tbody>
     </table>
   </div></div>
+</div>
+
+<!-- ══════════════════ PAGE: NOTA FISCAL (NFS-e MEI) ══════════════════ -->
+<div id="page-notafiscal" class="page">
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+    <div>
+      <div style="font-weight:800;font-size:15px">📑 Notas Fiscais de Serviço Eletrônicas (NFS-e MEI)</div>
+      <div style="font-size:11px;color:var(--silver);margin-top:2px">Gerenciar e acompanhar emissão de NFS-e junto à Prefeitura</div>
+    </div>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="goPage('rapido')">+ Emitir NFS-e</button>
+  </div>
+
+  <!-- CONFIGURAÇÃO NFS-e -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-hd">
+      <div class="panel-title">⚙️ Configuração da NFS-e MEI</div>
+    </div>
+    <div class="panel-bd">
+      <div class="speed-banner" style="margin-bottom:14px">
+        <span style="font-size:14px">⚠️</span>
+        <span><strong>Status:</strong> <span style="color:var(--amber)">Aguardando configuração</span> — Siga os passos abaixo para configurar sua NFS-e</span>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="font-weight:700;color:var(--white);margin-bottom:8px;font-size:13px">Dados Cadastrais Obrigatórios:</div>
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">CNPJ (MEI)</div><input class="fi" id="nf-cnpj" placeholder="00.000.000/0000-00" value="20.989.538/0001-88"></div>
+          <div><div class="fl">Prefeitura Municipal</div>
+            <select class="fs" id="nf-prefeitura">
+              <option>-- Selecione sua cidade --</option>
+              <option selected>São Paulo</option>
+              <option>Guarulhos</option>
+              <option>Diadema</option>
+              <option>Santo André</option>
+              <option>São Bernardo do Campo</option>
+              <option>Outra</option>
+            </select>
+          </div>
+        </div>
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">Inscrição Municipal (RPA/IM)</div><input class="fi" id="nf-inscricao" placeholder="Ex: 1234567"></div>
+          <div><div class="fl">Senha de Acesso (Prefeitura)</div><input class="fi" type="password" id="nf-senha" placeholder="••••••••"></div>
+        </div>
+        <button class="btn btn-primary" onclick="alert('✅ Dados salvos! Conectando à Prefeitura...')">💾 Salvar Configuração</button>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+        <div style="font-weight:700;color:var(--white);margin-bottom:8px;font-size:13px">Dados da Empresa:</div>
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">Razão Social</div><input class="fi fi-filled" value="ADS Portões Automáticos LTDA"></div>
+          <div><div class="fl">Nome Fantasia</div><input class="fi fi-filled" value="ADS Portões"></div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">Endereço da Empresa</div><input class="fi fi-filled" value="Av. Paulista, 1000 — São Paulo, SP"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO NFS-e -->
+  <div class="panel">
+    <div class="panel-hd">
+      <div class="panel-title">📋 Histórico de NFS-e Emitidas</div>
+    </div>
+    <div class="panel-bd" style="padding:0 16px">
+      <table>
+        <thead><tr><th>NFS-e</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="bold" style="color:var(--purple)">NFS-e #5432</td>
+            <td class="bold">Roberto Alves</td>
+            <td>Motor Basculante PPA</td>
+            <td style="color:var(--green2);font-weight:700">R$1.200</td>
+            <td>11/05/2026</td>
+            <td><span class="badge badge-nf">Emitida</span></td>
+            <td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('📥 Baixando XML da NFS-e #5432...')">📥 XML</button> <button class="btn btn-ghost btn-sm" onclick="alert('📄 Gerando PDF da NFS-e #5432...')">📄 PDF</button></td>
+          </tr>
+          <tr>
+            <td class="bold" style="color:var(--purple)">NFS-e #5431</td>
+            <td class="bold">Maria Santos</td>
+            <td>Manutenção Preventiva</td>
+            <td style="color:var(--green2);font-weight:700">R$350</td>
+            <td>10/05/2026</td>
+            <td><span class="badge badge-nf">Emitida</span></td>
+            <td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('📥 Baixando XML da NFS-e #5431...')">📥 XML</button> <button class="btn btn-ghost btn-sm" onclick="alert('📄 Gerando PDF da NFS-e #5431...')">📄 PDF</button></td>
+          </tr>
+          <tr>
+            <td class="bold" style="color:var(--amber)">NFS-e #5430</td>
+            <td class="bold">Carlos Lima</td>
+            <td>Troca de Central</td>
+            <td style="color:var(--green2);font-weight:700">R$850</td>
+            <td>09/05/2026</td>
+            <td><span class="badge badge-pend">Processando</span></td>
+            <td style="display:flex;gap:5px"><button class="btn btn-ghost btn-sm" onclick="alert('⏳ Aguardando resposta da Prefeitura...')">⏳ Acompanhar</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- INFO BOX -->
+  <div style="margin-top:16px;background:rgba(37,99,235,.08);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--silver2)">
+    <div style="font-weight:700;color:var(--white);margin-bottom:8px">💡 Como Funciona?</div>
+    <div style="margin-bottom:8px">
+      <strong>1. Configuração:</strong> Insira seus dados de acesso à Prefeitura (CNPJ, Inscrição Municipal, Senha)
+    </div>
+    <div style="margin-bottom:8px">
+      <strong>2. Emissão:</strong> Ao aprovar um orçamento, selecione "Nota Fiscal" e gere a NFS-e automaticamente
+    </div>
+    <div style="margin-bottom:8px">
+      <strong>3. Envio:</strong> O sistema comunica-se com a Prefeitura para validar e emitir a NFS-e
+    </div>
+    <div>
+      <strong>4. Acompanhamento:</strong> Acompanhe o status, baixe XML e gere PDF na aba "Histórico"
+    </div>
+  </div>
 </div>
 
 </div><!-- /content -->
@@ -785,12 +901,12 @@ function goPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  var map={rapido:'⚡ Acesso Rápido',orcamentos:'📋 Orçamentos',clientes:'👥 Clientes',templates:'🔧 Meus Templates',recibos:'🧾 Recibos',financeiro:'💰 Financeiro'};
-  var subs={rapido:'— modo campo',orcamentos:'— histórico e gestão',clientes:'— cadastro completo',templates:'— editar seus serviços',recibos:'— documentos emitidos',financeiro:'— controle de caixa'};
+  var map={rapido:'⚡ Acesso Rápido',orcamentos:'📋 Orçamentos',clientes:'👥 Clientes',servicos:'🔧 Serviços',recibos:'🧾 Recibos',notafiscal:'📑 Nota Fiscal',financeiro:'💰 Financeiro'};
+  var subs={rapido:'— modo campo',orcamentos:'— histórico e gestão',clientes:'— cadastro completo',servicos:'— editar seus serviços',recibos:'— documentos emitidos',notafiscal:'— NFS-e MEI integrada',financeiro:'— controle de caixa'};
   document.getElementById('pg-title').textContent=map[id]||id;
   document.getElementById('pg-sub').textContent=subs[id]||'';
   if(id==='rapido') resetFlow();
-  if(id==='templates') renderTplManage();
+  if(id==='servicos') renderTplManage();
   if(id==='orcamentos') renderOrcTable();
   fecharMenu();
 }
@@ -1345,12 +1461,12 @@ function renderOrcTable(){
     var sc=o.status==='aprovado'?'badge-ok':o.status==='pendente'?'badge-pend':'badge-canc';
     var sl=o.status==='aprovado'?'Aprovado':o.status==='pendente'?'Pendente':'Cancelado';
     var btns=o.status==='pendente'
-      ?'<button class="btn btn-ghost btn-sm" onclick="editarOrc(\''+o.num+'\')">✏️ Editar</button> <button class="btn btn-primary btn-sm" onclick="aprovarOrc(\''+o.num+'\')">✓ Aprovar</button>'
-      :'<button class="btn btn-ghost btn-sm" onclick="editarOrc(\''+o.num+'\')">✏️ Editar</button> <button class="btn btn-green btn-sm" onclick="emitirDocOrc(\''+o.num+'\')">📄 Doc</button>';
+      ?'<button class="btn btn-ghost btn-sm" onclick="editarOrc(\''+o.num+'\')">✏️ Editar</button> <button class="btn btn-primary btn-sm" onclick="aprovarOrc(\''+o.num+'\')">✓ Aprovar</button> <button class="btn btn-red btn-sm" onclick="if(confirm(\'Excluir orçamento #'+o.num+'?\')){excluirOrc(\''+o.num+'\');}">🗑 Excluir</button>'
+      :'<button class="btn btn-ghost btn-sm" onclick="editarOrc(\''+o.num+'\')">✏️ Editar</button> <button class="btn btn-green btn-sm" onclick="emitirDocOrc(\''+o.num+'\')">📄 Doc</button> <button class="btn btn-red btn-sm" onclick="if(confirm(\'Excluir orçamento #'+o.num+'?\')){excluirOrc(\''+o.num+'\');}">🗑 Excluir</button>';
     return '<tr><td class="bold" style="color:var(--blue3)">#'+o.num+'</td><td class="bold">'+o.cli+'</td><td>'+o.serv+'</td>'+
       '<td style="color:'+(o.status==='aprovado'?'var(--green2)':'var(--amber)')+';font-weight:700">'+fmtVal(o.val)+'</td>'+
       '<td>'+o.pgto+'</td><td><span class="badge '+sc+'">'+sl+'</span></td>'+
-      '<td style="display:flex;gap:5px;padding-top:10px">'+btns+'</td></tr>';
+      '<td style="display:flex;gap:5px;padding-top:10px;flex-wrap:wrap">'+btns+'</td></tr>';
   }).join('');
 }
 
@@ -1381,6 +1497,20 @@ function aprovarOrc(num){
   o.status='aprovado';
   editarOrc(num);
   setTimeout(showAprov,300);
+}
+
+function excluirOrc(num){
+  var idx=orcamentos.findIndex(x=>x.num===num);
+  if(idx>=0){
+    var orc=orcamentos[idx];
+    if(orc.sbId){
+      // Deletar do Supabase se tiver ID
+      sb.from('orcamentos').delete().eq('id',orc.sbId).catch(e=>console.log(e));
+    }
+    orcamentos.splice(idx,1);
+    renderOrcTable();
+    atualizarContadores();
+  }
 }
 
 function emitirDocOrc(num){
@@ -1432,9 +1562,10 @@ function fazerLogin() {
   if (found) {
     err.style.display = 'none';
     if (lembrar) {
-      sessionStorage.setItem('ads_user', JSON.stringify({user:found.user, pass:found.pass}));
+      // Usar localStorage para persistir entre aberturas do navegador
+      localStorage.setItem('ads_user', JSON.stringify({user:found.user, pass:found.pass}));
     } else {
-      sessionStorage.removeItem('ads_user');
+      localStorage.removeItem('ads_user');
     }
     aplicarUsuario(found);
   } else {
@@ -1443,16 +1574,17 @@ function fazerLogin() {
   }
 }
 
-// Verificar sessão salva ao carregar
+// Verificar acesso salvo ao carregar — PERSISTE ENTRE ABERTURAS DO NAVEGADOR
 (function verificarSessao() {
   try {
-    var salvo = sessionStorage.getItem('ads_user');
+    var salvo = localStorage.getItem('ads_user');
     if (salvo) {
       var dados = JSON.parse(salvo);
       var found = USUARIOS.find(function(x){ return x.user === dados.user && x.pass === dados.pass; });
       if (found) {
         document.getElementById('login-user').value = found.user;
         document.getElementById('lembrar-me').checked = true;
+        // Auto-login automático se encontrar credenciais válidas
         aplicarUsuario(found);
       }
     }
