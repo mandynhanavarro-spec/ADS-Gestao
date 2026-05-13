@@ -1,2 +1,2 @@
-# ads-gest-o
+# ads-gestao
 Auto-ads-gestão
