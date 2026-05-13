@@ -1104,7 +1104,8 @@ function gerarPDF(){
   if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  var PW=210,PH=297,ML=22,MR=20,MT=18;
+  doc.setFont('times','normal'); // Times suporta acentos nativamente
+  var PW=210,ML=22,MR=20,MT=18;
   var CW=PW-ML-MR;
 
   // === LOGO ADS (transparente) ===
@@ -1112,83 +1113,90 @@ function gerarPDF(){
 
   // === HEADER ===
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('ADS Portões Automáticos',PW-MR,MT,{align:'right'});
+  doc.text('ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: 20.989.538/0001-88',PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text('Orçamento Nº '+f.numero,ML,MT);
+  doc.text('Orcamento N\xba '+f.numero,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
-  doc.text('São Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
-  doc.text('Validade do Orçamento: 30 dias (até '+addDays(f.data,30)+')',ML,MT+13);
+  doc.text('Sao Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
+  doc.text('Validade do Orcamento: 30 dias (ate '+addDays(f.data,30)+')',ML,MT+13);
 
   // === TÍTULO ===
   doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
-  doc.text('Orçamento',PW/2-20,MT+32,{align:'center'});
+  doc.text('Orcamento',PW/2,MT+32,{align:'center'});
   doc.setTextColor(0,0,0);
 
   // === CLIENTE ===
   var y=MT+47;
-  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:   ',ML,y);
+  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
   doc.setFont('helvetica','normal');doc.text(f.cliente,ML+18,y);
-  y+=7;doc.setFont('helvetica','bold');doc.text('Endereço: ',ML,y);
-  doc.setFont('helvetica','normal');doc.text(f.endereco,ML+22,y,{maxWidth:CW-50});
+  y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
+  doc.setFont('helvetica','normal');
+  var endLines=doc.splitTextToSize(f.endereco,CW-30);
+  doc.text(endLines,ML+24,y);
+  y+=endLines.length*5+4;
 
   // === SERVIÇO ===
-  y+=16;doc.setFont('helvetica','bold');doc.setFontSize(10);
-  doc.text('Característica',ML+4,y);y+=7;doc.setFont('helvetica','normal');
+  doc.setFont('helvetica','bold');doc.setFontSize(10);
+  doc.text('Caracteristica',ML+4,y);y+=7;
+  doc.setFont('helvetica','normal');
   var items=f.descricao.split('\n').filter(function(l){return l.trim();});
-  items.forEach(function(it){doc.text('\u25cf  '+it.trim(),ML+7,y);y+=6;});
+  items.forEach(function(it){
+    var lines=doc.splitTextToSize('- '+it.trim(),CW-12);
+    doc.text(lines,ML+7,y);
+    y+=lines.length*6;
+  });
 
   // === VALOR ===
-  y+=6;doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=5;
-  var vf='R$ '+f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(f.valor)+').';
-  doc.setFont('helvetica','normal');doc.text(vf,ML+4,y,{maxWidth:CW-10});
+  y+=4;doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
+  var valorFmt='R$ '+f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(f.valor)+').';
+  var valorLines=doc.splitTextToSize(valorFmt,CW-6);
+  doc.setFont('helvetica','normal');doc.text(valorLines,ML+4,y);
+  y+=valorLines.length*6+4;
 
   // === GARANTIA ===
-  y+=11;doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
-  doc.line(ML,y-3,PW-MR,y-3);
+  doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
+  doc.line(ML,y-2,PW-MR,y-2);y+=4;
   doc.setFont('helvetica','bold');doc.text('Garantia',ML,y);
-  doc.setFont('helvetica','normal');doc.text(' de '+f.garantia+', Contra defeito de Fabricação.',ML+22,y);
+  doc.setFont('helvetica','normal');doc.text(' de '+f.garantia+', Contra defeito de Fabricacao.',ML+23,y);
+  y+=10;
 
   // === PAGAMENTO ===
-  y+=10;doc.line(ML,y-3,PW-MR,y-3);
-  doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=6;
+  doc.line(ML,y-2,PW-MR,y-2);y+=4;
+  doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
   doc.setFont('helvetica','normal');
   var pg=f.pagamento;
   if(pg==='Parcelado (50/50)'||pg==='Parcelado'){
-    doc.text(' Sinal de 50% / Restante 50% na entrega do serviço.',ML+2,y);y+=5;
-    doc.text(' Sendo Pix ads.pg@hotmail.com ou Banco Itaú AG 0466 CC 60864-3',ML+2,y);y+=5;
-  } else if(pg==='Pix'){doc.text(' Pix: ads.pg@hotmail.com',ML+2,y);y+=5;}
-  else if(pg==='Dinheiro'){doc.text(' Pagamento em dinheiro na entrega do serviço.',ML+2,y);y+=5;}
-  else{doc.text(' Pagamento via '+pg+'.',ML+2,y);y+=5;}
-  doc.text(' Ananias Antônio dos Santos',ML+2,y);
-  if(f.obs){y+=7;doc.setFontSize(9);doc.setTextColor(80,80,80);
-    doc.text('Obs: '+f.obs,ML+2,y,{maxWidth:CW});doc.setTextColor(0,0,0);}
+    doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
+    doc.text('Sendo Pix ads.pg@hotmail.com ou Banco Itau AG 0466 CC 60864-3',ML+2,y);y+=6;
+  } else if(pg==='Pix'){
+    doc.text('Pix: ads.pg@hotmail.com',ML+2,y);y+=6;
+  } else if(pg==='Dinheiro'){
+    doc.text('Pagamento em dinheiro na entrega do servico.',ML+2,y);y+=6;
+  } else {
+    doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
+  }
+  doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
+  if(f.obs){y+=5;doc.setFontSize(9);doc.setTextColor(80,80,80);
+    var obsLines=doc.splitTextToSize('Obs: '+f.obs,CW);
+    doc.text(obsLines,ML+2,y);
+    doc.setTextColor(0,0,0);y+=obsLines.length*5;}
 
-  // === RODAPÉ ===
-  var fy=18;
-  // QR Box
-  doc.setDrawColor(0,0,0);doc.setLineWidth(0.4);doc.rect(ML,fy,22,22);
-  // mini QR visual
-  var seed=42;function rng(){seed=(seed*1664525+1013904223)&0xffffffff;return(seed>>>0)/4294967296;}
-  doc.setFillColor(0,0,0);
-  for(var r=0;r<10;r++)for(var cc=0;cc<10;cc++){if(rng()>0.5)doc.rect(ML+1+cc*1.9,fy+1+r*1.9,1.6,1.6,'F');}
-  doc.setFillColor(255,255,255);doc.rect(ML+6,fy+6,10,10,'F');
-  doc.setFillColor(0,0,0);doc.rect(ML+7,fy+7,8,8,'F');
-  doc.setFillColor(255,255,255);doc.rect(ML+8,fy+8,6,6,'F');
-  doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(80,80,80);
-  doc.text('(11) 96770-4116',ML,fy+25);
+  // === TELEFONE (linha inferior esquerda) ===
+  y+=10;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+  doc.text('(11) 96770-4116',ML,y);
 
-  // Assinatura
-  var sx=PW-MR-65;
+  // === ASSINATURA (linha inferior direita) ===
+  var fy=y-8;
+  var sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('Qualquer duvida estamos a disposição',sx+32,fy+8,{align:'center'});
-  doc.text('Atenciosamente',sx+32,fy+13,{align:'center'});
-  // Imagem assinatura real
-  doc.addImage(SIG_B64,'PNG',sx+4,fy+13,52,20);
-  // Linha
-  doc.setLineWidth(0.3);doc.line(sx+2,fy+34,sx+62,fy+34);
-  doc.text('Ananias Santos',sx+32,fy+38,{align:'center'});
+  doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
+  doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
+  doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
+  doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
+  doc.text('Ananias Santos',sx+35,fy+30,{align:'center'});
 
   doc.save('Orcamento_ADS_'+f.numero+'_'+f.cliente.split(' ')[0]+'.pdf');
 }
