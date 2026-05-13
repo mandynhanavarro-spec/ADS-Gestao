@@ -1259,7 +1259,7 @@ function emitirDoc(){
       '<div style="font-size:12px;color:var(--silver)">Receita de '+fmtVal(f.valor)+' registrada · '+f.pagamento+'</div>'+
       '<div style="font-size:11px;color:var(--silver);margin-top:4px">Acesse o menu Financeiro para detalhar peças e deslocamento.</div>'+
       '<div style="margin-top:14px"><button class="btn btn-ghost" onclick="resetFlow()">⚡ Novo orçamento</button> '+
-      '<button class="btn btn-primary" onclick="goPage('financeiro')">💰 Ver Financeiro</button></div></div>';
+      '<button class="btn btn-primary" onclick="irFinanceiro()">💰 Ver Financeiro</button></div></div>';
     showBlock('doc');setStep(5);
     atualizarContadores();
     return;
@@ -1796,8 +1796,8 @@ function renderOrcTable(){
       '<td>'+o.pgto+'</td>'+
       '<td>'+badge+'</td>'+
       '<td><div style="display:flex;gap:4px">'+
-        '<button class="btn btn-ghost btn-sm" onclick="gerarPDF(''+o.num+'')">📄 PDF</button>'+
-        '<button class="btn btn-red btn-sm" onclick="excluirOrc(''+o.num+'')">🗑</button>'+
+        '<button class="btn btn-ghost btn-sm" onclick="gerarPDF(\''+o.num+'\')" >📄 PDF</button>'+
+        '<button class="btn btn-red btn-sm" onclick="excluirOrc(\''+o.num+'\')" >🗑</button>'+
       '</div></td>';
     tb.appendChild(tr);
   });
@@ -1870,6 +1870,7 @@ function fecharMenu(){
   var o=document.getElementById('sidebar-overlay');
   s.classList.remove('open');o.classList.remove('open');
 }
+function irFinanceiro(){goPage('financeiro');}
 
 // ════════════ LOGIN ════════════
 var USUARIOS=[
