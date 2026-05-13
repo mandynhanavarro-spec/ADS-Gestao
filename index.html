@@ -716,7 +716,7 @@ td.bold{color:var(--white);font-weight:700}
 
 <!-- ══ MODAL: TEMPLATE EDITOR ══ -->
 <div class="modal-bg" id="modal-tpl">
-  <div class="modal">
+  <div class="modal" style="width:600px;max-width:98vw">
     <div class="modal-hd">
       <span class="modal-title" id="modal-tpl-title">Novo Template</span>
       <button class="modal-x" onclick="closeTplModal()">✕</button>
@@ -728,29 +728,48 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid" style="margin-bottom:10px">
         <div>
           <div class="fl">Descrição completa (uma linha = um bullet no PDF)</div>
-          <textarea class="ft" id="mt-desc" rows="4" placeholder="Fornecimento e instalação..."></textarea>
+          <textarea class="ft" id="mt-desc" rows="3" placeholder="Fornecimento e instalação..."></textarea>
         </div>
       </div>
-      <div class="fgrid fg3" style="margin-bottom:10px">
-        <div><div class="fl">Valor sugerido (R$)</div><input class="fi" type="number" id="mt-valor" placeholder="0,00" step="0.01"></div>
+
+      <!-- ÍCONE SELETOR VISUAL -->
+      <div style="margin-bottom:12px">
+        <div class="fl" style="margin-bottom:6px">Ícone do serviço</div>
+        <div id="mt-ic-grid" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <input type="hidden" id="mt-ic" value="🔧">
+      </div>
+
+      <!-- COR DA CATEGORIA -->
+      <div style="margin-bottom:12px">
+        <div class="fl" style="margin-bottom:6px">Cor da categoria</div>
+        <div class="clr-opts">
+          <div class="clr-opt sel" style="background:var(--blue2)" data-cat="cm" onclick="selClr(this,'cm')" title="Instalação"></div>
+          <div class="clr-opt" style="background:var(--green)" data-cat="cg" onclick="selClr(this,'cg')" title="Manutenção"></div>
+          <div class="clr-opt" style="background:var(--amber)" data-cat="ca" onclick="selClr(this,'ca')" title="Conserto"></div>
+          <div class="clr-opt" style="background:var(--purple)" data-cat="cp" onclick="selClr(this,'cp')" title="Programação"></div>
+          <div class="clr-opt" style="background:var(--silver)" data-cat="cs" onclick="selClr(this,'cs')" title="Visita/Outros"></div>
+        </div>
+      </div>
+
+      <!-- PREÇOS -->
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="number" id="mt-valor" placeholder="0,00" step="0.01" oninput="calcLucroTpl()"></div>
+        <div><div class="fl">Custo das peças (R$)</div><input class="fi" type="number" id="mt-custo-pecas" placeholder="0,00" step="0.01" value="0" oninput="calcLucroTpl()"></div>
+      </div>
+      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:20px;flex-wrap:wrap">
+        <div style="font-size:12px"><span style="color:var(--silver2)">Venda: </span><span style="color:var(--green2);font-weight:700" id="mt-show-venda">R$ 0,00</span></div>
+        <div style="font-size:12px"><span style="color:var(--silver2)">Custo peças: </span><span style="color:var(--red);font-weight:700" id="mt-show-custo">R$ 0,00</span></div>
+        <div style="font-size:12px"><span style="color:var(--silver2)">Lucro estimado: </span><span style="color:var(--blue3);font-weight:800" id="mt-show-lucro">R$ 0,00</span></div>
+        <div style="font-size:12px"><span style="color:var(--silver2)">Margem: </span><span style="color:var(--amber);font-weight:700" id="mt-show-margem">—</span></div>
+      </div>
+
+      <!-- GARANTIA E PAGAMENTO -->
+      <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Garantia padrão</div><input class="fi" id="mt-gtia" placeholder="Ex: 12 meses"></div>
         <div><div class="fl">Pagamento padrão</div>
           <select class="fs" id="mt-pgto">
             <option>Pix</option><option>Dinheiro</option><option>Parcelado (50/50)</option><option>Cartão Crédito</option><option>Cartão Débito</option>
           </select>
-        </div>
-      </div>
-      <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Ícone (emoji)</div><input class="fi" id="mt-ic" placeholder="🔧" maxlength="4"></div>
-        <div>
-          <div class="fl">Cor da categoria</div>
-          <div class="clr-opts">
-            <div class="clr-opt sel" style="background:var(--blue2)" data-cat="cm" onclick="selClr(this,'cm')"></div>
-            <div class="clr-opt" style="background:var(--green)" data-cat="cg" onclick="selClr(this,'cg')"></div>
-            <div class="clr-opt" style="background:var(--amber)" data-cat="ca" onclick="selClr(this,'ca')"></div>
-            <div class="clr-opt" style="background:var(--purple)" data-cat="cp" onclick="selClr(this,'cp')"></div>
-            <div class="clr-opt" style="background:var(--silver)" data-cat="cs" onclick="selClr(this,'cs')"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -978,6 +997,7 @@ var STATE = {tpl:null,cli:null,aprov:null,editTplId:null,editOrcNum:null,selCat:
 // ════════════ PERSISTÊNCIA LOCAL (localStorage) ════════════
 function salvarLocal(){
   try{
+    localStorage.setItem('ads_templates',JSON.stringify(templates));
     localStorage.setItem('ads_clientes',JSON.stringify(clientes));
     localStorage.setItem('ads_orcamentos',JSON.stringify(orcamentos));
     localStorage.setItem('ads_financeiro',JSON.stringify(financeiro));
@@ -988,12 +1008,14 @@ function salvarLocal(){
 }
 function carregarLocal(){
   try{
+    var tp=localStorage.getItem('ads_templates');
     var c=localStorage.getItem('ads_clientes');
     var o=localStorage.getItem('ads_orcamentos');
     var f=localStorage.getItem('ads_financeiro');
     var r=localStorage.getItem('ads_recibos');
     var m=localStorage.getItem('ads_materiais');
     var nf=localStorage.getItem('ads_notasfiscais');
+    if(tp)templates=JSON.parse(tp);
     if(c)clientes=JSON.parse(c);
     if(o)orcamentos=JSON.parse(o);
     if(f)financeiro=JSON.parse(f);
@@ -1097,6 +1119,10 @@ async function sbSalvarOrcamento(o) {
 
 // ── CARREGAR DADOS do Supabase ───────────────────────────────
 async function carregarDados() {
+  // localStorage é sempre a fonte da verdade — Supabase só é usado para salvar
+  // Nunca sobrescrever dados locais com dados do Supabase
+  console.log('carregarDados: ignorado — localStorage é a fonte da verdade.');
+  return;
   if (!SUPABASE_ATIVO) return;
 
   // Templates
@@ -1251,14 +1277,35 @@ function renderTplManage(){
     var d=document.createElement('div');
     d.className='tpl-card '+t.cat;
     d.style.cursor='default';
+    var lucroTpl=(t.val||0)-(t.custoPecas||0);
     d.innerHTML='<div class="tpl-ic">'+t.ic+'</div>'+
       '<div class="tpl-nm">'+t.nm+'</div>'+
       '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:10px;margin:2px 0 4px">'+
+        '<span style="color:var(--red)">Custo: '+fmtVal(t.custoPecas||0)+'</span>'+
+        '<span style="color:var(--blue3)">Lucro: '+fmtVal(lucroTpl)+'</span>'+
+      '</div>'+
       '<div class="tpl-gt">Gtia: '+t.gtia+'</div>'+
       '<div style="margin-top:8px;display:flex;gap:5px">'+
-        '<button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 6px" onclick="editTpl('+t.id+')">✏️ Editar</button>'+
-        '<button class="btn btn-red btn-sm" style="padding:4px 8px" onclick="confirmDeleteTpl('+t.id+')">🗑</button>'+
+        '<button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 6px">✏️ Editar</button>'+
+        '<button class="btn btn-red btn-sm" style="padding:4px 8px">🗑</button>'+
       '</div>';
+    var btns=d.querySelectorAll('button');
+    (function(tref){
+      btns[0].onclick=function(e){e.stopPropagation();editTpl(tref.id);};
+      btns[1].onclick=function(e){
+        e.stopPropagation();
+        if(!confirm('Excluir o template "'+tref.nm+'"?'))return;
+        var idx=templates.indexOf(tref);
+        if(idx===-1)idx=templates.findIndex(function(x){return x.id==tref.id;});
+        if(idx===-1){alert('Template não encontrado.');return;}
+        if(tref.sbId)sbDeletarTemplate(tref.sbId);
+        templates.splice(idx,1);
+        salvarLocal();
+        renderTemplates();
+        renderTplManage();
+      };
+    })(t);
     g.appendChild(d);
   });
   var add=document.createElement('div');
@@ -1520,12 +1567,15 @@ function pickAprov(el,tipo){
 function emitirDoc(){
   var f=getFormData();
   var matTotais=getOrcMatTotais();
+  // Inclui custo de peças do template selecionado + materiais do orçamento
+  var custoPecasTpl=STATE.tpl?parseFloat(STATE.tpl.custoPecas||0):0;
+  var totalPecas=matTotais.custo+custoPecasTpl;
   // Sempre lança no financeiro independente da escolha
   var lancFin={
     desc:f.descricao.split('\n')[0]+' — '+f.cliente,
     cli:f.cliente,val:f.valor,pgto:f.pagamento,
     data:fmtDateBr(f.data),dataRaw:f.data,
-    pecas:matTotais.custo,pecasVenda:matTotais.venda,desloc:0,num:f.numero
+    pecas:totalPecas,pecasVenda:matTotais.venda,desloc:0,num:f.numero
   };
 
   if(STATE.aprov==='financeiro'){
@@ -2331,6 +2381,7 @@ function openTplModal(){
   document.getElementById('mt-nome').value='';
   document.getElementById('mt-desc').value='';
   document.getElementById('mt-valor').value='';
+  document.getElementById('mt-custo-pecas').value='0';
   document.getElementById('mt-gtia').value='';
   document.getElementById('mt-ic').value='🔧';
   document.getElementById('modal-delete-btn').style.display='none';
@@ -2338,26 +2389,31 @@ function openTplModal(){
   document.querySelectorAll('.clr-opt').forEach(function(x){x.classList.remove('sel');});
   var cm=document.querySelector('.clr-opt[data-cat="cm"]');
   if(cm)cm.classList.add('sel');
+  renderIconPicker('🔧');
+  calcLucroTpl();
   document.getElementById('modal-tpl').classList.add('open');
 }
 
 function editTpl(id){
-  var t=templates.find(function(x){return x.id===id;});
-  if(!t)return;
-  STATE.editTplId=id;
+  var t=templates.find(function(x){return x.id==id||x.id===id;});
+  if(!t){alert('Template não encontrado.');return;}
+  STATE.editTplId=t.id;
   document.getElementById('modal-tpl-title').textContent='Editar Template';
   document.getElementById('mt-nome').value=t.nm;
-  document.getElementById('mt-desc').value=t.desc;
-  document.getElementById('mt-valor').value=t.val;
-  document.getElementById('mt-gtia').value=t.gtia;
-  document.getElementById('mt-ic').value=t.ic;
+  document.getElementById('mt-desc').value=t.desc||'';
+  document.getElementById('mt-valor').value=t.val||0;
+  document.getElementById('mt-custo-pecas').value=t.custoPecas||0;
+  document.getElementById('mt-gtia').value=t.gtia||'';
+  document.getElementById('mt-ic').value=t.ic||'🔧';
   var pgEl=document.getElementById('mt-pgto');
   for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].value===t.pgto||pgEl.options[i].text===t.pgto){pgEl.selectedIndex=i;break;}}
-  STATE.selCat=t.cat;
+  STATE.selCat=t.cat||'cm';
   document.querySelectorAll('.clr-opt').forEach(function(x){x.classList.remove('sel');});
-  var cel=document.querySelector('.clr-opt[data-cat="'+t.cat+'"]');
+  var cel=document.querySelector('.clr-opt[data-cat="'+STATE.selCat+'"]');
   if(cel)cel.classList.add('sel');
   document.getElementById('modal-delete-btn').style.display='inline-flex';
+  renderIconPicker(t.ic||'🔧');
+  calcLucroTpl();
   document.getElementById('modal-tpl').classList.add('open');
 }
 
@@ -2368,6 +2424,40 @@ function selClr(el,cat){
   el.classList.add('sel');STATE.selCat=cat;
 }
 
+var TPL_ICONS=['🔧','🚪','🔄','⚙️','🔩','📡','🔗','📻','🔍','🛠','⚡','🔌','🔋','💡','🔑','🏠','🚗','🔒','📲','🖥','📦','🔨','⛏','🪛','🪚','🔬','🧰','🗜','⚙','🔐'];
+
+function renderIconPicker(selected){
+  var g=document.getElementById('mt-ic-grid');
+  if(!g)return;
+  g.innerHTML='';
+  TPL_ICONS.forEach(function(ic){
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=ic;
+    btn.title=ic;
+    btn.style.cssText='font-size:20px;padding:6px 8px;border-radius:7px;cursor:pointer;border:2px solid '+(ic===selected?'var(--blue2)':'var(--border)')+';background:'+(ic===selected?'rgba(37,99,235,.18)':'var(--bg3)')+';transition:all .1s';
+    btn.onclick=function(){
+      document.getElementById('mt-ic').value=ic;
+      document.querySelectorAll('#mt-ic-grid button').forEach(function(b){
+        b.style.borderColor='var(--border)';b.style.background='var(--bg3)';
+      });
+      btn.style.borderColor='var(--blue2)';btn.style.background='rgba(37,99,235,.18)';
+    };
+    g.appendChild(btn);
+  });
+}
+
+function calcLucroTpl(){
+  var venda=parseFloat(document.getElementById('mt-valor').value||0);
+  var custo=parseFloat(document.getElementById('mt-custo-pecas').value||0);
+  var lucro=venda-custo;
+  var margem=venda>0?Math.round(lucro/venda*100):0;
+  document.getElementById('mt-show-venda').textContent=fmtVal(venda);
+  document.getElementById('mt-show-custo').textContent=fmtVal(custo);
+  document.getElementById('mt-show-lucro').textContent=fmtVal(lucro);
+  document.getElementById('mt-show-margem').textContent=venda>0?margem+'%':'—';
+}
+
 function saveTpl(){
   var nm=(document.getElementById('mt-nome').value||'').trim();
   if(!nm){alert('Informe o nome do serviço.');return;}
@@ -2375,15 +2465,17 @@ function saveTpl(){
     nm:nm,
     desc:document.getElementById('mt-desc').value.trim(),
     val:parseFloat(document.getElementById('mt-valor').value||0),
+    custoPecas:parseFloat(document.getElementById('mt-custo-pecas').value||0),
     gtia:(document.getElementById('mt-gtia').value||'').trim()||'—',
     pgto:document.getElementById('mt-pgto').value,
     ic:(document.getElementById('mt-ic').value||'').trim()||'🔧',
     cat:STATE.selCat
   };
   if(STATE.editTplId){
-    var idx=templates.findIndex(function(x){return x.id===STATE.editTplId;});
+    var idx=templates.findIndex(function(x){return x.id==STATE.editTplId||x.id===STATE.editTplId;});
     t.id=STATE.editTplId;
     if(idx>=0)templates[idx]=t;
+    else templates.push(t);
     sbSalvarTemplate(t);
   } else {
     t.id=Date.now();
@@ -2391,24 +2483,40 @@ function saveTpl(){
     sbSalvarTemplate(t);
   }
   closeTplModal();
+  salvarLocal();
   renderTemplates();
   renderTplManage();
 }
 
 function deleteTpl(){
   if(!confirm('Excluir este template?'))return;
-  var t=templates.find(function(x){return x.id===STATE.editTplId;});
+  var idx=templates.findIndex(function(x){return x.id==STATE.editTplId||x.id===STATE.editTplId;});
+  if(idx===-1){alert('Erro: template não encontrado.');return;}
+  var t=templates[idx];
   if(t&&t.sbId)sbDeletarTemplate(t.sbId);
-  templates=templates.filter(function(x){return x.id!==STATE.editTplId;});
-  closeTplModal();renderTemplates();renderTplManage();
+  templates.splice(idx,1);
+  closeTplModal();
+  salvarLocal();
+  renderTemplates();
+  renderTplManage();
 }
 
 function confirmDeleteTpl(id){
   if(!confirm('Excluir este template?'))return;
-  var t=templates.find(function(x){return x.id===id;});
+  // Busca por id com comparação flexível (número ou string)
+  var idx=templates.findIndex(function(x){return x.id==id||x.id===id;});
+  if(idx===-1){
+    // Fallback: se não achar por id, não faz nada — log para debug
+    console.warn('Template não encontrado para excluir. id=',id,'templates=',templates.map(function(t){return t.id;}));
+    alert('Erro: template não encontrado. Tente recarregar a página.');
+    return;
+  }
+  var t=templates[idx];
   if(t&&t.sbId)sbDeletarTemplate(t.sbId);
-  templates=templates.filter(function(x){return x.id!==id;});
-  renderTemplates();renderTplManage();
+  templates.splice(idx,1);
+  salvarLocal();
+  renderTemplates();
+  renderTplManage();
 }
 
 // ════════════ ORÇAMENTOS TABLE ════════════
