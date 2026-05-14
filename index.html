@@ -1194,151 +1194,358 @@ function carregarLocal(){
   }catch(e){console.warn('Erro ao carregar local:',e);}
 }
 
-var SUPABASE_URL = 'https://realiuwjctmqgrwanmpx.supabase.co' ;       // ex: https://xyzabc.supabase.co
-var SUPABASE_KEY = 'sb_publishable_Cqgc1Iw1EJqgLm7VqSXXJQ_-7hewU15' ;     // ex: eyJhbGci...
+// ════════════════════════════════════════════════════════════
+// SUPABASE — SINCRONIZAÇÃO EM TEMPO REAL
+// Fonte única de verdade: Supabase.
+// localStorage = cache offline apenas.
+// ════════════════════════════════════════════════════════════
+var SUPABASE_URL = 'https://realiuwjctmqgrwanmpx.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_Cqgc1Iw1EJqgLm7VqSXXJQ_-7hewU15';
 
-var sb = null; // instância Supabase
+var sb = null;
 var SUPABASE_ATIVO = false;
+var _syncTimer = null;      // polling fallback
+var _lastSyncHash = '';     // detecta mudanças reais
 
+// Paleta de cores para clientes
+var CORES_CLI = [
+  {cor:'rgba(37,99,235,.25)',tc:'var(--blue3)'},
+  {cor:'rgba(16,185,129,.2)',tc:'var(--green2)'},
+  {cor:'rgba(139,92,246,.2)',tc:'var(--purple)'},
+  {cor:'rgba(245,158,11,.2)',tc:'var(--amber)'},
+];
+
+// ── STATUS INDICADOR ─────────────────────────────────────────
+function mostrarStatusBD(status, extra) {
+  var el = document.getElementById('bd-status');
+  if (!el) return;
+  var cfg = {
+    online:   { txt:'● Banco online',    bg:'rgba(16,185,129,.15)', color:'#34d399' },
+    sincronizando: { txt:'↻ Sincronizando…', bg:'rgba(59,130,246,.15)', color:'#60a5fa' },
+    local:    { txt:'○ Modo local',      bg:'rgba(245,158,11,.12)', color:'#f59e0b' },
+    erro:     { txt:'⚠ Erro conexão',    bg:'rgba(239,68,68,.12)',  color:'#f87171' },
+  };
+  var c = cfg[status] || cfg.local;
+  el.textContent = extra ? c.txt + ' ' + extra : c.txt;
+  el.style.background = c.bg;
+  el.style.color = c.color;
+}
+
+// ── INIT ─────────────────────────────────────────────────────
 async function initSupabase() {
-  if (SUPABASE_URL === 'COLE_SUA_URL_AQUI') {
-    console.log('Supabase não configurado — modo local ativo');
+  if (!window.supabase) {
+    console.warn('Supabase SDK não carregado');
     mostrarStatusBD('local');
     return;
   }
   try {
     const { createClient } = window.supabase;
     sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-    // Teste de conexão
-    const { error } = await sb.from('templates').select('id').limit(1);
-    if (error) throw error;
+    mostrarStatusBD('sincronizando');
+    await carregarTodosDados();
     SUPABASE_ATIVO = true;
     mostrarStatusBD('online');
-    await carregarDados();
-    console.log('✅ Supabase conectado!');
+    ativarSincronizacaoRealtime();
+    console.log('✅ Supabase conectado e dados carregados!');
   } catch(e) {
-    console.warn('Supabase erro:', e.message);
+    console.warn('Supabase erro na inicialização:', e.message || e);
     mostrarStatusBD('erro');
+    // Fallback: usa localStorage
+    carregarLocal();
+    renderizarTudo();
   }
 }
 
-function mostrarStatusBD(status) {
-  var el = document.getElementById('bd-status');
-  if (!el) return;
-  var cfg = {
-    online:  { txt:'● Banco online',  bg:'rgba(16,185,129,.15)', color:'#34d399' },
-    local:   { txt:'○ Modo local',    bg:'rgba(245,158,11,.12)', color:'#f59e0b' },
-    erro:    { txt:'⚠ Erro conexão',  bg:'rgba(239,68,68,.12)',  color:'#f87171' },
-  };
-  var c = cfg[status] || cfg.local;
-  el.textContent = c.txt;
-  el.style.background = c.bg;
-  el.style.color = c.color;
+// ── CARREGAR TODOS OS DADOS DO SUPABASE ─────────────────────
+async function carregarTodosDados() {
+  // Templates
+  const {data:tpls, error:eTpl} = await sb.from('templates').select('*').order('ordem');
+  if (!eTpl && tpls && tpls.length > 0) {
+    templates = tpls.map(function(t, i) {
+      return {
+        id: t.id, sbId: t.id,
+        nm: t.nome||'', desc: t.descricao||'',
+        val: parseFloat(t.valor||0), gtia: t.garantia||'—',
+        pgto: t.pagamento||'Pix', ic: t.icone||'🔧',
+        cat: t.categoria||'cm', custoPecas: parseFloat(t.custo_pecas||0)
+      };
+    });
+  }
+
+  // Clientes
+  const {data:clis, error:eCli} = await sb.from('clientes').select('*').order('criado_em', {ascending:false});
+  if (!eCli && clis && clis.length > 0) {
+    clientes = clis.map(function(c, i) {
+      var ini = (c.nome||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+      var cor = CORES_CLI[i % CORES_CLI.length];
+      return { id: c.id, sbId: c.id, nm: c.nome||'', tel: c.telefone||'',
+               end: c.endereco||'', av: ini, cor: cor.cor, tc: cor.tc, dt: '' };
+    });
+    _cliNextId = Math.max.apply(null, clientes.map(function(c){return typeof c.id==='number'?c.id:0;}).concat([200])) + 1;
+  }
+
+  // Orçamentos
+  const {data:orcs, error:eOrc} = await sb.from('orcamentos').select('*').order('criado_em', {ascending:false});
+  if (!eOrc && orcs && orcs.length > 0) {
+    orcamentos = orcs.map(function(o) {
+      return {
+        sbId: o.id, num: o.numero||'???', cli: o.cliente_nome||'',
+        tel: o.cliente_tel||'', end: o.cliente_end||'',
+        serv: (o.descricao||'').split('\n')[0], desc: o.descricao||'',
+        val: parseFloat(o.valor||0), gtia: o.garantia||'',
+        pgto: o.pagamento||'Pix', status: o.status||'pendente',
+        data: o.data_emissao||'', obs: o.observacoes||'',
+        custoPecas: parseFloat(o.custo_pecas||0)
+      };
+    });
+  }
+
+  // Recibos
+  const {data:recs, error:eRec} = await sb.from('recibos').select('*').order('criado_em', {ascending:false});
+  if (!eRec && recs && recs.length > 0) {
+    recibos = recs.map(function(r) {
+      return {
+        sbId: r.id, num: r.numero||'', cli: r.cliente_nome||'',
+        tel: r.cliente_tel||'', end: r.cliente_end||'',
+        serv: r.servico||'', desc: r.descricao||'',
+        val: parseFloat(r.valor||0), pgto: r.pagamento||'',
+        gtia: r.garantia||'', data: r.data_emissao||'',
+        dataRaw: r.data_raw||''
+      };
+    });
+  }
+
+  // Financeiro
+  const {data:fins, error:eFin} = await sb.from('financeiro').select('*').order('criado_em', {ascending:false});
+  if (!eFin && fins && fins.length > 0) {
+    financeiro = fins.map(function(f) {
+      return {
+        sbId: f.id, desc: f.descricao||'', cli: f.cliente||'',
+        val: parseFloat(f.valor||0), pgto: f.pagamento||'',
+        data: f.data||'', dataRaw: f.data_raw||'',
+        pecas: parseFloat(f.custo_pecas||0),
+        desloc: parseFloat(f.deslocamento||0), num: f.num_ref||''
+      };
+    });
+  }
+
+  // Materiais
+  const {data:mats, error:eMat} = await sb.from('materiais').select('*').order('titulo');
+  if (!eMat && mats && mats.length > 0) {
+    materiais = mats.map(function(m) {
+      return {
+        id: m.id, sbId: m.id, titulo: m.titulo||'',
+        qtd: parseInt(m.qtd||0), custo: parseFloat(m.custo||0),
+        margemTipo: m.margem_tipo||'perc', margemVal: parseFloat(m.margem_val||0),
+        venda: parseFloat(m.venda||0)
+      };
+    });
+    _matNextId = Math.max.apply(null, materiais.map(function(m){return typeof m.id==='number'?m.id:0;}).concat([100])) + 1;
+  }
+
+  // Salva cache local
+  salvarLocal();
+  // Atualiza UI completa
+  renderizarTudo();
 }
 
-// ── SALVAR TEMPLATE no Supabase ──────────────────────────────
+// ── RENDERIZAR TUDO ──────────────────────────────────────────
+function renderizarTudo() {
+  renderTemplates();
+  renderOrcTable();
+  renderClients();
+  renderClientesPage();
+  renderRecibosPage();
+  renderMateriaisPage();
+  atualizarContadores();
+  var pgAtiva = document.querySelector('.page.active');
+  if (pgAtiva) {
+    if (pgAtiva.id === 'page-financeiro') renderFinanceiroPage();
+    if (pgAtiva.id === 'page-notafiscal') renderNFPage();
+  }
+}
+
+// ── SINCRONIZAÇÃO REALTIME (Supabase Realtime) ───────────────
+function ativarSincronizacaoRealtime() {
+  // Tabelas a monitorar
+  var tabelas = ['orcamentos','recibos','financeiro','clientes','templates','materiais'];
+  tabelas.forEach(function(tabela) {
+    sb.channel('realtime-'+tabela)
+      .on('postgres_changes', { event: '*', schema: 'public', table: tabela }, function(payload) {
+        console.log('🔄 Mudança detectada em', tabela, payload.eventType);
+        // Debounce: agrupa várias mudanças simultâneas
+        clearTimeout(_syncTimer);
+        _syncTimer = setTimeout(function() {
+          mostrarStatusBD('sincronizando');
+          carregarTodosDados().then(function() {
+            mostrarStatusBD('online');
+          }).catch(function(e) {
+            console.warn('Erro ao resync:', e);
+            mostrarStatusBD('online');
+          });
+        }, 400);
+      })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Realtime ativo para', tabela);
+        }
+      });
+  });
+
+  // Polling fallback a cada 30s (garante sync mesmo se realtime falhar)
+  setInterval(function() {
+    if (SUPABASE_ATIVO) {
+      carregarTodosDados().catch(function(){});
+    }
+  }, 30000);
+
+  // Sincroniza ao voltar do background (celular bloqueia tela)
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && SUPABASE_ATIVO) {
+      mostrarStatusBD('sincronizando');
+      carregarTodosDados().then(function() {
+        mostrarStatusBD('online');
+      }).catch(function(){});
+    }
+  });
+}
+
+// ── SALVAR TEMPLATE ──────────────────────────────────────────
 async function sbSalvarTemplate(t) {
   if (!SUPABASE_ATIVO) return;
   const payload = {
-    nome:t.nm, descricao:t.desc, valor:t.val,
-    garantia:t.gtia, pagamento:t.pgto,
-    icone:t.ic, categoria:t.cat, ordem: templates.indexOf(t)
+    nome: t.nm, descricao: t.desc, valor: t.val,
+    garantia: t.gtia, pagamento: t.pgto,
+    icone: t.ic, categoria: t.cat,
+    custo_pecas: t.custoPecas||0,
+    ordem: templates.indexOf(t)
   };
-  if (t.sbId) {
-    await sb.from('templates').update(payload).eq('id', t.sbId);
-  } else {
-    const {data} = await sb.from('templates').insert(payload).select().single();
-    if (data) t.sbId = data.id;
-  }
+  try {
+    if (t.sbId) {
+      await sb.from('templates').update(payload).eq('id', t.sbId);
+    } else {
+      const {data} = await sb.from('templates').insert(payload).select().single();
+      if (data) t.sbId = data.id;
+    }
+  } catch(e) { console.warn('Erro ao salvar template:', e); }
 }
 
 async function sbDeletarTemplate(sbId) {
   if (!SUPABASE_ATIVO || !sbId) return;
-  await sb.from('templates').delete().eq('id', sbId);
+  try { await sb.from('templates').delete().eq('id', sbId); } catch(e) {}
 }
 
-// ── SALVAR CLIENTE no Supabase ───────────────────────────────
+// ── SALVAR CLIENTE ───────────────────────────────────────────
 async function sbSalvarCliente(c) {
   if (!SUPABASE_ATIVO) return;
-  const payload = { nome:c.nm, telefone:c.tel, endereco:c.end };
-  if (c.sbId) {
-    await sb.from('clientes').update(payload).eq('id', c.sbId);
-  } else {
-    const {data} = await sb.from('clientes').insert(payload).select().single();
-    if (data) c.sbId = data.id;
-  }
+  const payload = { nome: c.nm, telefone: c.tel, endereco: c.end };
+  try {
+    if (c.sbId) {
+      await sb.from('clientes').update(payload).eq('id', c.sbId);
+    } else {
+      const {data} = await sb.from('clientes').insert(payload).select().single();
+      if (data) { c.sbId = data.id; c.id = data.id; }
+    }
+  } catch(e) { console.warn('Erro ao salvar cliente:', e); }
 }
 
-// ── SALVAR ORÇAMENTO no Supabase ─────────────────────────────
+async function sbDeletarCliente(sbId) {
+  if (!SUPABASE_ATIVO || !sbId) return;
+  try { await sb.from('clientes').delete().eq('id', sbId); } catch(e) {}
+}
+
+// ── SALVAR ORÇAMENTO ─────────────────────────────────────────
 async function sbSalvarOrcamento(o) {
   if (!SUPABASE_ATIVO) return;
   const payload = {
-    numero:o.num, cliente_nome:o.cli, cliente_tel:o.tel||'',
-    cliente_end:o.end, descricao:o.desc, valor:o.val,
-    garantia:o.gtia, pagamento:o.pgto, status:o.status,
-    data_emissao:o.data, observacoes:o.obs||''
+    numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
+    cliente_end: o.end||'', descricao: o.desc, valor: o.val,
+    garantia: o.gtia, pagamento: o.pgto, status: o.status,
+    data_emissao: o.data, observacoes: o.obs||'',
+    custo_pecas: o.custoPecas||0
   };
-  if (o.sbId) {
-    await sb.from('orcamentos').update(payload).eq('id', o.sbId);
-  } else {
-    const {data} = await sb.from('orcamentos').insert(payload).select().single();
-    if (data) o.sbId = data.id;
-  }
+  try {
+    if (o.sbId) {
+      await sb.from('orcamentos').update(payload).eq('id', o.sbId);
+    } else {
+      const {data} = await sb.from('orcamentos').insert(payload).select().single();
+      if (data) o.sbId = data.id;
+    }
+  } catch(e) { console.warn('Erro ao salvar orçamento:', e); }
 }
 
-// ── CARREGAR DADOS do Supabase ───────────────────────────────
-async function carregarDados() {
-  // localStorage é sempre a fonte da verdade — Supabase só é usado para salvar
-  // Nunca sobrescrever dados locais com dados do Supabase
-  console.log('carregarDados: ignorado — localStorage é a fonte da verdade.');
-  return;
+async function sbDeletarOrcamento(sbId) {
+  if (!SUPABASE_ATIVO || !sbId) return;
+  try { await sb.from('orcamentos').delete().eq('id', sbId); } catch(e) {}
+}
+
+// ── SALVAR RECIBO ────────────────────────────────────────────
+async function sbSalvarRecibo(r) {
   if (!SUPABASE_ATIVO) return;
+  const payload = {
+    numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
+    cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
+    valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
+    data_emissao: r.data, data_raw: r.dataRaw||''
+  };
+  try {
+    if (r.sbId) {
+      await sb.from('recibos').update(payload).eq('id', r.sbId);
+    } else {
+      const {data} = await sb.from('recibos').insert(payload).select().single();
+      if (data) r.sbId = data.id;
+    }
+  } catch(e) { console.warn('Erro ao salvar recibo:', e); }
+}
 
-  // Templates
-  const {data:tpls} = await sb.from('templates').select('*').order('ordem');
-  if (tpls && tpls.length > 0) {
-    templates = tpls.map(t => ({
-      id: t.id, sbId: t.id,
-      nm: t.nome, desc: t.descricao||'', val: parseFloat(t.valor||0),
-      gtia: t.garantia||'—', pgto: t.pagamento||'Pix',
-      ic: t.icone||'🔧', cat: t.categoria||'cm'
-    }));
-  }
+async function sbDeletarRecibo(sbId) {
+  if (!SUPABASE_ATIVO || !sbId) return;
+  try { await sb.from('recibos').delete().eq('id', sbId); } catch(e) {}
+}
 
-  // Clientes
-  const {data:clis} = await sb.from('clientes').select('*').order('criado_em', {ascending:false}).limit(8);
-  if (clis && clis.length > 0) {
-    var cores = [
-      {cor:'rgba(37,99,235,.25)',tc:'var(--blue3)'},
-      {cor:'rgba(16,185,129,.2)',tc:'var(--green2)'},
-      {cor:'rgba(139,92,246,.2)',tc:'var(--purple)'},
-      {cor:'rgba(245,158,11,.2)',tc:'var(--amber)'},
-    ];
-    clientes = clis.map((c,i) => {
-      var ini = (c.nome||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-      var cor = cores[i % cores.length];
-      return { sbId:c.id, nm:c.nome, tel:c.telefone||'', end:c.endereco||'',
-               av:ini, cor:cor.cor, tc:cor.tc, dt:'banco' };
-    });
-  }
+// ── SALVAR FINANCEIRO ────────────────────────────────────────
+async function sbSalvarFinanceiro(f) {
+  if (!SUPABASE_ATIVO) return;
+  const payload = {
+    descricao: f.desc, cliente: f.cli||'', valor: f.val,
+    pagamento: f.pgto, data: f.data, data_raw: f.dataRaw||'',
+    custo_pecas: f.pecas||0, deslocamento: f.desloc||0, num_ref: f.num||''
+  };
+  try {
+    if (f.sbId) {
+      await sb.from('financeiro').update(payload).eq('id', f.sbId);
+    } else {
+      const {data} = await sb.from('financeiro').insert(payload).select().single();
+      if (data) f.sbId = data.id;
+    }
+  } catch(e) { console.warn('Erro ao salvar financeiro:', e); }
+}
 
-  // Orçamentos
-  const {data:orcs} = await sb.from('orcamentos').select('*').order('criado_em', {ascending:false}).limit(50);
-  if (orcs && orcs.length > 0) {
-    orcamentos = orcs.map(o => ({
-      sbId:o.id, num:o.numero||'???', cli:o.cliente_nome||'', tel:o.cliente_tel||'',
-      end:o.cliente_end||'', serv:(o.descricao||'').split('\n')[0],
-      desc:o.descricao||'', val:parseFloat(o.valor||0), gtia:o.garantia||'',
-      pgto:o.pagamento||'Pix', status:o.status||'pendente',
-      data:o.data_emissao||new Date().toISOString().split('T')[0], obs:o.observacoes||''
-    }));
-  }
+async function sbDeletarFinanceiro(sbId) {
+  if (!SUPABASE_ATIVO || !sbId) return;
+  try { await sb.from('financeiro').delete().eq('id', sbId); } catch(e) {}
+}
 
-  // Atualizar UI
-  renderTemplates();
-  renderOrcTable();
-  renderClients();
-  atualizarContadores();
+// ── SALVAR MATERIAL ──────────────────────────────────────────
+async function sbSalvarMaterial(m) {
+  if (!SUPABASE_ATIVO) return;
+  const payload = {
+    titulo: m.titulo, qtd: m.qtd, custo: m.custo,
+    margem_tipo: m.margemTipo, margem_val: m.margemVal, venda: m.venda
+  };
+  try {
+    if (m.sbId) {
+      await sb.from('materiais').update(payload).eq('id', m.sbId);
+    } else {
+      const {data} = await sb.from('materiais').insert(payload).select().single();
+      if (data) { m.sbId = data.id; m.id = data.id; }
+    }
+  } catch(e) { console.warn('Erro ao salvar material:', e); }
+}
+
+async function sbDeletarMaterial(sbId) {
+  if (!SUPABASE_ATIVO || !sbId) return;
+  try { await sb.from('materiais').delete().eq('id', sbId); } catch(e) {}
 }
 
 function atualizarContadores(){
@@ -1578,6 +1785,7 @@ function excluirCliente(id){
   var c=clientes.find(function(x){return x.id===id;});
   if(!c)return;
   if(!confirm('Excluir cliente "'+c.nm+'"? Esta ação não pode ser desfeita.'))return;
+  if(c.sbId)sbDeletarCliente(c.sbId);
   clientes=clientes.filter(function(x){return x.id!==id;});
   salvarLocal();
   renderClientesPage();
@@ -1869,6 +2077,7 @@ function emitirDoc(){
 
   if(STATE.aprov==='financeiro'){
     financeiro.unshift(lancFin);
+    sbSalvarFinanceiro(lancFin);
     salvarLocal();
     document.getElementById('doc-render').innerHTML=
       '<div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:22px;text-align:center">'+
@@ -1889,7 +2098,9 @@ function emitirDoc(){
       serv:f.descricao.split('\n')[0],desc:f.descricao,
       val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data};
     recibos.unshift(recibo);
+    sbSalvarRecibo(recibo);
     financeiro.unshift(lancFin);
+    sbSalvarFinanceiro(lancFin);
     salvarLocal();
     atualizarContadores();
     var corBadge='background:rgba(59,130,246,.15);color:var(--blue3)';
@@ -1923,6 +2134,7 @@ function emitirDoc(){
       val:f.valor,data:fmtDateBr(f.data),dataRaw:f.data,status:'Aguardando prefeitura'};
     notasFiscais.unshift(nfRec);
     financeiro.unshift(lancFin);
+    sbSalvarFinanceiro(lancFin);
     salvarLocal();
     atualizarContadores();
     var corBadgeNF='background:rgba(139,92,246,.2);color:var(--purple)';
@@ -2267,9 +2479,11 @@ function nrEmitirRecibo(){
   var numR='#R'+String(recibos.length+1).padStart(3,'0');
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:val,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw};
   recibos.unshift(recibo);
+  sbSalvarRecibo(recibo);
   var deslocR=parseFloat((document.getElementById('nr-desloc')||{}).value||0);
   var lancFin={desc:serv+' — '+nome,cli:nome,val:val,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:0,desloc:deslocR,num:numR};
   financeiro.unshift(lancFin);
+  sbSalvarFinanceiro(lancFin);
   salvarLocal();
   atualizarContadores();
   fecharNovoRecibo();
@@ -2336,6 +2550,8 @@ function renderRecibosPage(){
 
 function excluirRecibo(i){
   if(!confirm('Excluir este recibo? Esta ação não pode ser desfeita.'))return;
+  var r=recibos[i];
+  if(r&&r.sbId)sbDeletarRecibo(r.sbId);
   recibos.splice(i,1);
   salvarLocal();
   renderRecibosPage();
@@ -2427,15 +2643,18 @@ function emitirDocAprovado(){
 
   if(tipo==='recibo'){
     var numR='#R'+String(recibos.length+1).padStart(3,'0');
-    recibos.unshift({num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
+    var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:o.pgto,
-      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||''});
+      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||''};
+    recibos.unshift(novoRec);
+    sbSalvarRecibo(novoRec);
     financeiro.unshift(lancFin);
+    sbSalvarFinanceiro(lancFin);
+    sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
     fecharAprovacaoModal();
-    // Gera PDF do recibo
     setTimeout(function(){gerarPDFRecibo(0);},200);
     alert('✅ Recibo emitido e lançado no financeiro!');
   } else if(tipo==='nf'){
@@ -2443,6 +2662,8 @@ function emitirDocAprovado(){
     notasFiscais.unshift({num:numNF,cli:o.cli,serv:o.serv||'',
       val:o.val,data:dataFormatada,dataRaw:o.data||'',status:'Aguardando prefeitura'});
     financeiro.unshift(lancFin);
+    sbSalvarFinanceiro(lancFin);
+    sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
@@ -2450,6 +2671,8 @@ function emitirDocAprovado(){
     alert('✅ Nota Fiscal registrada e lançada no financeiro!');
   } else if(tipo==='financeiro'){
     financeiro.unshift(lancFin);
+    sbSalvarFinanceiro(lancFin);
+    sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
@@ -2561,6 +2784,7 @@ function salvarLancamentoManual(){
     num:'MAN'+Date.now()
   };
   financeiro.unshift(lancFin);
+  sbSalvarFinanceiro(lancFin);
   salvarLocal();
   fecharLancamentoManual();
   renderFinanceiroPage();
@@ -2658,6 +2882,8 @@ function renderFinanceiroPage(){
 
 function excluirFinanceiro(i){
   if(!confirm('Excluir este lançamento?'))return;
+  var f=financeiro[i];
+  if(f&&f.sbId)sbDeletarFinanceiro(f.sbId);
   financeiro.splice(i,1);
   salvarLocal();
   renderFinanceiroPage();
@@ -2666,6 +2892,8 @@ function excluirFinanceiro(i){
 function limparFinanceiro(){
   if(financeiro.length===0){alert('O financeiro já está vazio.');return;}
   if(!confirm('Remover TODOS os '+financeiro.length+' lançamentos? Esta ação não pode ser desfeita.'))return;
+  // Deleta cada um do Supabase
+  financeiro.forEach(function(f){if(f.sbId)sbDeletarFinanceiro(f.sbId);});
   financeiro=[];
   salvarLocal();
   renderFinanceiroPage();
@@ -2701,6 +2929,7 @@ function salvarFinanceiro(){
   if(i===null||i===undefined)return;
   financeiro[i].pecas=parseFloat(document.getElementById('fin-pecas').value||0);
   financeiro[i].desloc=parseFloat(document.getElementById('fin-desloc').value||0);
+  sbSalvarFinanceiro(financeiro[i]);
   fecharModalFin();
   salvarLocal();
   renderFinanceiroPage();
@@ -2877,10 +3106,13 @@ function salvarMaterial(){
   if(STATE.editMatId){
     var idx=materiais.findIndex(function(x){return x.id===STATE.editMatId;});
     if(idx>=0){
-      materiais[idx]={id:STATE.editMatId,titulo:titulo,qtd:qtd,custo:custo,margemTipo:margemTipo,margemVal:margemVal,venda:venda};
+      materiais[idx]={id:STATE.editMatId,sbId:materiais[idx].sbId,titulo:titulo,qtd:qtd,custo:custo,margemTipo:margemTipo,margemVal:margemVal,venda:venda};
+      sbSalvarMaterial(materiais[idx]);
     }
   } else {
-    materiais.push({id:_matNextId++,titulo:titulo,qtd:qtd,custo:custo,margemTipo:margemTipo,margemVal:margemVal,venda:venda});
+    var novoMat={id:_matNextId++,titulo:titulo,qtd:qtd,custo:custo,margemTipo:margemTipo,margemVal:margemVal,venda:venda};
+    materiais.push(novoMat);
+    sbSalvarMaterial(novoMat);
   }
   fecharModalMat();
   salvarLocal();
@@ -2889,6 +3121,8 @@ function salvarMaterial(){
 
 function deleteMaterial(){
   if(!confirm('Excluir este material?'))return;
+  var m=materiais.find(function(x){return x.id===STATE.editMatId;});
+  if(m&&m.sbId)sbDeletarMaterial(m.sbId);
   materiais=materiais.filter(function(x){return x.id!==STATE.editMatId;});
   fecharModalMat();
   salvarLocal();
@@ -2897,6 +3131,8 @@ function deleteMaterial(){
 
 function confirmarExcluirMaterial(id){
   if(!confirm('Excluir este material?'))return;
+  var m=materiais.find(function(x){return x.id===id;});
+  if(m&&m.sbId)sbDeletarMaterial(m.sbId);
   materiais=materiais.filter(function(x){return x.id!==id;});
   salvarLocal();
   renderMateriaisPage();
@@ -3221,6 +3457,7 @@ function excluirOrc(num){
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
   if(!confirm('Excluir orçamento #'+num+' de '+o.cli+'? Esta ação não pode ser desfeita.'))return;
+  if(o.sbId)sbDeletarOrcamento(o.sbId);
   orcamentos=orcamentos.filter(function(x){return x.num!==num;});
   salvarLocal();
   renderOrcTable();
