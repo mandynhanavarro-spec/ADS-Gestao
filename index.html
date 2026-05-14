@@ -911,12 +911,24 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid" style="margin-bottom:10px">
         <div><div class="fl">Nome completo</div><input class="fi" id="mc-nome" placeholder="Ex: João Silva"></div>
       </div>
-      <div class="fgrid" style="margin-bottom:10px">
+      <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Telefone / WhatsApp</div><input class="fi" id="mc-tel" placeholder="11 99999-9999"></div>
+        <div><div class="fl">CPF / CNPJ</div><input class="fi" id="mc-cpf" placeholder="Ex: 000.000.000-00 ou CNPJ"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">CEP</div>
+          <div style="display:flex;gap:6px">
+            <input class="fi" id="mc-cep" placeholder="00000-000" style="flex:1" oninput="formatarCEP(this)" onblur="buscarCEP()">
+            <button class="btn btn-ghost btn-sm" onclick="buscarCEP()" title="Buscar CEP">🔍</button>
+          </div>
+        </div>
+        <div><div class="fl">Cidade / Estado</div><input class="fi" id="mc-cidade" placeholder="São Paulo / SP"></div>
       </div>
       <div class="fgrid" style="margin-bottom:10px">
         <div><div class="fl">Endereço completo</div><input class="fi" id="mc-end" placeholder="Rua, número, bairro, cidade"></div>
       </div>
+      <div id="mc-cep-status" style="font-size:11px;color:var(--silver2);margin-bottom:4px;display:none"></div>
     </div>
     <div class="modal-ft">
       <button class="btn btn-ghost" onclick="fecharModalCli()">Cancelar</button>
@@ -1279,7 +1291,8 @@ async function carregarTodosDados() {
       var ini = (c.nome||'?').split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
       var cor = CORES_CLI[i % CORES_CLI.length];
       return { id: c.id, sbId: c.id, nm: c.nome||'', tel: c.telefone||'',
-               end: c.endereco||'', av: ini, cor: cor.cor, tc: cor.tc, dt: '' };
+               end: c.endereco||'', av: ini, cor: cor.cor, tc: cor.tc, dt: '',
+               cpf: c.cpf_cnpj||'', cep: c.cep||'', cidade: c.cidade||'' };
     });
     _cliNextId = Math.max.apply(null, clientes.map(function(c){return typeof c.id==='number'?c.id:0;}).concat([200])) + 1;
   }
@@ -1438,7 +1451,7 @@ async function sbDeletarTemplate(sbId) {
 // ── SALVAR CLIENTE ───────────────────────────────────────────
 async function sbSalvarCliente(c) {
   if (!SUPABASE_ATIVO) return;
-  const payload = { nome: c.nm, telefone: c.tel, endereco: c.end };
+  const payload = { nome: c.nm, telefone: c.tel, endereco: c.end, cpf_cnpj: c.cpf||'', cep: c.cep||'', cidade: c.cidade||'' };
   try {
     if (c.sbId) {
       await sb.from('clientes').update(payload).eq('id', c.sbId);
@@ -1724,7 +1737,8 @@ function renderClientesPage(){
       '<div class="cli-card-av" style="background:'+c.cor+';color:'+c.tc+'">'+c.av+'</div>'+
       '<div class="cli-card-info">'+
         '<div class="cli-card-nm">'+c.nm+'</div>'+
-        '<div class="cli-card-tel">📞 '+c.tel+'</div>'+
+        '<div class="cli-card-tel">📞 '+c.tel+(c.cpf?' &nbsp;|&nbsp; 🪪 '+c.cpf:'')+'</div>'+
+        (c.cep?'<div class="cli-card-end">📮 CEP: '+c.cep+(c.cidade?' — '+c.cidade:'')+'</div>':'')+
         '<div class="cli-card-end">📍 '+c.end+'</div>'+
         '<div class="cli-card-actions">'+
           '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();abrirCliOpcoes('+c.id+')">📋 Ver histórico & ações</button>'+
@@ -1739,6 +1753,8 @@ function renderClientesPage(){
 
 function abrirModalCliente(id){
   STATE.editCliId=id;
+  var statusEl=document.getElementById('mc-cep-status');
+  if(statusEl)statusEl.style.display='none';
   if(id){
     var c=clientes.find(function(x){return x.id===id;});
     if(!c)return;
@@ -1746,11 +1762,17 @@ function abrirModalCliente(id){
     document.getElementById('mc-nome').value=c.nm;
     document.getElementById('mc-tel').value=c.tel;
     document.getElementById('mc-end').value=c.end;
+    document.getElementById('mc-cpf').value=c.cpf||'';
+    document.getElementById('mc-cep').value=c.cep||'';
+    document.getElementById('mc-cidade').value=c.cidade||'';
   } else {
     document.getElementById('modal-cli-title').textContent='Novo Cliente';
     document.getElementById('mc-nome').value='';
     document.getElementById('mc-tel').value='';
     document.getElementById('mc-end').value='';
+    document.getElementById('mc-cpf').value='';
+    document.getElementById('mc-cep').value='';
+    document.getElementById('mc-cidade').value='';
   }
   document.getElementById('modal-cli').classList.add('open');
 }
@@ -1762,16 +1784,23 @@ function salvarCliente(){
   if(!nm){alert('Informe o nome do cliente.');return;}
   var tel=(document.getElementById('mc-tel').value||'').trim();
   var end=(document.getElementById('mc-end').value||'').trim();
+  var cpf=(document.getElementById('mc-cpf').value||'').trim();
+  var cep=(document.getElementById('mc-cep').value||'').trim();
+  var cidade=(document.getElementById('mc-cidade').value||'').trim();
   var ini=nm.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
   var cores=['rgba(37,99,235,.25)','rgba(16,185,129,.2)','rgba(139,92,246,.2)','rgba(245,158,11,.2)'];
   var tcs=['var(--blue3)','var(--green2)','var(--purple)','var(--amber)'];
   if(STATE.editCliId){
     var idx=clientes.findIndex(function(x){return x.id===STATE.editCliId;});
-    if(idx>=0){clientes[idx].nm=nm;clientes[idx].tel=tel;clientes[idx].end=end;clientes[idx].av=ini;}
+    if(idx>=0){
+      clientes[idx].nm=nm;clientes[idx].tel=tel;clientes[idx].end=end;
+      clientes[idx].av=ini;clientes[idx].cpf=cpf;
+      clientes[idx].cep=cep;clientes[idx].cidade=cidade;
+    }
     if(SUPABASE_ATIVO&&idx>=0)sbSalvarCliente(clientes[idx]);
   } else {
     var ci=clientes.length%4;
-    var novo={id:_cliNextId++,nm:nm,tel:tel,end:end,av:ini,cor:cores[ci],tc:tcs[ci],dt:'agora'};
+    var novo={id:_cliNextId++,nm:nm,tel:tel,end:end,av:ini,cor:cores[ci],tc:tcs[ci],dt:'agora',cpf:cpf,cep:cep,cidade:cidade};
     clientes.unshift(novo);
     if(SUPABASE_ATIVO)sbSalvarCliente(novo);
   }
@@ -1800,7 +1829,12 @@ function abrirCliOpcoes(id){
   if(!c)return;
   _cliOpId=id;
   document.getElementById('cliop-nome').textContent=c.nm;
-  document.getElementById('cliop-tel').textContent=c.tel+' · '+c.end;
+  var subInfo=c.tel;
+  if(c.cpf)subInfo+=' · 🪪 '+c.cpf;
+  if(c.cep)subInfo+=' · 📮 '+c.cep;
+  if(c.cidade)subInfo+=' · '+c.cidade;
+  subInfo+=' · '+c.end;
+  document.getElementById('cliop-tel').textContent=subInfo;
   // Monta histórico: orçamentos + recibos deste cliente
   var hist=[];
   orcamentos.forEach(function(o){
@@ -3630,7 +3664,41 @@ renderTemplates();
 renderOrcTable();
 renderClients();
 atualizarContadores();
-// Define mês atual como padrão do filtro financeiro
+// ════════════ CEP LOOKUP (ViaCEP) ════════════
+function formatarCEP(input){
+  var v=input.value.replace(/\D/g,'');
+  if(v.length>5)v=v.substring(0,5)+'-'+v.substring(5,8);
+  input.value=v;
+}
+
+function buscarCEP(){
+  var cep=(document.getElementById('mc-cep').value||'').replace(/\D/g,'');
+  if(cep.length!==8)return;
+  var statusEl=document.getElementById('mc-cep-status');
+  if(statusEl){statusEl.textContent='🔍 Buscando CEP...';statusEl.style.display='block';}
+  fetch('https://viacep.com.br/ws/'+cep+'/json/')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.erro){
+        if(statusEl){statusEl.textContent='❌ CEP não encontrado.';statusEl.style.display='block';}
+        return;
+      }
+      var rua=d.logradouro||'';
+      var bairro=d.bairro||'';
+      var cidade=d.localidade||'';
+      var uf=d.uf||'';
+      var endEl=document.getElementById('mc-end');
+      var cidEl=document.getElementById('mc-cidade');
+      if(endEl&&!endEl.value){
+        endEl.value=(rua?(rua+(bairro?', '+bairro:'')+', '+cidade+' / '+uf):'');
+      }
+      if(cidEl)cidEl.value=cidade+(uf?' / '+uf:'');
+      if(statusEl){statusEl.textContent='✅ '+cidade+(uf?' / '+uf:'')+(rua?' — '+rua:'');statusEl.style.display='block';}
+    })
+    .catch(function(){
+      if(statusEl){statusEl.textContent='⚠ Não foi possível buscar o CEP agora.';statusEl.style.display='block';}
+    });
+}
 (function(){
   var mesEl=document.getElementById('fin-filter-mes');
   if(mesEl){var m=new Date().getMonth()+1;mesEl.value=String(m);}
