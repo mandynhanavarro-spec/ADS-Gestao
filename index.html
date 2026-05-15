@@ -331,9 +331,8 @@ td.bold{color:var(--white);font-weight:700}
   </div>
   <div class="nav">
     <div class="nlabel">Principal</div>
-    <div class="ni active" onclick="goPage('rapido')"><span class="ic">⚡</span>Acesso Rápido</div>
     <div class="ni" onclick="goPage('orcamentos')"><span class="ic">📋</span>Orçamentos<span class="nb" id="nb-orc"></span></div>
-    <div class="ni" onclick="goPage('clientes')"><span class="ic">👥</span>Clientes</div>
+    <div class="ni active" onclick="goPage('clientes')"><span class="ic">👥</span>Clientes</div>
     <div class="ni" onclick="goPage('servicos')"><span class="ic">🔧</span>Serviços</div>
     <div class="ni" onclick="goPage('materiais')"><span class="ic">📦</span>Materiais</div>
     <div class="nlabel">Documentos</div>
@@ -357,8 +356,8 @@ td.bold{color:var(--white);font-weight:700}
 <div class="main">
 <div class="topbar">
   <button class="hamburger" onclick="toggleMenu()">☰</button>
-  <span class="tb-title" id="pg-title">⚡ Acesso Rápido</span>
-  <span class="tb-sub" id="pg-sub">— modo campo</span>
+  <span class="tb-title" id="pg-title">👥 Clientes</span>
+  <span class="tb-sub" id="pg-sub">— cadastro completo</span>
   <div class="tb-right">
     <span style="font-size:11px;color:var(--silver)" id="data-hoje"></span>
     <div id="bd-status" style="font-size:10px;padding:3px 10px;border-radius:12px;font-weight:700;background:rgba(245,158,11,.12);color:#f59e0b;cursor:default">○ Modo local</div>
@@ -366,8 +365,8 @@ td.bold{color:var(--white);font-weight:700}
 </div>
 <div class="content">
 
-<!-- ══ PAGE: ACESSO RÁPIDO ══ -->
-<div id="page-rapido" class="page active">
+<!-- ══ PAGE: ACESSO RÁPIDO (mantido internamente para fluxo de orçamento) ══ -->
+<div id="page-rapido" class="page">
   <div class="speed-banner" style="justify-content:space-between">
     <div style="display:flex;align-items:center;gap:10px">
       <span style="font-size:16px">⚡</span>
@@ -504,7 +503,8 @@ td.bold{color:var(--white);font-weight:700}
 <!-- ══ PAGE: ORÇAMENTOS ══ -->
 <div id="page-orcamentos" class="page">
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
-    <button class="btn btn-primary" onclick="goPage('rapido')">⚡ Novo orçamento rápido</button>
+    <button class="btn btn-primary" onclick="iniciarNovoOrcamento()">📋 Novo Orçamento</button>
+    <button class="btn btn-ghost" onclick="abrirSerrOrc()" style="border-color:rgba(245,158,11,.4);color:#ca8a04">🔨 Orçamento Serralheria</button>
     <span style="font-size:12px;color:var(--silver);margin-left:4px" id="orc-count-label"></span>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       <input class="fi" id="orc-search" style="width:160px" placeholder="🔍 Buscar..." oninput="renderOrcTable()">
@@ -579,7 +579,12 @@ td.bold{color:var(--white);font-weight:700}
 </div>
 
 <!-- ══ PAGE: CLIENTES ══ -->
-<div id="page-clientes" class="page">
+<div id="page-clientes" class="page active">
+  <!-- Banner de fluxo -->
+  <div style="background:rgba(37,99,235,.08);border:1px solid var(--border2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:16px">👆</span>
+    <span style="font-size:12px;color:var(--silver2)"><strong style="color:var(--blue3)">Toque em um cliente</strong> para criar Orçamento ou Recibo — o sistema pré-preenche tudo automaticamente.</span>
+  </div>
   <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
     <input class="fi" id="cli-search" style="flex:1;max-width:300px" placeholder="🔍  Buscar por nome, telefone, endereço..." oninput="renderClientesPage()">
     <button class="btn btn-primary" onclick="abrirModalCliente(null)">+ Novo cliente</button>
@@ -629,7 +634,7 @@ td.bold{color:var(--white);font-weight:700}
     <span style="font-weight:800;font-size:15px">🧾 Recibos Emitidos</span>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="abrirSerrRec()" style="border-color:rgba(245,158,11,.4);color:#ca8a04">🔨 Recibo Serralheria</button>
-      <button class="btn btn-primary" onclick="abrirNovoRecibo()">+ Emitir novo recibo</button>
+      <button class="btn btn-primary" onclick="iniciarNovoRecibo()">🧾 Emitir Novo Recibo</button>
     </div>
   </div>
   <!-- Desktop table -->
@@ -647,28 +652,29 @@ td.bold{color:var(--white);font-weight:700}
 
 <!-- ══ MODAL: NOVO RECIBO DIRETO ══ -->
 <div class="modal-bg" id="modal-novo-recibo">
-  <div class="modal" style="width:560px">
+  <div class="modal" style="width:600px;max-width:98vw">
     <div class="modal-hd">
       <span class="modal-title">🧾 Emitir Novo Recibo</span>
       <button class="modal-x" onclick="fecharNovoRecibo()">✕</button>
     </div>
     <div class="modal-bd">
-      <!-- STEP: TEMPLATE -->
-      <div id="nr-blk-tpl">
-        <div class="sec-label" style="margin-bottom:8px">1. Selecione o serviço / template</div>
-        <div class="tpl-grid" id="nr-tpl-render" style="margin-bottom:12px"></div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:10px">
-          <div class="fl" style="margin-bottom:6px">Ou descreva o serviço manualmente</div>
-          <input class="fi" id="nr-serv-manual" placeholder="Ex: Manutenção preventiva completa">
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="nrProxCliente()">Próximo → Selecionar cliente</button>
+      <!-- STEP INDICATOR -->
+      <div class="steps" id="nr-steps" style="margin-bottom:14px">
+        <div class="stp active" id="nr-s1"><div class="stp-n">1</div><span class="stp-l">Cliente</span></div>
+        <div class="stp-line" id="nr-sl1"></div>
+        <div class="stp idle" id="nr-s2"><div class="stp-n">2</div><span class="stp-l">Serviço</span></div>
+        <div class="stp-line" id="nr-sl2"></div>
+        <div class="stp idle" id="nr-s3"><div class="stp-n">3</div><span class="stp-l">Materiais</span></div>
+        <div class="stp-line" id="nr-sl3"></div>
+        <div class="stp idle" id="nr-s4"><div class="stp-n">4</div><span class="stp-l">Recibo</span></div>
       </div>
-      <!-- STEP: CLIENTE -->
-      <div id="nr-blk-cli" style="display:none">
-        <div class="sec-label" style="margin-bottom:8px">2. Selecione ou cadastre o cliente</div>
+
+      <!-- STEP 1: CLIENTE -->
+      <div id="nr-blk-cli">
+        <div class="sec-label" style="margin-bottom:8px">1. Selecione ou cadastre o cliente</div>
         <div class="rc-grid" id="nr-cli-render" style="margin-bottom:10px"></div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:10px">
-          <div class="fl" style="margin-bottom:6px">Ou informe os dados do cliente</div>
+          <div class="fl" style="margin-bottom:6px">Ou informe os dados do novo cliente</div>
           <div class="fgrid fg2" style="margin-bottom:8px">
             <div><div class="fl">Nome</div><input class="fi" id="nr-cli-nome" placeholder="Nome do cliente"></div>
             <div><div class="fl">Telefone</div><input class="fi" id="nr-cli-tel" placeholder="11 99999-9999"></div>
@@ -676,19 +682,65 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">Endereço</div><input class="fi" id="nr-cli-end" placeholder="Rua, número, bairro"></div>
         </div>
         <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="nrProxServico()">Próximo → Selecionar serviço</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: TEMPLATE / SERVIÇO -->
+      <div id="nr-blk-tpl" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <div class="sec-label" style="margin:0">2. Selecione o serviço / template</div>
+          <span style="font-size:10px;color:var(--green2);font-weight:700;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:2px 10px">👆 Toque no serviço para avançar</span>
+        </div>
+        <div class="tpl-grid" id="nr-tpl-render" style="margin-bottom:12px"></div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:10px">
+          <div class="fl" style="margin-bottom:6px">Ou descreva o serviço manualmente</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="fi" id="nr-serv-manual" placeholder="Ex: Manutenção preventiva completa" style="flex:1" oninput="nrClearTplSel()">
+            <button class="btn btn-primary btn-sm" onclick="nrProxMateriais()" style="white-space:nowrap;flex-shrink:0">Avançar →</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" id="nr-btn-voltar-cli" onclick="nrVoltarCli2()">← Voltar</button>
+          <button class="btn btn-primary btn-sm" onclick="nrProxMateriais()">Próximo → Materiais</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: MATERIAIS -->
+      <div id="nr-blk-mat" style="display:none">
+        <div class="sec-label" style="margin-bottom:8px">3. Adicionar peças / materiais (opcional)</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--silver2);font-weight:700;text-transform:uppercase;letter-spacing:1px">📦 Peças / Materiais do recibo</div>
+            <button class="btn btn-ghost btn-sm" onclick="adicionarLinhaMatRec()">+ Adicionar peça</button>
+          </div>
+          <div id="nr-mat-linhas"></div>
+          <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="color:var(--silver2)">Custo das peças:</span>
+              <span style="color:var(--red);font-weight:700" id="nr-mat-custo">R$ 0,00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--silver2)">Valor de venda das peças:</span>
+              <span style="color:var(--green2);font-weight:700" id="nr-mat-venda">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" onclick="nrVoltarTpl()">← Voltar</button>
           <button class="btn btn-primary btn-sm" onclick="nrProxRecibo()">Próximo → Dados do recibo</button>
         </div>
       </div>
-      <!-- STEP: RECIBO -->
+
+      <!-- STEP 4: RECIBO -->
       <div id="nr-blk-rec" style="display:none">
-        <div class="sec-label" style="margin-bottom:8px">3. Preencha os dados do recibo</div>
+        <div class="sec-label" style="margin-bottom:8px">4. Preencha os dados do recibo</div>
         <div style="background:rgba(59,130,246,.08);border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin-bottom:10px;font-size:12px">
           <strong style="color:var(--blue3)">Serviço:</strong> <span id="nr-show-serv" style="color:var(--white)"></span><br>
           <strong style="color:var(--blue3)">Cliente:</strong> <span id="nr-show-cli" style="color:var(--white)"></span>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="nr-valor" placeholder="0,00" step="0.01"></div>
+          <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="nr-valor" placeholder="0,00" step="0.01" oninput="calcTotalRecibo()"></div>
           <div><div class="fl">Data</div><input class="fi" type="date" id="nr-data"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
@@ -730,9 +782,159 @@ td.bold{color:var(--white);font-weight:700}
             </div>
           </div>
         </div>
+        <!-- Total automático -->
+        <div id="nr-total-box" style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--silver2);font-weight:700">TOTAL DO RECIBO:</span>
+            <span style="font-size:18px;font-weight:900;color:var(--green2)" id="nr-total-val">R$ 0,00</span>
+          </div>
+        </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="nrVoltarCli()">← Voltar</button>
-          <button class="btn btn-green" style="flex:1" onclick="nrEmitirRecibo()">🧾 Emitir Recibo e Lançar no Financeiro</button>
+          <button class="btn btn-ghost btn-sm" onclick="nrVoltarMat()">← Voltar</button>
+          <button class="btn btn-green" style="flex:1" onclick="nrEmitirRecibo()">🧾 Emitir Recibo e Gerar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: NOVO ORÇAMENTO FLUXO ══ -->
+<div class="modal-bg" id="modal-novo-orc-flow">
+  <div class="modal" style="width:600px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">📋 Novo Orçamento</span>
+      <button class="modal-x" onclick="fecharNovoOrcFlow()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <!-- STEP INDICATOR -->
+      <div class="steps" style="margin-bottom:14px">
+        <div class="stp active" id="nof-s1"><div class="stp-n">1</div><span class="stp-l">Cliente</span></div>
+        <div class="stp-line" id="nof-sl1"></div>
+        <div class="stp idle" id="nof-s2"><div class="stp-n">2</div><span class="stp-l">Serviço</span></div>
+        <div class="stp-line" id="nof-sl2"></div>
+        <div class="stp idle" id="nof-s3"><div class="stp-n">3</div><span class="stp-l">Materiais</span></div>
+        <div class="stp-line" id="nof-sl3"></div>
+        <div class="stp idle" id="nof-s4"><div class="stp-n">4</div><span class="stp-l">PDF</span></div>
+      </div>
+
+      <!-- STEP 1: CLIENTE -->
+      <div id="nof-blk-cli">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <div class="sec-label" style="margin:0">1. Selecione ou cadastre o cliente</div>
+          <span style="font-size:10px;color:var(--blue3);font-weight:700;background:rgba(37,99,235,.12);border:1px solid var(--border2);border-radius:20px;padding:2px 10px">👆 Toque no cliente para avançar</span>
+        </div>
+        <div class="rc-grid" id="nof-cli-render" style="margin-bottom:10px"></div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:10px">
+          <div class="fl" style="margin-bottom:6px">Ou informe os dados do novo cliente</div>
+          <div class="fgrid fg2" style="margin-bottom:8px">
+            <div><div class="fl">Nome</div><input class="fi" id="nof-cli-nome" placeholder="Nome do cliente" oninput="nofClearCliSel()"></div>
+            <div><div class="fl">Telefone</div><input class="fi" id="nof-cli-tel" placeholder="11 99999-9999"></div>
+          </div>
+          <div><div class="fl">Endereço</div><input class="fi" id="nof-cli-end" placeholder="Rua, número, bairro"></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="nofProxServico()">Próximo → Selecionar serviço</button>
+      </div>
+
+      <!-- STEP 2: SERVIÇO / TEMPLATE -->
+      <div id="nof-blk-tpl" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+          <div class="sec-label" style="margin:0">2. Selecione o serviço / template</div>
+          <span style="font-size:10px;color:var(--green2);font-weight:700;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:2px 10px">👆 Toque no serviço para avançar</span>
+        </div>
+        <div class="tpl-grid" id="nof-tpl-render" style="margin-bottom:12px"></div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px 12px;margin-bottom:10px">
+          <div class="fl" style="margin-bottom:6px">Ou descreva o serviço manualmente</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="fi" id="nof-serv-manual" placeholder="Ex: Instalação de portão deslizante" style="flex:1" oninput="nofClearTplSel()">
+            <button class="btn btn-primary btn-sm" onclick="nofProxMateriais()" style="white-space:nowrap;flex-shrink:0">Avançar →</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="nofVoltarCli()">← Voltar</button>
+          <button class="btn btn-primary btn-sm" onclick="nofProxMateriais()">Próximo → Materiais</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: MATERIAIS -->
+      <div id="nof-blk-mat" style="display:none">
+        <div class="sec-label" style="margin-bottom:8px">3. Adicionar peças / materiais (opcional)</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--silver2);font-weight:700;text-transform:uppercase;letter-spacing:1px">📦 Peças / Materiais do orçamento</div>
+            <button class="btn btn-ghost btn-sm" onclick="adicionarLinhaMatNof()">+ Adicionar peça</button>
+          </div>
+          <div id="nof-mat-linhas"></div>
+          <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:12px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="color:var(--silver2)">Custo das peças:</span>
+              <span style="color:var(--red);font-weight:700" id="nof-mat-custo">R$ 0,00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--silver2)">Valor de venda das peças:</span>
+              <span style="color:var(--green2);font-weight:700" id="nof-mat-venda">R$ 0,00</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="nofVoltarTpl()">← Voltar</button>
+          <button class="btn btn-primary btn-sm" onclick="nofProxOrc()">Próximo → Orçamento</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: DADOS DO ORÇAMENTO -->
+      <div id="nof-blk-orc" style="display:none">
+        <div class="sec-label" style="margin-bottom:8px">4. Confirme e gere o orçamento</div>
+        <div style="background:rgba(59,130,246,.08);border:1px solid var(--border);border-radius:7px;padding:9px 12px;margin-bottom:10px;font-size:12px">
+          <strong style="color:var(--blue3)">Serviço:</strong> <span id="nof-show-serv" style="color:var(--white)"></span><br>
+          <strong style="color:var(--blue3)">Cliente:</strong> <span id="nof-show-cli" style="color:var(--white)"></span>
+        </div>
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">Nº Orçamento</div><input class="fi" id="nof-num" placeholder="026"></div>
+          <div><div class="fl">Data</div><input class="fi" type="date" id="nof-data"></div>
+        </div>
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">Valor do serviço (R$)</div><input class="fi" type="number" id="nof-valor" placeholder="0,00" step="0.01"></div>
+          <div><div class="fl">Garantia</div><input class="fi" id="nof-gtia" placeholder="Ex: 12 meses"></div>
+        </div>
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">Pagamento</div>
+            <select class="fs" id="nof-pgto">
+              <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
+              <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
+            </select>
+          </div>
+          <div><div class="fl">Validade</div><input class="fi" id="nof-val" readonly style="color:var(--green2);cursor:default"></div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="number" id="nof-desloc" placeholder="0,00" step="0.01" value="0"></div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">Descrição do serviço (uma linha = um item no PDF)</div>
+            <textarea class="ft" id="nof-desc" rows="4" placeholder="Cada linha vira um bullet no orçamento..."></textarea>
+          </div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">Observações (opcional)</div><input class="fi" id="nof-obs" placeholder="Ex: Aguardando aprovação"></div>
+        </div>
+        <!-- Desconto -->
+        <div style="background:var(--bg3);border:1px solid rgba(234,179,8,.35);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:#ca8a04;letter-spacing:.8px;margin-bottom:8px">🏷️ Desconto (opcional)</div>
+          <div class="fgrid fg3">
+            <div><div class="fl">Tipo</div>
+              <select class="fs" id="nof-desc-tipo" onchange="calcDescontoNof()">
+                <option value="">Sem desconto</option><option value="valor">R$ Valor fixo</option><option value="perc">% Percentual</option>
+              </select>
+            </div>
+            <div><div class="fl">Desconto</div><input class="fi" type="number" id="nof-desc-qtd" placeholder="0" step="0.01" value="0" oninput="calcDescontoNof()"></div>
+            <div id="nof-desc-preview" style="display:none">
+              <div class="fl">Valor com desconto</div>
+              <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;font-size:14px;font-weight:700;color:var(--green2)" id="nof-desc-final">R$ 0,00</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="nofVoltarMat()">← Voltar</button>
+          <button class="btn btn-primary" style="flex:1" onclick="nofSalvarGerarPDF()">📄 Salvar e Gerar PDF →</button>
         </div>
       </div>
     </div>
@@ -933,7 +1135,7 @@ td.bold{color:var(--white);font-weight:700}
       <div style="font-weight:800;font-size:15px">📑 Notas Fiscais de Serviço Eletrônicas (NFS-e MEI)</div>
       <div style="font-size:11px;color:var(--silver);margin-top:2px">Gerenciar e acompanhar emissão de NFS-e junto à Prefeitura</div>
     </div>
-    <button class="btn btn-primary" style="margin-left:auto" onclick="goPage('rapido')">+ Emitir NFS-e</button>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="iniciarNovoOrcamento()">+ Emitir NFS-e</button>
   </div>
   <div class="panel" style="margin-bottom:16px">
     <div class="panel-hd"><div class="panel-title">⚙️ Configuração da NFS-e MEI</div></div>
@@ -1799,6 +2001,10 @@ function goPage(id){
   if(id==='recibos')renderRecibosPage();
   if(id==='financeiro'){initFinanceiroFiltros();renderFinanceiroPage();}
   if(id==='notafiscal')renderNFPage();
+  // Ativa item do menu correspondente
+  document.querySelectorAll('.ni').forEach(function(n){
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")>=0)n.classList.add('active');
+  });
   fecharMenu();
 }
 
@@ -1855,12 +2061,16 @@ function renderTemplates(){
   templates.forEach(function(t){
     var d=document.createElement('div');
     d.className='tpl-card '+t.cat;
-    d.innerHTML='<button class="tpl-edit-btn" onclick="event.stopPropagation();editTpl('+t.id+')">✏️ editar</button>'+
+    d.innerHTML='<button class="tpl-edit-btn">✏️ editar</button>'+
       '<div class="tpl-ic">'+t.ic+'</div>'+
       '<div class="tpl-nm">'+t.nm+'</div>'+
       '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
       '<div class="tpl-gt">Gtia: '+t.gtia+'</div>';
-    d.onclick=(function(tt){return function(){selectTpl(d,tt);};})(t);
+    // Wire via closures — UUID-safe
+    (function(tt){
+      d.querySelector('.tpl-edit-btn').onclick=function(e){e.stopPropagation();editTpl(tt.id);};
+      d.onclick=function(){selectTpl(d,tt);};
+    })(t);
     g.appendChild(d);
   });
   var add=document.createElement('div');
@@ -1954,12 +2164,29 @@ function renderClientesPage(){
         (c.cep?'<div class="cli-card-end">📮 CEP: '+c.cep+(c.cidade?' — '+c.cidade:'')+'</div>':'')+
         '<div class="cli-card-end">📍 '+c.end+'</div>'+
         '<div class="cli-card-actions">'+
-          '<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();abrirCliOpcoes('+c.id+')">📋 Ver histórico & ações</button>'+
-          '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();abrirModalCli('+c.id+')">✏️ Editar</button>'+
-          '<button class="btn btn-red btn-sm" onclick="event.stopPropagation();excluirCliente('+c.id+')">🗑</button>'+
+          '<button class="btn btn-primary btn-sm" data-action="orc">📋 Orçamento</button>'+
+          '<button class="btn btn-green btn-sm" data-action="rec">🧾 Recibo</button>'+
+          '<button class="btn btn-ghost btn-sm" data-action="hist">📂 Histórico</button>'+
+          '<button class="btn btn-ghost btn-sm" data-action="edit">✏️</button>'+
+          '<button class="btn btn-red btn-sm" data-action="del">🗑</button>'+
         '</div>'+
       '</div>';
-    div.onclick=function(){abrirCliOpcoes(c.id);};
+    // Wire buttons via closures — UUID-safe
+    (function(cc){
+      var btns=div.querySelectorAll('[data-action]');
+      btns.forEach(function(btn){
+        btn.onclick=function(e){
+          e.stopPropagation();
+          var a=btn.getAttribute('data-action');
+          if(a==='orc')iniciarNovoOrcamento(cc);
+          else if(a==='rec')iniciarNovoRecibo(cc);
+          else if(a==='hist')abrirCliOpcoes(cc.id);
+          else if(a==='edit')abrirModalCli(cc.id);
+          else if(a==='del')excluirCliente(cc.id);
+        };
+      });
+      div.onclick=function(){abrirCliOpcoes(cc.id);};
+    })(c);
     container.appendChild(div);
   });
 }
@@ -2112,40 +2339,11 @@ function cliOpAcao(acao){
   if(acao==='editar'){
     abrirModalCliente(c.id);
   } else if(acao==='orcamento'){
-    // Vai para acesso rápido e pré-seleciona o cliente
-    goPage('rapido');
-    // Espera renderizar e simula click no cliente
-    setTimeout(function(){
-      showBlock('tpl');
-      // Seleciona template padrão via STATE, espera template ser selecionado pelo user
-      // Mas pré-define o cliente no STATE
-      STATE.cli=c;
-      // Vai direto para a etapa de orçamento se já tem template
-      if(STATE.tpl){
-        preencherForm();
-        showBlock('orc');setStep(3);
-      } else {
-        // Mostra etapa 1 (template) com aviso
-        var banner=document.getElementById('edit-banner');
-        if(banner){banner.innerHTML='<span>👤</span><span>Cliente <strong>'+c.nm+'</strong> pré-selecionado. Escolha um template para continuar.</span>';banner.style.display='flex';}
-        showBlock('tpl');setStep(1);
-      }
-    },120);
+    // Abre modal novo orçamento com cliente pré-selecionado
+    iniciarNovoOrcamento(c);
   } else if(acao==='recibo'){
-    // Abre modal recibo e pré-preenche cliente
-    abrirNovoRecibo();
-    setTimeout(function(){
-      document.getElementById('nr-cli-nome').value=c.nm;
-      document.getElementById('nr-cli-tel').value=c.tel;
-      document.getElementById('nr-cli-end').value=c.end;
-      // Seleciona o card do cliente no grid
-      var cards=document.querySelectorAll('#nr-cli-render .rc-card');
-      cards.forEach(function(cd){
-        if(cd.querySelector('.rc-nm')&&cd.querySelector('.rc-nm').textContent===c.nm){
-          cd.classList.add('sel');NR.cli=c;
-        }
-      });
-    },150);
+    // Abre modal recibo novo e pré-preenche cliente
+    iniciarNovoRecibo(c);
   }
 }
 
@@ -2649,77 +2847,159 @@ function previewPDF(){
 }
 function closePDFPreview(){document.getElementById('pdf-overlay').classList.remove('open');}
 
-// ════════════ NOVO RECIBO DIRETO ════════════
-var NR = {tpl:null,cli:null};
+// ════════════ NOVO RECIBO — FLUXO: CLIENTE→SERVIÇO→MATERIAL→RECIBO→PDF ════════════
+var NR = {tpl:null,cli:null,matLinhas:[]};
 
-function abrirNovoRecibo(){
-  NR={tpl:null,cli:null};
-  // render templates
-  var g=document.getElementById('nr-tpl-render');
-  if(g){
-    g.innerHTML='';
-    templates.forEach(function(t){
-      var d=document.createElement('div');
-      d.className='tpl-card '+t.cat;
-      d.innerHTML='<div class="tpl-ic">'+t.ic+'</div><div class="tpl-nm">'+t.nm+'</div><div class="tpl-vl">'+fmtVal(t.val)+'</div>';
-      d.onclick=(function(tt){return function(){
-        g.querySelectorAll('.tpl-card').forEach(function(c){c.classList.remove('sel');});
-        d.classList.add('sel');NR.tpl=tt;
-        document.getElementById('nr-serv-manual').value='';
-      };})(t);
-      g.appendChild(d);
-    });
-  }
-  // render clients
+// Entrada: de qualquer lugar (com ou sem cliente pré-definido)
+function iniciarNovoRecibo(cliPre){
+  NR={tpl:null,cli:cliPre||null,matLinhas:[]};
+  // Limpa linhas de material
+  var ml=document.getElementById('nr-mat-linhas');
+  if(ml)ml.innerHTML='';
+  nrMatLinhas=[];
+  // Render clientes (para quando aberto sem pré-seleção)
   var gc=document.getElementById('nr-cli-render');
   if(gc){
     gc.innerHTML='';
-    clientes.slice(0,8).forEach(function(c){
+    clientes.slice(0,10).forEach(function(c){
       var cd=document.createElement('div');
-      cd.className='rc-card';
-      cd.innerHTML='<div class="rc-av" style="background:'+c.cor+';color:'+c.tc+'">'+c.av+'</div>'+
-        '<div><div class="rc-nm">'+c.nm+'</div><div class="rc-ph">'+c.tel+'</div></div>';
+      cd.className='rc-card'+(NR.cli&&NR.cli.id===c.id?' sel':'');
+      cd.innerHTML=
+        '<div class="rc-av" style="background:'+c.cor+';color:'+c.tc+'">'+c.av+'</div>'+
+        '<div style="min-width:0">'+
+          '<div class="rc-nm">'+c.nm+'</div>'+
+          '<div class="rc-ph">'+c.tel+'</div>'+
+          (c.end?'<div class="rc-dt" style="font-size:9px;color:var(--silver);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">'+c.end+'</div>':'')+
+        '</div>';
       cd.onclick=(function(cc){return function(){
         gc.querySelectorAll('.rc-card').forEach(function(x){x.classList.remove('sel');});
         cd.classList.add('sel');NR.cli=cc;
         document.getElementById('nr-cli-nome').value=cc.nm;
         document.getElementById('nr-cli-tel').value=cc.tel;
         document.getElementById('nr-cli-end').value=cc.end;
+        // Avança automaticamente
+        setTimeout(function(){nrProxServico();},200);
       };})(c);
       gc.appendChild(cd);
     });
   }
-  // set today date
+  // Pré-preenche campos
+  document.getElementById('nr-cli-nome').value=NR.cli?NR.cli.nm:'';
+  document.getElementById('nr-cli-tel').value=NR.cli?NR.cli.tel:'';
+  document.getElementById('nr-cli-end').value=NR.cli?NR.cli.end:'';
+  // Data hoje
   var today=new Date();
   var fmtD=function(x){return x.getFullYear()+'-'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'-'+(x.getDate()<10?'0':'')+x.getDate();};
   document.getElementById('nr-data').value=fmtD(today);
-  // show first step
-  document.getElementById('nr-blk-tpl').style.display='block';
-  document.getElementById('nr-blk-cli').style.display='none';
-  document.getElementById('nr-blk-rec').style.display='none';
+  // Esconde todos os blocos
+  ['nr-blk-cli','nr-blk-tpl','nr-blk-mat','nr-blk-rec'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
   document.getElementById('modal-novo-recibo').classList.add('open');
+  if(NR.cli){
+    // Cliente já definido: pula Step 1, vai direto para Serviço
+    // Esconde o botão "← Voltar" do Step 2 (não tem para onde voltar)
+    var btnVoltar=document.getElementById('nr-btn-voltar-cli');
+    if(btnVoltar)btnVoltar.style.display='none';
+    nrProxServico();
+  } else {
+    // Sem cliente: mostra Step 1 normalmente com botão Voltar visível
+    var btnVoltar=document.getElementById('nr-btn-voltar-cli');
+    if(btnVoltar)btnVoltar.style.display='inline-flex';
+    nrSetStep(1);
+    document.getElementById('nr-blk-cli').style.display='block';
+  }
 }
 
-function fecharNovoRecibo(){document.getElementById('modal-novo-recibo').classList.remove('open');}
+function abrirNovoRecibo(){iniciarNovoRecibo();}
 
-function nrProxCliente(){
+function nrSetStep(n){
+  for(var i=1;i<=4;i++){
+    var s=document.getElementById('nr-s'+i);
+    if(s)s.className='stp '+(i<n?'done':i===n?'active':'idle');
+    if(i<4){var l=document.getElementById('nr-sl'+i);if(l)l.className='stp-line'+(i<n?' done':'');}
+  }
+}
+
+function fecharNovoRecibo(){
+  document.getElementById('modal-novo-recibo').classList.remove('open');
+}
+
+function nrClearTplSel(){
+  NR.tpl=null;
+  var g=document.getElementById('nr-tpl-render');
+  if(g)g.querySelectorAll('.tpl-card').forEach(function(x){x.classList.remove('sel');});
+}
+
+// Step 1 → Step 2
+function nrProxServico(){
+  var nome=(document.getElementById('nr-cli-nome').value||'').trim();
+  if(!nome){alert('Selecione ou informe o nome do cliente.');return;}
+  if(!NR.cli){
+    NR.cli={nm:nome,tel:(document.getElementById('nr-cli-tel').value||'').trim(),
+      end:(document.getElementById('nr-cli-end').value||'').trim()};
+  }
+  // Render templates — clique no card avança direto para materiais
+  var g=document.getElementById('nr-tpl-render');
+  if(g){
+    g.innerHTML='';
+    templates.forEach(function(t){
+      var d=document.createElement('div');
+      d.className='tpl-card '+t.cat;
+      d.innerHTML='<div class="tpl-ic">'+t.ic+'</div>'+
+        '<div class="tpl-nm">'+t.nm+'</div>'+
+        '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
+        '<div class="tpl-gt">Gtia: '+t.gtia+'</div>';
+      d.onclick=(function(tt){return function(){
+        g.querySelectorAll('.tpl-card').forEach(function(c){c.classList.remove('sel');});
+        d.classList.add('sel');
+        NR.tpl=tt;
+        document.getElementById('nr-serv-manual').value='';
+        // Avança automaticamente com delay visual
+        setTimeout(function(){nrProxMateriais();},180);
+      };})(t);
+      g.appendChild(d);
+    });
+  }
+  document.getElementById('nr-serv-manual').value='';
+  NR.tpl=null;
+  ['nr-blk-cli','nr-blk-tpl','nr-blk-mat','nr-blk-rec'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  document.getElementById('nr-blk-tpl').style.display='block';
+  nrSetStep(2);
+}
+
+// Step 2 → back to 1
+function nrVoltarCli2(){
+  document.getElementById('nr-blk-tpl').style.display='none';
+  document.getElementById('nr-blk-cli').style.display='block';
+  nrSetStep(1);
+}
+
+// Step 2 → Step 3
+function nrProxMateriais(){
   var manual=(document.getElementById('nr-serv-manual').value||'').trim();
   if(!NR.tpl&&!manual){alert('Selecione um template ou descreva o serviço.');return;}
   document.getElementById('nr-blk-tpl').style.display='none';
-  document.getElementById('nr-blk-cli').style.display='block';
+  document.getElementById('nr-blk-mat').style.display='block';
+  nrSetStep(3);
+  recalcMatRec();
 }
 
+// Step 3 → back to 2
 function nrVoltarTpl(){
-  document.getElementById('nr-blk-cli').style.display='none';
+  document.getElementById('nr-blk-mat').style.display='none';
   document.getElementById('nr-blk-tpl').style.display='block';
+  nrSetStep(2);
 }
 
+// Step 3 → Step 4
 function nrProxRecibo(){
-  var nome=(document.getElementById('nr-cli-nome').value||'').trim();
-  if(!nome){alert('Informe o nome do cliente.');return;}
   var manual=(document.getElementById('nr-serv-manual').value||'').trim();
   var servTxt=NR.tpl?NR.tpl.nm:manual;
   var descTxt=NR.tpl?NR.tpl.desc:manual;
+  var nome=(document.getElementById('nr-cli-nome').value||'').trim();
   document.getElementById('nr-show-serv').textContent=servTxt;
   document.getElementById('nr-show-cli').textContent=nome;
   if(NR.tpl){
@@ -2729,13 +3009,95 @@ function nrProxRecibo(){
     for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NR.tpl.pgto){pgEl.selectedIndex=i;break;}}
     document.getElementById('nr-desc').value=descTxt;
   }
-  document.getElementById('nr-blk-cli').style.display='none';
+  // Adiciona valor de venda de materiais ao valor total
+  var matVenda=getNrMatTotais().venda;
+  if(matVenda>0&&NR.tpl){
+    var baseVal=parseFloat(document.getElementById('nr-valor').value||0);
+    document.getElementById('nr-valor').value=(baseVal+matVenda).toFixed(2);
+  }
+  document.getElementById('nr-blk-mat').style.display='none';
   document.getElementById('nr-blk-rec').style.display='block';
+  nrSetStep(4);
+  calcTotalRecibo();
 }
 
-function nrVoltarCli(){
+// Step 4 → back to 3
+function nrVoltarMat(){
   document.getElementById('nr-blk-rec').style.display='none';
-  document.getElementById('nr-blk-cli').style.display='block';
+  document.getElementById('nr-blk-mat').style.display='block';
+  nrSetStep(3);
+}
+
+// Backward compat alias
+function nrVoltarCli(){nrVoltarTpl();}
+
+// Materiais do recibo
+var nrMatLinhas=[];
+
+function adicionarLinhaMatRec(){
+  var rowId='nrmat-'+Date.now();
+  var opts=materiais.map(function(m){
+    return '<option value="'+m.id+'">'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+  }).join('');
+  if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
+  var div=document.createElement('div');
+  div.id=rowId;
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatRec()" id="nrsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="nrqtd-'+rowId+'" oninput="recalcMatRec()">'+
+    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="nrsub-'+rowId+'">R$ 0,00</span>'+
+    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatRec(\''+rowId+'\')">✕</button>';
+  document.getElementById('nr-mat-linhas').appendChild(div);
+  nrMatLinhas.push(rowId);
+  recalcMatRec();
+}
+
+function removerLinhaMatRec(rowId){
+  var el=document.getElementById(rowId);if(el)el.remove();
+  nrMatLinhas=nrMatLinhas.filter(function(r){return r!==rowId;});
+  recalcMatRec();
+}
+
+function recalcMatRec(){
+  var totalCusto=0,totalVenda=0;
+  nrMatLinhas.forEach(function(rowId){
+    var selEl=document.getElementById('nrsel-'+rowId);
+    var qtdEl=document.getElementById('nrqtd-'+rowId);
+    var subEl=document.getElementById('nrsub-'+rowId);
+    if(!selEl||!qtdEl)return;
+    var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
+    if(!matId||isNaN(qtd)||qtd<1)return;
+    var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
+    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
+    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+  });
+  var cEl=document.getElementById('nr-mat-custo');var vEl=document.getElementById('nr-mat-venda');
+  if(cEl)cEl.textContent=fmtVal(totalCusto);
+  if(vEl)vEl.textContent=fmtVal(totalVenda);
+}
+
+function getNrMatTotais(){
+  var totalCusto=0,totalVenda=0;
+  nrMatLinhas.forEach(function(rowId){
+    var selEl=document.getElementById('nrsel-'+rowId);var qtdEl=document.getElementById('nrqtd-'+rowId);
+    if(!selEl||!qtdEl)return;
+    var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
+    if(!matId||isNaN(qtd)||qtd<1)return;
+    var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
+    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
+  });
+  return{custo:totalCusto,venda:totalVenda};
+}
+
+function calcTotalRecibo(){
+  var val=parseFloat(document.getElementById('nr-valor').value||0);
+  var descTipo=(document.getElementById('nr-desc-tipo')||{}).value||'';
+  var descQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
+  var desc=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
+  var total=Math.max(0,val-desc);
+  var tBox=document.getElementById('nr-total-box');var tVal=document.getElementById('nr-total-val');
+  if(tBox)tBox.style.display=(val>0)?'block':'none';
+  if(tVal)tVal.textContent=fmtVal(total);
 }
 
 function nrEmitirRecibo(){
@@ -2748,7 +3110,6 @@ function nrEmitirRecibo(){
   var gtia=(document.getElementById('nr-gtia').value||'').trim();
   var desc=(document.getElementById('nr-desc').value||'').trim();
   if(!val||val<=0){alert('Informe um valor válido.');return;}
-  // Desconto
   var nrDescTipo=(document.getElementById('nr-desc-tipo')||{}).value||'';
   var nrDescQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
   var nrDesc=nrDescTipo==='valor'?nrDescQtd:(nrDescTipo==='perc'?val*(nrDescQtd/100):0);
@@ -2756,18 +3117,292 @@ function nrEmitirRecibo(){
   var manual=(document.getElementById('nr-serv-manual').value||'').trim();
   var serv=NR.tpl?NR.tpl.nm:manual;
   var numR='#R'+String(recibos.length+1).padStart(3,'0');
+  var matTotais=getNrMatTotais();
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc};
   recibos.unshift(recibo);
   sbSalvarRecibo(recibo);
   var deslocR=parseFloat((document.getElementById('nr-desloc')||{}).value||0);
-  var lancFin={desc:serv+' — '+nome,cli:nome,val:valorFinal,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:0,desloc:deslocR,num:numR};
+  var lancFin={desc:serv+' — '+nome,cli:nome,val:valorFinal,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:matTotais.custo,desloc:deslocR,num:numR};
   financeiro.unshift(lancFin);
   sbSalvarFinanceiro(lancFin);
   salvarLocal();
   atualizarContadores();
   fecharNovoRecibo();
   renderRecibosPage();
-  alert('✅ Recibo '+numR+' emitido e lançado no financeiro!');
+  // Gera PDF automaticamente
+  setTimeout(function(){gerarPDFRecibo(0);},200);
+  alert('✅ Recibo '+numR+' emitido! O PDF será gerado agora.');
+}
+
+// ════════════ NOVO ORÇAMENTO — FLUXO: CLIENTE→SERVIÇO→MATERIAL→ORÇAMENTO→PDF ════════════
+var NOF = {tpl:null,cli:null};
+var nofMatLinhas=[];
+
+function iniciarNovoOrcamento(cliPre){
+  NOF={tpl:null,cli:cliPre||null};
+  nofMatLinhas=[];
+  var ml=document.getElementById('nof-mat-linhas');if(ml)ml.innerHTML='';
+  // Render clientes — clique no card preenche campos E avança automaticamente
+  var gc=document.getElementById('nof-cli-render');
+  if(gc){
+    gc.innerHTML='';
+    clientes.slice(0,10).forEach(function(c){
+      var cd=document.createElement('div');
+      cd.className='rc-card'+(NOF.cli&&NOF.cli.id===c.id?' sel':'');
+      cd.innerHTML=
+        '<div class="rc-av" style="background:'+c.cor+';color:'+c.tc+'">'+c.av+'</div>'+
+        '<div style="min-width:0">'+
+          '<div class="rc-nm">'+c.nm+'</div>'+
+          '<div class="rc-ph">'+c.tel+'</div>'+
+          (c.end?'<div class="rc-dt" style="font-size:9px;color:var(--silver);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">'+c.end+'</div>':'')+
+        '</div>';
+      cd.onclick=(function(cc){return function(){
+        gc.querySelectorAll('.rc-card').forEach(function(x){x.classList.remove('sel');});
+        cd.classList.add('sel');
+        NOF.cli=cc;
+        document.getElementById('nof-cli-nome').value=cc.nm;
+        document.getElementById('nof-cli-tel').value=cc.tel;
+        document.getElementById('nof-cli-end').value=cc.end;
+        // Avança automaticamente com pequeno delay visual
+        setTimeout(function(){nofProxServico();},200);
+      };})(c);
+      gc.appendChild(cd);
+    });
+  }
+  document.getElementById('nof-cli-nome').value=NOF.cli?NOF.cli.nm:'';
+  document.getElementById('nof-cli-tel').value=NOF.cli?NOF.cli.tel:'';
+  document.getElementById('nof-cli-end').value=NOF.cli?NOF.cli.end:'';
+  nofSetStep(1);
+  ['nof-blk-cli','nof-blk-tpl','nof-blk-mat','nof-blk-orc'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  document.getElementById('nof-blk-cli').style.display='block';
+  // Se já tem cliente pré-selecionado (vindo do card na aba Clientes), vai direto para serviço
+  if(NOF.cli){
+    setTimeout(function(){nofProxServico();},100);
+  }
+  document.getElementById('modal-novo-orc-flow').classList.add('open');
+}
+
+function fecharNovoOrcFlow(){
+  document.getElementById('modal-novo-orc-flow').classList.remove('open');
+}
+
+function nofSetStep(n){
+  for(var i=1;i<=4;i++){
+    var s=document.getElementById('nof-s'+i);
+    if(s)s.className='stp '+(i<n?'done':i===n?'active':'idle');
+    if(i<4){var l=document.getElementById('nof-sl'+i);if(l)l.className='stp-line'+(i<n?' done':'');}
+  }
+}
+
+function nofClearCliSel(){
+  // Ao digitar manualmente, deseleciona o card
+  NOF.cli=null;
+  var gc=document.getElementById('nof-cli-render');
+  if(gc)gc.querySelectorAll('.rc-card').forEach(function(x){x.classList.remove('sel');});
+}
+
+function nofClearTplSel(){
+  // Ao digitar manualmente, deseleciona o card de serviço
+  NOF.tpl=null;
+  var g=document.getElementById('nof-tpl-render');
+  if(g)g.querySelectorAll('.tpl-card').forEach(function(x){x.classList.remove('sel');});
+}
+
+function nofProxServico(){
+  var nome=(document.getElementById('nof-cli-nome').value||'').trim();
+  if(!nome){alert('Selecione ou informe o nome do cliente.');return;}
+  if(!NOF.cli){
+    NOF.cli={nm:nome,tel:(document.getElementById('nof-cli-tel').value||'').trim(),
+      end:(document.getElementById('nof-cli-end').value||'').trim()};
+  }
+  // Render templates — clique no card avança direto para materiais
+  var g=document.getElementById('nof-tpl-render');
+  if(g){
+    g.innerHTML='';
+    templates.forEach(function(t){
+      var d=document.createElement('div');
+      d.className='tpl-card '+t.cat;
+      d.innerHTML='<div class="tpl-ic">'+t.ic+'</div><div class="tpl-nm">'+t.nm+'</div>'+
+        '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
+        '<div class="tpl-gt">Gtia: '+t.gtia+'</div>';
+      d.onclick=(function(tt){return function(){
+        g.querySelectorAll('.tpl-card').forEach(function(c){c.classList.remove('sel');});
+        d.classList.add('sel');
+        NOF.tpl=tt;
+        document.getElementById('nof-serv-manual').value='';
+        // Avança automaticamente com pequeno delay visual
+        setTimeout(function(){nofProxMateriais();},180);
+      };})(t);
+      g.appendChild(d);
+    });
+  }
+  document.getElementById('nof-serv-manual').value='';
+  NOF.tpl=null;
+  document.getElementById('nof-blk-cli').style.display='none';
+  document.getElementById('nof-blk-tpl').style.display='block';
+  nofSetStep(2);
+}
+
+function nofVoltarCli(){
+  document.getElementById('nof-blk-tpl').style.display='none';
+  document.getElementById('nof-blk-cli').style.display='block';
+  nofSetStep(1);
+}
+
+function nofProxMateriais(){
+  var manual=(document.getElementById('nof-serv-manual').value||'').trim();
+  if(!NOF.tpl&&!manual){alert('Selecione um template ou descreva o serviço.');return;}
+  document.getElementById('nof-blk-tpl').style.display='none';
+  document.getElementById('nof-blk-mat').style.display='block';
+  nofSetStep(3);
+  recalcMatNof();
+}
+
+function nofVoltarTpl(){
+  document.getElementById('nof-blk-mat').style.display='none';
+  document.getElementById('nof-blk-tpl').style.display='block';
+  nofSetStep(2);
+}
+
+function adicionarLinhaMatNof(){
+  var rowId='nofmat-'+Date.now();
+  var opts=materiais.map(function(m){
+    return '<option value="'+m.id+'">'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+  }).join('');
+  if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
+  var div=document.createElement('div');
+  div.id=rowId;
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatNof()" id="nofsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="nofqtd-'+rowId+'" oninput="recalcMatNof()">'+
+    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="nofsub-'+rowId+'">R$ 0,00</span>'+
+    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatNof(\''+rowId+'\')">✕</button>';
+  document.getElementById('nof-mat-linhas').appendChild(div);
+  nofMatLinhas.push(rowId);
+  recalcMatNof();
+}
+
+function removerLinhaMatNof(rowId){
+  var el=document.getElementById(rowId);if(el)el.remove();
+  nofMatLinhas=nofMatLinhas.filter(function(r){return r!==rowId;});
+  recalcMatNof();
+}
+
+function recalcMatNof(){
+  var totalCusto=0,totalVenda=0;
+  nofMatLinhas.forEach(function(rowId){
+    var selEl=document.getElementById('nofsel-'+rowId);var qtdEl=document.getElementById('nofqtd-'+rowId);var subEl=document.getElementById('nofsub-'+rowId);
+    if(!selEl||!qtdEl)return;
+    var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
+    if(!matId||isNaN(qtd)||qtd<1)return;
+    var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
+    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
+    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+  });
+  var cEl=document.getElementById('nof-mat-custo');var vEl=document.getElementById('nof-mat-venda');
+  if(cEl)cEl.textContent=fmtVal(totalCusto);
+  if(vEl)vEl.textContent=fmtVal(totalVenda);
+  return{custo:totalCusto,venda:totalVenda};
+}
+
+function getNofMatTotais(){return recalcMatNof()||{custo:0,venda:0};}
+
+function nofProxOrc(){
+  var manual=(document.getElementById('nof-serv-manual').value||'').trim();
+  var servTxt=NOF.tpl?NOF.tpl.nm:manual;
+  var descTxt=NOF.tpl?NOF.tpl.desc:manual;
+  var nome=(document.getElementById('nof-cli-nome').value||'').trim();
+  document.getElementById('nof-show-serv').textContent=servTxt;
+  document.getElementById('nof-show-cli').textContent=nome;
+  // Preenche campos
+  var maxNum=25;
+  orcamentos.forEach(function(o){var n=parseInt(o.num);if(!isNaN(n)&&n>maxNum)maxNum=n;});
+  document.getElementById('nof-num').value=String(maxNum+1).padStart(3,'0');
+  var d=new Date();
+  var fmtD=function(x){return x.getFullYear()+'-'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'-'+(x.getDate()<10?'0':'')+x.getDate();};
+  var dv=new Date(d);dv.setDate(dv.getDate()+30);
+  var fmtShow=function(x){return (x.getDate()<10?'0':'')+x.getDate()+'/'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'/'+x.getFullYear();};
+  document.getElementById('nof-data').value=fmtD(d);
+  document.getElementById('nof-val').value='30 dias — até '+fmtShow(dv);
+  if(NOF.tpl){
+    document.getElementById('nof-valor').value=NOF.tpl.val;
+    document.getElementById('nof-gtia').value=NOF.tpl.gtia;
+    var pgEl=document.getElementById('nof-pgto');
+    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NOF.tpl.pgto){pgEl.selectedIndex=i;break;}}
+    document.getElementById('nof-desc').value=descTxt;
+  }
+  document.getElementById('nof-blk-mat').style.display='none';
+  document.getElementById('nof-blk-orc').style.display='block';
+  nofSetStep(4);
+}
+
+function nofVoltarMat(){
+  document.getElementById('nof-blk-orc').style.display='none';
+  document.getElementById('nof-blk-mat').style.display='block';
+  nofSetStep(3);
+}
+
+function calcDescontoNof(){
+  var val=parseFloat(document.getElementById('nof-valor').value||0);
+  var tipo=document.getElementById('nof-desc-tipo').value;
+  var qtd=parseFloat(document.getElementById('nof-desc-qtd').value||0);
+  var desc=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
+  var final=Math.max(0,val-desc);
+  var preview=document.getElementById('nof-desc-preview');
+  var finalEl=document.getElementById('nof-desc-final');
+  if(preview)preview.style.display=(tipo?'block':'none');
+  if(finalEl)finalEl.textContent=fmtVal(final);
+}
+
+function nofSalvarGerarPDF(){
+  var cli=NOF.cli;
+  var nome=(document.getElementById('nof-cli-nome').value||'').trim();
+  var tel=(document.getElementById('nof-cli-tel').value||cli&&cli.tel||'').trim();
+  var end=(document.getElementById('nof-cli-end').value||cli&&cli.end||'').trim();
+  if(!nome){alert('Cliente não definido.');return;}
+  var manual=(document.getElementById('nof-serv-manual').value||'').trim();
+  var desc=(document.getElementById('nof-desc').value||'').trim();
+  if(!desc&&!manual){alert('Preencha a descrição do serviço.');return;}
+  var num=document.getElementById('nof-num').value;
+  var data=document.getElementById('nof-data').value;
+  var valor=parseFloat(document.getElementById('nof-valor').value||0);
+  var gtia=document.getElementById('nof-gtia').value;
+  var pgto=document.getElementById('nof-pgto').value;
+  var obs=(document.getElementById('nof-obs').value||'').trim();
+  var desloc=parseFloat((document.getElementById('nof-desloc').value)||0);
+  var matTotais=recalcMatNof()||{custo:0,venda:0};
+  // Desconto
+  var descTipo=document.getElementById('nof-desc-tipo').value;
+  var descQtd=parseFloat(document.getElementById('nof-desc-qtd').value||0);
+  var descVal=descTipo==='valor'?descQtd:(descTipo==='perc'?valor*(descQtd/100):0);
+  var valorFinal=Math.max(0,valor-descVal);
+  var serv=NOF.tpl?NOF.tpl.nm:(desc.split('\n')[0]);
+  // Salva orçamento
+  var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
+    val:valorFinal,gtia:gtia,pgto:pgto,status:'pendente',data:data,obs:obs,
+    custoPecas:matTotais.custo};
+  var oExist=orcamentos.find(function(o){return o.num===num;});
+  if(oExist){Object.assign(oExist,novoOrc);}
+  else{orcamentos.unshift(novoOrc);}
+  if(SUPABASE_ATIVO)sbSalvarOrcamento(oExist||novoOrc);
+  salvarLocal();
+  atualizarContadores();
+  fecharNovoOrcFlow();
+  // Gera PDF usando form intermediário
+  document.getElementById('f-num').value=num;
+  document.getElementById('f-data').value=data;
+  document.getElementById('f-cli').value=nome;
+  document.getElementById('f-tel').value=tel;
+  document.getElementById('f-end').value=end.replace(' — ',' - ');
+  document.getElementById('f-desc').value=desc||manual;
+  document.getElementById('f-valor').value=valorFinal;
+  document.getElementById('f-gtia').value=gtia;
+  document.getElementById('f-obs').value=obs;
+  setTimeout(function(){_gerarPDFOriginal();},150);
+  alert('✅ Orçamento #'+num+' salvo! PDF sendo gerado.');
+  renderOrcTable();
 }
 
 // ════════════ RECIBOS PAGE ════════════
@@ -3313,9 +3948,14 @@ function renderMateriaisPage(){
       '<td style="color:var(--amber)">'+margemLabel+'</td>'+
       '<td style="color:var(--green2);font-weight:700">'+fmtVal(m.venda)+'</td>'+
       '<td><div style="display:flex;gap:5px">'+
-        '<button class="btn btn-ghost btn-sm" onclick="abrirModalMaterial('+m.id+')">✏️ Editar</button>'+
-        '<button class="btn btn-red btn-sm" onclick="confirmarExcluirMaterial('+m.id+')">🗑</button>'+
+        '<button class="btn btn-ghost btn-sm" data-mid="edit">✏️ Editar</button>'+
+        '<button class="btn btn-red btn-sm" data-mid="del">🗑</button>'+
       '</div></td>';
+    // Wire via closures — UUID-safe
+    (function(mref){
+      tr.querySelector('[data-mid="edit"]').onclick=function(){abrirModalMaterial(mref.id);};
+      tr.querySelector('[data-mid="del"]').onclick=function(){confirmarExcluirMaterial(mref.id);};
+    })(m);
     tb.appendChild(tr);
   });
 }
@@ -3898,6 +4538,8 @@ document.getElementById('modal-edit-orc').addEventListener('click',function(e){i
 document.getElementById('modal-aprovacao').addEventListener('click',function(e){if(e.target===this)fecharAprovacaoModal();});
 document.getElementById('modal-serr-orc').addEventListener('click',function(e){if(e.target===this)fecharSerrOrc();});
 document.getElementById('modal-serr-rec').addEventListener('click',function(e){if(e.target===this)fecharSerrRec();});
+document.getElementById('modal-cli-opcoes').addEventListener('click',function(e){if(e.target===this)fecharCliOpcoes();});
+document.getElementById('modal-novo-orc-flow').addEventListener('click',function(e){if(e.target===this)fecharNovoOrcFlow();});
 
 
 
@@ -4170,6 +4812,13 @@ renderTemplates();
 renderOrcTable();
 renderClients();
 atualizarContadores();
+// Inicializa na aba Clientes
+renderClientesPage();
+// Marca item de menu Clientes como ativo
+document.querySelectorAll('.ni').forEach(function(n){
+  if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'clientes'")>=0)n.classList.add('active');
+  else n.classList.remove('active');
+});
 // ════════════ CEP LOOKUP (ViaCEP) ════════════
 function formatarCEP(input){
   var v=input.value.replace(/\D/g,'');
