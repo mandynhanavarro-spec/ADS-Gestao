@@ -1816,14 +1816,18 @@ async function initSupabase() {
   try {
     const { createClient } = window.supabase;
     sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // CORREÇÃO: marcar Supabase como ativo IMEDIATAMENTE após criar o cliente
+    // Não esperar carregarTodosDados() — se as queries falharem por RLS ou
+    // tabelas vazias, SUPABASE_ATIVO ficava false e NADA era salvo nunca
+    SUPABASE_ATIVO = true;
     mostrarStatusBD('sincronizando');
     await carregarTodosDados();
-    SUPABASE_ATIVO = true;
     mostrarStatusBD('online');
     ativarSincronizacaoRealtime();
     console.log('✅ Supabase conectado e dados carregados!');
   } catch(e) {
     console.warn('Supabase erro na inicialização:', e.message || e);
+    SUPABASE_ATIVO = false;
     mostrarStatusBD('erro');
     // Fallback: usa localStorage
     carregarLocal();
@@ -2017,10 +2021,14 @@ async function sbSalvarTemplate(t) {
   };
   try {
     if (t.sbId) {
-      await sb.from('templates').update(payload).eq('id', t.sbId);
+      // Registro existente: UPDATE direto pelo id do banco
+      const {error} = await sb.from('templates').update(payload).eq('id', t.sbId);
+      if (error) console.warn('Erro ao atualizar template:', error);
     } else {
-      const {data} = await sb.from('templates').insert(payload).select().single();
-      if (data) t.sbId = data.id;
+      // Registro novo: INSERT e captura o id gerado
+      const {data, error} = await sb.from('templates').insert(payload).select('id').single();
+      if (error) console.warn('Erro ao inserir template:', error);
+      else if (data) t.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar template:', e); }
 }
@@ -2061,10 +2069,12 @@ async function sbSalvarOrcamento(o) {
   };
   try {
     if (o.sbId) {
-      await sb.from('orcamentos').update(payload).eq('id', o.sbId);
+      const {error} = await sb.from('orcamentos').update(payload).eq('id', o.sbId);
+      if (error) console.warn('Erro ao atualizar orçamento:', error);
     } else {
-      const {data} = await sb.from('orcamentos').insert(payload).select().single();
-      if (data) o.sbId = data.id;
+      const {data, error} = await sb.from('orcamentos').insert(payload).select('id').single();
+      if (error) console.warn('Erro ao inserir orçamento:', error);
+      else if (data) o.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar orçamento:', e); }
 }
@@ -2086,10 +2096,12 @@ async function sbSalvarRecibo(r) {
   };
   try {
     if (r.sbId) {
-      await sb.from('recibos').update(payload).eq('id', r.sbId);
+      const {error} = await sb.from('recibos').update(payload).eq('id', r.sbId);
+      if (error) console.warn('Erro ao atualizar recibo:', error);
     } else {
-      const {data} = await sb.from('recibos').insert(payload).select().single();
-      if (data) r.sbId = data.id;
+      const {data, error} = await sb.from('recibos').insert(payload).select('id').single();
+      if (error) console.warn('Erro ao inserir recibo:', error);
+      else if (data) r.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar recibo:', e); }
 }
@@ -2662,13 +2674,14 @@ function showAprov(){
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,desc:f.descricao,
       val:f.valor,gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,status:'aprovado'});
-    if(SUPABASE_ATIVO)sbSalvarOrcamento(oExist);
+    // sbId já está em oExist — o UPDATE vai funcionar corretamente
+    sbSalvarOrcamento(oExist);
   } else {
     var novoOrc={num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
       gtia:f.garantia,pgto:f.pagamento,status:'aprovado',data:f.data,obs:f.obs};
     orcamentos.unshift(novoOrc);
-    if(SUPABASE_ATIVO)sbSalvarOrcamento(novoOrc);
+    sbSalvarOrcamento(novoOrc);
   }
   salvarLocal();
   atualizarContadores();
@@ -3730,7 +3743,7 @@ function pickAprovModal(el,tipo){
   document.getElementById('aprov-modal-btn').style.display='flex';
 }
 
-function emitirDocAprovado(){
+async function emitirDocAprovado(){
   var num=window._aprovOrcNum;
   var tipo=window._aprovTipo;
   if(!num||!tipo)return;
@@ -3752,10 +3765,10 @@ function emitirDocAprovado(){
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:o.pgto,
       gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||''};
     recibos.unshift(novoRec);
-    sbSalvarRecibo(novoRec);
+    await sbSalvarRecibo(novoRec);
     financeiro.unshift(lancFin);
-    sbSalvarFinanceiro(lancFin);
-    sbSalvarOrcamento(o);
+    await sbSalvarFinanceiro(lancFin);
+    await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
@@ -3767,8 +3780,8 @@ function emitirDocAprovado(){
     notasFiscais.unshift({num:numNF,cli:o.cli,serv:o.serv||'',
       val:o.val,data:dataFormatada,dataRaw:o.data||'',status:'Aguardando prefeitura'});
     financeiro.unshift(lancFin);
-    sbSalvarFinanceiro(lancFin);
-    sbSalvarOrcamento(o);
+    await sbSalvarFinanceiro(lancFin);
+    await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
@@ -3776,8 +3789,8 @@ function emitirDocAprovado(){
     alert('✅ Nota Fiscal registrada e lançada no financeiro!');
   } else if(tipo==='financeiro'){
     financeiro.unshift(lancFin);
-    sbSalvarFinanceiro(lancFin);
-    sbSalvarOrcamento(o);
+    await sbSalvarFinanceiro(lancFin);
+    await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
@@ -4360,7 +4373,7 @@ function calcLucroTpl(){
   document.getElementById('mt-show-margem').textContent=venda>0?margem+'%':'—';
 }
 
-function saveTpl(){
+async function saveTpl(){
   var nm=(document.getElementById('mt-nome').value||'').trim();
   if(!nm){alert('Informe o nome do serviço.');return;}
   var t={
@@ -4376,15 +4389,14 @@ function saveTpl(){
   if(STATE.editTplId){
     var idx=templates.findIndex(function(x){return x.id==STATE.editTplId||x.id===STATE.editTplId;});
     t.id=STATE.editTplId;
-    // BUG FIX: preservar sbId do registro original para que sbSalvarTemplate
-    // execute UPDATE em vez de INSERT, evitando duplicatas e perda de dados ao recarregar
+    // Preservar sbId do registro original para UPDATE correto no Supabase
     if(idx>=0){t.sbId=templates[idx].sbId;templates[idx]=t;}
     else templates.push(t);
-    sbSalvarTemplate(t);
+    await sbSalvarTemplate(t);
   } else {
     t.id=Date.now();
     templates.push(t);
-    sbSalvarTemplate(t);
+    await sbSalvarTemplate(t);
   }
   closeTplModal();
   salvarLocal();
