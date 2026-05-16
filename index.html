@@ -2015,9 +2015,7 @@ async function sbSalvarTemplate(t) {
   const payload = {
     nome: t.nm, descricao: t.desc, valor: t.val,
     garantia: t.gtia, pagamento: t.pgto,
-    icone: t.ic, categoria: t.cat,
-    custo_pecas: t.custoPecas||0,
-    ordem: templates.indexOf(t)
+    icone: t.ic, categoria: t.cat
   };
   try {
     if (t.sbId) {
@@ -2064,8 +2062,7 @@ async function sbSalvarOrcamento(o) {
     numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
     cliente_end: o.end||'', descricao: o.desc, valor: o.val,
     garantia: o.gtia, pagamento: o.pgto, status: o.status,
-    data_emissao: o.data, observacoes: o.obs||'',
-    custo_pecas: o.custoPecas||0
+    data_emissao: o.data, observacoes: o.obs||''
   };
   try {
     if (o.sbId) {
@@ -2091,8 +2088,7 @@ async function sbSalvarRecibo(r) {
     numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
     cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
     valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
-    data_emissao: r.data, data_raw: r.dataRaw||'',
-    desc_base: r.descBase||0, desc_val: r.descV||0
+    data_emissao: r.data
   };
   try {
     if (r.sbId) {
@@ -2116,15 +2112,16 @@ async function sbSalvarFinanceiro(f) {
   if (!SUPABASE_ATIVO) return;
   const payload = {
     descricao: f.desc, cliente: f.cli||'', valor: f.val,
-    pagamento: f.pgto, data: f.data, data_raw: f.dataRaw||'',
-    custo_pecas: f.pecas||0, deslocamento: f.desloc||0, num_ref: f.num||''
+    pagamento: f.pgto, data: f.data
   };
   try {
     if (f.sbId) {
-      await sb.from('financeiro').update(payload).eq('id', f.sbId);
+      const {error} = await sb.from('financeiro').update(payload).eq('id', f.sbId);
+      if (error) console.warn('Erro ao atualizar financeiro:', error);
     } else {
-      const {data} = await sb.from('financeiro').insert(payload).select().single();
-      if (data) f.sbId = data.id;
+      const {data, error} = await sb.from('financeiro').insert(payload).select('id').single();
+      if (error) console.warn('Erro ao inserir financeiro:', error);
+      else if (data) f.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar financeiro:', e); }
 }
