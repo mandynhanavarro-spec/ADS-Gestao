@@ -2411,7 +2411,8 @@ async function sbSalvarRecibo(r) {
     numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
     cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
     valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
-    data_emissao: r.data
+    data_emissao: r.data, data_raw: r.dataRaw||'',
+    desc_base: r.descBase||0, desc_val: r.descV||0
   };
   try {
     if (r.sbId) {
@@ -3091,7 +3092,7 @@ function pickAprov(el,tipo){
 }
 
 // ════════════ EMITIR DOCUMENTO ════════════
-function emitirDoc(){
+async function emitirDoc(){
   var f=getFormData();
   var matTotais=getOrcMatTotais();
   // Inclui custo de peças do template selecionado + materiais do orçamento
@@ -3126,11 +3127,11 @@ function emitirDoc(){
     var numR='#R'+String(recibos.length+1).padStart(3,'0');
     var recibo={num:numR,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,
-      val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data};
+      val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0};
     recibos.unshift(recibo);
-    sbSalvarRecibo(recibo);
+    if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
     financeiro.unshift(lancFin);
-    sbSalvarFinanceiro(lancFin);
+    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
     salvarLocal();
     atualizarContadores();
     var corBadge='background:rgba(59,130,246,.15);color:var(--blue3)';
@@ -4159,7 +4160,7 @@ async function emitirDocAprovado(){
     var numR='#R'+String(recibos.length+1).padStart(3,'0');
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:o.pgto,
-      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||''};
+      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0};
     recibos.unshift(novoRec);
     await sbSalvarRecibo(novoRec);
     financeiro.unshift(lancFin);
@@ -5411,7 +5412,7 @@ function serrProxPDF(){
 function serrVoltarMat(){serrMostrarStep(3);serrSetStep(3);}
 
 // Emitir Recibo (chamado pelo botão no step 4)
-function serrEmitirRecibo(){
+async function serrEmitirRecibo(){
   var cli=document.getElementById('so-cli').value.trim();
   var desc=document.getElementById('so-desc').value.trim();
   var val=parseFloat(document.getElementById('so-valor').value||0);
@@ -5431,9 +5432,9 @@ function serrEmitirRecibo(){
   var novoRec={num:numR,cli:cli,tel:(document.getElementById('so-tel').value||'').trim(),
     end:(document.getElementById('so-end').value||'').trim(),
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
-    gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw};
+    gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal};
   recibos.unshift(novoRec);
-  sbSalvarRecibo(novoRec);
+  if(SUPABASE_ATIVO)await sbSalvarRecibo(novoRec);
   // Lança financeiro
   var lancFin={
     desc:'Serralheria — '+cli,cli:cli,val:valorFinal,pgto:pgto,
@@ -5441,7 +5442,7 @@ function serrEmitirRecibo(){
     pecas:matTotais.custo,desloc:desloc,num:'SERR'+Date.now()
   };
   financeiro.unshift(lancFin);
-  sbSalvarFinanceiro(lancFin);
+  if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
   salvarLocal();
   atualizarContadores();
   fecharSerrOrc();
