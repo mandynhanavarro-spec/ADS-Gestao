@@ -341,7 +341,7 @@ td.bold{color:var(--white);font-weight:700}
     <div class="nlabel">Gestão</div>
     <div class="ni" onclick="goPage('financeiro')"><span class="ic">💰</span>Financeiro</div>
     <div class="ni" onclick="goPage('relatorios')"><span class="ic">📊</span>Relatórios</div>
-    <div class="ni"><span class="ic">⚙️</span>Configurações</div>
+    <div class="ni" onclick="goPage('configuracoes')"><span class="ic">⚙️</span>Configurações</div>
   </div>
   <div class="sidebar-foot">
     <div class="user-row">
@@ -1285,6 +1285,157 @@ td.bold{color:var(--white);font-weight:700}
     </table>
     <div id="fin-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum lançamento. Conclua um orçamento para lançar aqui.</div>
   </div></div>
+</div>
+
+<!-- ══ PAGE: CONFIGURAÇÕES ══ -->
+<div id="page-configuracoes" class="page">
+
+  <!-- ── 1. DADOS DA EMPRESA ── -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-hd">
+      <div class="panel-title">🏢 Dados da Empresa</div>
+      <span style="font-size:10px;color:var(--silver2)">Aparecem em todos os PDFs gerados</span>
+    </div>
+    <div class="panel-bd">
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Nome da Empresa</div><input class="fi" id="cfg-empresa-nome" placeholder="Ex: ADS Portões Automáticos"></div>
+        <div><div class="fl">CNPJ / CPF</div><input class="fi" id="cfg-empresa-cnpj" placeholder="00.000.000/0000-00"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Telefone / WhatsApp</div><input class="fi" id="cfg-empresa-tel" placeholder="(11) 99999-9999"></div>
+        <div><div class="fl">E-mail</div><input class="fi" id="cfg-empresa-email" placeholder="email@empresa.com"></div>
+      </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">Endereço</div><input class="fi" id="cfg-empresa-end" placeholder="Rua, número, bairro, cidade"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Nome do Responsável (assina PDFs)</div><input class="fi" id="cfg-empresa-resp" placeholder="Ex: Ananias Santos"></div>
+        <div><div class="fl">Cargo / Função</div><input class="fi" id="cfg-empresa-cargo" placeholder="Ex: Técnico Responsável"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+        <button class="btn btn-ghost btn-sm" onclick="carregarConfiguracoes()">↺ Restaurar</button>
+        <button class="btn btn-primary btn-sm" onclick="salvarDadosEmpresa()">💾 Salvar Dados da Empresa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. PADRÃO DOS DOCUMENTOS ── -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-hd">
+      <div class="panel-title">🖨️ Padrão dos Documentos PDF</div>
+      <span style="font-size:10px;color:var(--silver2)">Valores padrão usados nos orçamentos e recibos</span>
+    </div>
+    <div class="panel-bd">
+      <div class="fgrid fg3" style="margin-bottom:10px">
+        <div><div class="fl">Validade do Orçamento (dias)</div><input class="fi" id="cfg-doc-validade" type="number" placeholder="30" min="1"></div>
+        <div><div class="fl">Garantia Padrão</div><input class="fi" id="cfg-doc-garantia" placeholder="Ex: 12 meses"></div>
+        <div><div class="fl">Forma de Pgto. Padrão</div>
+          <select class="fs" id="cfg-doc-pgto">
+            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
+            <option>Sinal de 50% / Restante 50%</option><option>Cartão Crédito</option><option>Cartão Débito</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Chave Pix</div><input class="fi" id="cfg-doc-pix" placeholder="Ex: email@empresa.com ou CPF/CNPJ"></div>
+        <div><div class="fl">Dados Bancários (para pagamentos parcelados)</div><input class="fi" id="cfg-doc-banco" placeholder="Ex: Banco Itaú AG 0466 CC 60864-3"></div>
+      </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">Texto de rodapé / observação padrão nos documentos</div>
+        <textarea class="ft" id="cfg-doc-rodape" rows="2" placeholder="Ex: Qualquer dúvida estamos à disposição. Obrigado pela preferência!"></textarea></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+        <button class="btn btn-primary btn-sm" onclick="salvarPadraoDocumentos()">💾 Salvar Padrão dos Documentos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. USUÁRIOS ── -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-hd">
+      <div class="panel-title">👤 Usuários e Acesso</div>
+      <button class="btn btn-primary btn-sm" onclick="abrirModalNovoUsuario()">+ Novo Usuário</button>
+    </div>
+    <div class="panel-bd" style="padding:0 16px">
+      <table>
+        <thead><tr><th>Usuário</th><th>Nome</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="cfg-usuarios-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 4. BACKUP E DADOS ── -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-hd">
+      <div class="panel-title">🗄️ Backup e Dados</div>
+      <span style="font-size:10px;color:var(--silver2)">Exporte ou importe todos os dados do sistema</span>
+    </div>
+    <div class="panel-bd">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:800;color:var(--green2);margin-bottom:4px">📤 Exportar Backup</div>
+          <div style="font-size:11px;color:var(--silver2);margin-bottom:12px">Salva todos os dados em arquivo JSON no seu dispositivo. Recomendado fazer periodicamente.</div>
+          <button class="btn btn-green btn-sm" onclick="exportarBackup()" style="width:100%;justify-content:center">⬇️ Baixar Backup JSON</button>
+        </div>
+        <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:16px">
+          <div style="font-size:13px;font-weight:800;color:var(--blue3);margin-bottom:4px">📥 Importar Backup</div>
+          <div style="font-size:11px;color:var(--silver2);margin-bottom:12px">Restaura dados de um arquivo JSON exportado anteriormente. Os dados atuais serão substituídos.</div>
+          <label style="display:block">
+            <input type="file" id="cfg-import-file" accept=".json" style="display:none" onchange="importarBackup(event)">
+            <span class="btn btn-ghost btn-sm" onclick="document.getElementById('cfg-import-file').click()" style="width:100%;justify-content:center;display:flex;cursor:pointer">⬆️ Selecionar arquivo JSON</span>
+          </label>
+        </div>
+      </div>
+      <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:800;color:var(--amber);margin-bottom:8px">📊 Resumo dos Dados Armazenados</div>
+        <div id="cfg-resumo-dados" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+      </div>
+      <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px">
+        <div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:4px">⚠️ Zona de Perigo</div>
+        <div style="font-size:11px;color:var(--silver2);margin-bottom:10px">Estas ações são irreversíveis. Faça um backup antes.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-red btn-sm" onclick="limparDadosDemo()">🗑 Limpar dados demo</button>
+          <button class="btn btn-red btn-sm" onclick="resetarTudo()">💣 Apagar TUDO e reiniciar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ MODAL: NOVO / EDITAR USUÁRIO ══ -->
+<div class="modal-bg" id="modal-usuario">
+  <div class="modal" style="width:460px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title" id="modal-usuario-title">👤 Novo Usuário</span>
+      <button class="modal-x" onclick="fecharModalUsuario()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Nome completo</div><input class="fi" id="mu-nome" placeholder="Ex: João Silva"></div>
+        <div><div class="fl">Login (usuário)</div><input class="fi" id="mu-user" placeholder="Ex: joao" autocomplete="off"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Senha</div><input class="fi" type="password" id="mu-pass" placeholder="Mínimo 4 caracteres" autocomplete="new-password"></div>
+        <div><div class="fl">Confirmar senha</div><input class="fi" type="password" id="mu-pass2" placeholder="Repita a senha"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Perfil</div>
+          <select class="fs" id="mu-role">
+            <option value="Técnico">Técnico</option>
+            <option value="Administrador">Administrador</option>
+            <option value="Vendedor">Vendedor</option>
+          </select>
+        </div>
+        <div><div class="fl">Avatar (2 letras)</div><input class="fi" id="mu-avatar" placeholder="Ex: JS" maxlength="2" style="text-transform:uppercase"></div>
+      </div>
+      <div id="mu-erro" style="color:var(--red);font-size:12px;display:none;margin-top:6px"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharModalUsuario()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarUsuario()">💾 Salvar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ PAGE: RELATÓRIOS ══ -->
@@ -2300,8 +2451,8 @@ function goPage(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
-  var map={rapido:'⚡ Acesso Rápido',orcamentos:'📋 Orçamentos',clientes:'👥 Clientes',servicos:'🔧 Serviços',materiais:'📦 Materiais',recibos:'🧾 Recibos',notafiscal:'📑 Nota Fiscal',financeiro:'💰 Financeiro',relatorios:'📊 Relatórios'};
-  var subs={rapido:'— modo campo',orcamentos:'— histórico e gestão',clientes:'— cadastro completo',servicos:'— editar seus serviços',materiais:'— gestão de peças e componentes',recibos:'— documentos emitidos',notafiscal:'— NFS-e MEI integrada',financeiro:'— controle de caixa',relatorios:'— visão completa do negócio'};
+  var map={rapido:'⚡ Acesso Rápido',orcamentos:'📋 Orçamentos',clientes:'👥 Clientes',servicos:'🔧 Serviços',materiais:'📦 Materiais',recibos:'🧾 Recibos',notafiscal:'📑 Nota Fiscal',financeiro:'💰 Financeiro',relatorios:'📊 Relatórios',configuracoes:'⚙️ Configurações'};
+  var subs={rapido:'— modo campo',orcamentos:'— histórico e gestão',clientes:'— cadastro completo',servicos:'— editar seus serviços',materiais:'— gestão de peças e componentes',recibos:'— documentos emitidos',notafiscal:'— NFS-e MEI integrada',financeiro:'— controle de caixa',relatorios:'— visão completa do negócio',configuracoes:'— personalize o sistema'};
   document.getElementById('pg-title').textContent=map[id]||id;
   document.getElementById('pg-sub').textContent=subs[id]||'';
   if(id==='rapido')resetFlow();
@@ -2313,6 +2464,7 @@ function goPage(id){
   if(id==='financeiro'){initFinanceiroFiltros();renderFinanceiroPage();}
   if(id==='notafiscal')renderNFPage();
   if(id==='relatorios'){initRelatoriosFiltros();renderRelatorios();}
+  if(id==='configuracoes')renderConfiguracoes();
   // Ativa item do menu correspondente
   document.querySelectorAll('.ni').forEach(function(n){
     if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")>=0)n.classList.add('active');
@@ -3015,9 +3167,9 @@ function gerarPDFRecibo(idx){
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
   doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
-  doc.text('CNPJ: 20.989.538/0001-88',PW-MR,MT+4,{align:'right'});
+  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo '+r.num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
@@ -3072,10 +3224,10 @@ function gerarPDFRecibo(idx){
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
   doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
-  doc.text('Ananias Santos',sx+35,fy+30,{align:'center'});
+  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
   doc.addImage(QR_WPP_B64,'PNG',ML,fy+6,22,22);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text('(11) 96770-4116',ML,fy+30);
+  doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,fy+30);
   doc.save('Recibo_ADS_'+r.num+'_'+r.cli.split(' ')[0]+'.pdf');
 }
 
@@ -3094,14 +3246,15 @@ function gerarPDF(){
 
   // === HEADER ===
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
-  doc.text('CNPJ: 20.989.538/0001-88',PW-MR,MT+4,{align:'right'});
+  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Orcamento N\xba '+f.numero,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
+  var valDias=CFG.doc.validade||30;
   doc.text('Sao Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
-  doc.text('Validade do Orcamento: 30 dias (ate '+addDays(f.data,30)+')',ML,MT+13);
+  doc.text('Validade do Orcamento: '+valDias+' dias (ate '+addDays(f.data,valDias)+')',ML,MT+13);
 
   // === TÍTULO ===
   doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
@@ -3159,17 +3312,20 @@ function gerarPDF(){
   doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
   doc.setFont('helvetica','normal');
   var pg=f.pagamento;
+  var pixKey=CFG.doc.pix||'ads.pg@hotmail.com';
+  var bancoInfo=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
+  var respNome=CFG.empresa.resp||'Ananias Antonio dos Santos';
   if(pg==='Parcelado'||pg==='Sinal de 50% / Restante 50%'){
     doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
-    doc.text('Sendo Pix ads.pg@hotmail.com ou Banco Itau AG 0466 CC 60864-3',ML+2,y);y+=6;
+    doc.text('Sendo Pix '+pixKey+' ou '+bancoInfo,ML+2,y);y+=6;
   } else if(pg==='Pix'){
-    doc.text('Pix: ads.pg@hotmail.com',ML+2,y);y+=6;
+    doc.text('Pix: '+pixKey,ML+2,y);y+=6;
   } else if(pg==='Dinheiro'){
     doc.text('Pagamento em dinheiro na entrega do servico.',ML+2,y);y+=6;
   } else {
     doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
   }
-  doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
+  doc.text(respNome,ML+2,y);y+=4;
   if(f.obs){y+=5;doc.setFontSize(9);doc.setTextColor(80,80,80);
     var obsLines=doc.splitTextToSize('Obs: '+f.obs,CW);
     doc.text(obsLines,ML+2,y);
@@ -3179,7 +3335,7 @@ function gerarPDF(){
   y+=10;
   doc.addImage(QR_WPP_B64,'PNG',ML,y-6,22,22);
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text('(11) 96770-4116',ML,y+18);
+  doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
 
   // === ASSINATURA (linha inferior direita) ===
   var fy=y-8;
@@ -3189,7 +3345,7 @@ function gerarPDF(){
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
   doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
-  doc.text('Ananias Santos',sx+35,fy+30,{align:'center'});
+  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
 
   doc.save('Orcamento_ADS_'+f.numero+'_'+f.cliente.split(' ')[0]+'.pdf');
 }
@@ -3200,19 +3356,19 @@ function previewPDF(){
   var items=f.descricao.split('\n').filter(l=>l.trim()).map(l=>'<li>'+l.trim()+'</li>').join('');
   var valorFmt='R$ '+f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2});
   var pgtoTxt=f.pagamento==='Parcelado'||f.pagamento==='Sinal de 50% / Restante 50%'
-    ?'Sinal de 50% / Restante 50% na entrega do serviço.<br>Sendo Pix ads.pg@hotmail.com ou Banco Itaú AG 0466 CC 60864-3<br>Ananias Antônio dos Santos'
-    :f.pagamento==='Pix'?'Pix: ads.pg@hotmail.com<br>Ananias Antônio dos Santos'
-    :'Pagamento em '+f.pagamento+' na entrega do serviço.<br>Ananias Antônio dos Santos';
+    ?'Sinal de 50% / Restante 50% na entrega do serviço.<br>Sendo Pix '+(CFG.doc.pix||'ads.pg@hotmail.com')+' ou '+(CFG.doc.banco||'Banco Itaú AG 0466 CC 60864-3')+'<br>'+(CFG.empresa.resp||'Ananias Antônio dos Santos')
+    :f.pagamento==='Pix'?'Pix: '+(CFG.doc.pix||'ads.pg@hotmail.com')+'<br>'+(CFG.empresa.resp||'Ananias Antônio dos Santos')
+    :'Pagamento em '+f.pagamento+' na entrega do serviço.<br>'+(CFG.empresa.resp||'Ananias Antônio dos Santos');
   document.getElementById('pdf-content').innerHTML=`
     <div style="position:relative;min-height:700px">
       <div style="position:absolute;top:0;right:0;text-align:right">
-        <div style="font-weight:bold;font-size:13px">ADS Portões Automáticos</div>
-        <div style="font-size:11px">CNPJ: 20.989.538/0001-88</div>
+        <div style="font-weight:bold;font-size:13px">${CFG.empresa.nome||'ADS Portões Automáticos'}</div>
+        <div style="font-size:11px">CNPJ: ${CFG.empresa.cnpj||'20.989.538/0001-88'}</div>
         <img src='"+ADS_LOGO_B64+"' style="width:120px;margin-top:6px" onerror="this.style.display='none'">
       </div>
       <div style="font-weight:bold;font-size:12px">Orçamento Nº ${f.numero}</div>
       <div style="font-weight:bold;font-size:12px;margin-top:4px">São Paulo, ${fmtDateLong(f.data)}.</div>
-      <div style="font-weight:bold;font-size:12px">Validade do Orçamento: 30 dias (até ${addDays(f.data,30)})</div>
+      <div style="font-weight:bold;font-size:12px">Validade do Orçamento: ${CFG.doc.validade||30} dias (até ${addDays(f.data,CFG.doc.validade||30)})</div>
       <div style="text-align:center;font-size:26px;font-weight:bold;color:#003399;margin:18px 0 16px;padding-right:120px">Orçamento</div>
       <div style="font-size:13px;margin-bottom:4px"><b>Nome:</b> &nbsp; ${f.cliente}</div>
       <div style="font-size:13px;margin-bottom:16px"><b>Endereço:</b> ${f.endereco}</div>
@@ -3228,12 +3384,12 @@ function previewPDF(){
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px">
         <div>
           <img src="${QR_WPP_B64}" style="width:70px;height:70px">
-          <div style="font-size:10px;margin-top:4px">(11) 96770-4116</div>
+          <div style="font-size:10px;margin-top:4px">${CFG.empresa.tel||'(11) 96770-4116'}</div>
         </div>
         <div style="text-align:center">
           <div style="font-weight:bold;font-size:12px">Qualquer duvida estamos a disposição</div>
           <div style="font-weight:bold;font-size:12px;margin-bottom:30px">Atenciosamente</div>
-          <div style="border-top:1px solid #000;padding-top:4px;font-weight:bold;font-size:12px">Ananias Santos</div>
+          <div style="border-top:1px solid #000;padding-top:4px;font-weight:bold;font-size:12px">${CFG.empresa.resp||'Ananias Santos'}</div>
         </div>
       </div>
     </div>
@@ -4860,7 +5016,7 @@ function enviarWpp(){
     '\n💰 Valor: R$ '+parseFloat(f.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+
     '\n💳 Pagamento: '+f.pagamento+
     '\n🛡 Garantia: '+f.garantia+
-    '\n\nQualquer dúvida estamos à disposição!\nADS Portões Automáticos — (11) 96770-4116';
+    '\n\nQualquer dúvida estamos à disposição!\n'+(CFG.empresa.nome||'ADS Portões Automáticos')+' — '+(CFG.empresa.tel||'(11) 96770-4116');
   window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg),'_blank');
 }
 
@@ -4874,7 +5030,7 @@ function enviarWppRecibo(r){
     '\n💰 Valor: R$ '+parseFloat(r.val||0).toLocaleString('pt-BR',{minimumFractionDigits:2})+
     '\n💳 Pagamento: '+r.pgto+
     '\n📅 Data: '+r.data+
-    '\n\nObrigado pela preferência!\nADS Portões Automáticos — (11) 96770-4116';
+    '\n\nObrigado pela preferência!\n'+(CFG.empresa.nome||'ADS Portões Automáticos')+' — '+(CFG.empresa.tel||'(11) 96770-4116');
   window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg),'_blank');
 }
 function irFinanceiro(){goPage('financeiro');}
@@ -4892,6 +5048,21 @@ var USUARIOS=[
   {user:'ananias',pass:'La20Yu31',nome:'Ananias',role:'Técnico',avatar:'AN'},
   {user:'amanda',pass:'La20Yu31',nome:'Amanda',role:'Administrador',avatar:'AM'}
 ];
+
+// ════════════ CONFIGURAÇÕES DO SISTEMA ════════════
+var CFG = {
+  empresa:{nome:'ADS Portões Automáticos',cnpj:'20.989.538/0001-88',tel:'(11) 96770-4116',email:'ads.pg@hotmail.com',end:'São Paulo / SP',resp:'Ananias Santos',cargo:'Técnico Responsável'},
+  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!'}
+};
+function salvarCFG(){try{localStorage.setItem('ads_cfg',JSON.stringify(CFG));localStorage.setItem('ads_usuarios',JSON.stringify(USUARIOS));}catch(e){}}
+function carregarCFG(){
+  try{
+    var c=localStorage.getItem('ads_cfg');
+    var u=localStorage.getItem('ads_usuarios');
+    if(c){var p=JSON.parse(c);CFG.empresa=Object.assign({},CFG.empresa,p.empresa||{});CFG.doc=Object.assign({},CFG.doc,p.doc||{});}
+    if(u){var pu=JSON.parse(u);if(Array.isArray(pu)&&pu.length>0)USUARIOS=pu;}
+  }catch(e){}
+}
 
 function aplicarUsuario(found){
   document.getElementById('login-screen').classList.add('hide');
@@ -4946,6 +5117,7 @@ document.getElementById('modal-aprovacao').addEventListener('click',function(e){
 document.getElementById('modal-serr-orc').addEventListener('click',function(e){if(e.target===this)fecharSerrOrc();});
 // modal-serr-rec é stub de compatibilidade — sem listener adicional
 document.getElementById('modal-cli-opcoes').addEventListener('click',function(e){if(e.target===this)fecharCliOpcoes();});
+document.getElementById('modal-usuario').addEventListener('click',function(e){if(e.target===this)fecharModalUsuario();});
 document.getElementById('modal-novo-orc-flow').addEventListener('click',function(e){if(e.target===this)fecharNovoOrcFlow();});
 
 
@@ -5219,9 +5391,9 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
   doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
-  doc.text('CNPJ: 20.989.538/0001-88',PW-MR,MT+4,{align:'right'});
+  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo Serralheria '+r.num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
@@ -5293,9 +5465,9 @@ function gerarPDFSerrOrc(){
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
   doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
-  doc.text('CNPJ: 20.989.538/0001-88',PW-MR,MT+4,{align:'right'});
+  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Orcamento Serralheria N\xba '+num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
@@ -5359,6 +5531,7 @@ renderOrcTable();
 // BUG FIX: carregar dados do localStorage imediatamente para que a UI mostre
 // os dados em cache enquanto o Supabase responde (evita tela em branco de ~1s
 // e garante exibição correta quando o Supabase está offline ou falha)
+carregarCFG();
 carregarLocal();
 renderizarTudo();
 // initSupabase carrega os dados do servidor e chama renderizarTudo() novamente
@@ -5902,6 +6075,208 @@ function renderRelatorios(){
     }).join('');
   }
 }
+
+// ════════════ CONFIGURAÇÕES — FUNÇÕES ════════════
+
+function renderConfiguracoes(){
+  carregarConfiguracoes();
+  renderTabelaUsuarios();
+  renderResumoDados();
+}
+
+function carregarConfiguracoes(){
+  // Empresa
+  var e=CFG.empresa;
+  _cfgSet('cfg-empresa-nome',e.nome);_cfgSet('cfg-empresa-cnpj',e.cnpj);
+  _cfgSet('cfg-empresa-tel',e.tel);_cfgSet('cfg-empresa-email',e.email);
+  _cfgSet('cfg-empresa-end',e.end);_cfgSet('cfg-empresa-resp',e.resp);
+  _cfgSet('cfg-empresa-cargo',e.cargo);
+  // Documentos
+  var d=CFG.doc;
+  _cfgSet('cfg-doc-validade',d.validade);_cfgSet('cfg-doc-garantia',d.garantia);
+  _cfgSet('cfg-doc-pix',d.pix);_cfgSet('cfg-doc-banco',d.banco);
+  _cfgSet('cfg-doc-rodape',d.rodape);
+  var pgSel=document.getElementById('cfg-doc-pgto');
+  if(pgSel)pgSel.value=d.pgto;
+}
+function _cfgSet(id,val){var el=document.getElementById(id);if(el)el.value=val||'';}
+function _cfgGet(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
+
+function salvarDadosEmpresa(){
+  CFG.empresa={
+    nome:_cfgGet('cfg-empresa-nome'),cnpj:_cfgGet('cfg-empresa-cnpj'),
+    tel:_cfgGet('cfg-empresa-tel'),email:_cfgGet('cfg-empresa-email'),
+    end:_cfgGet('cfg-empresa-end'),resp:_cfgGet('cfg-empresa-resp'),
+    cargo:_cfgGet('cfg-empresa-cargo')
+  };
+  salvarCFG();
+  _cfgToast('✅ Dados da empresa salvos! Os PDFs já usam as novas informações.');
+}
+
+function salvarPadraoDocumentos(){
+  CFG.doc={
+    validade:parseInt(_cfgGet('cfg-doc-validade'))||30,
+    garantia:_cfgGet('cfg-doc-garantia'),
+    pgto:_cfgGet('cfg-doc-pgto'),
+    pix:_cfgGet('cfg-doc-pix'),
+    banco:_cfgGet('cfg-doc-banco'),
+    rodape:_cfgGet('cfg-doc-rodape')
+  };
+  salvarCFG();
+  _cfgToast('✅ Padrão dos documentos salvo! Novos orçamentos e recibos já aplicam as configurações.');
+}
+
+function _cfgToast(msg){
+  var t=document.getElementById('cfg-toast');
+  if(!t){t=document.createElement('div');t.id='cfg-toast';
+    t.style.cssText='position:fixed;bottom:24px;right:24px;background:rgba(16,185,129,.95);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s';
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.opacity='0';},3000);
+}
+
+// ── Usuários ──
+var _editUserIdx=null;
+function renderTabelaUsuarios(){
+  var tb=document.getElementById('cfg-usuarios-tbody');
+  if(!tb)return;
+  tb.innerHTML=USUARIOS.map(function(u,i){
+    var roleColor=u.role==='Administrador'?'var(--blue3)':u.role==='Vendedor'?'var(--amber)':'var(--green2)';
+    return '<tr>'+
+      '<td class="bold">'+u.user+'</td>'+
+      '<td>'+u.nome+'</td>'+
+      '<td><span style="color:'+roleColor+';font-weight:700;font-size:11px">'+u.role+'</span></td>'+
+      '<td><span class="badge badge-ok">Ativo</span></td>'+
+      '<td><div style="display:flex;gap:5px">'+
+        '<button class="btn btn-ghost btn-sm" onclick="editarUsuario('+i+')">✏️ Editar</button>'+
+        (USUARIOS.length>1?'<button class="btn btn-red btn-sm" onclick="excluirUsuario('+i+')">🗑</button>':'')+
+      '</div></td>'+
+      '</tr>';
+  }).join('');
+}
+
+function abrirModalNovoUsuario(){
+  _editUserIdx=null;
+  document.getElementById('modal-usuario-title').textContent='👤 Novo Usuário';
+  ['mu-nome','mu-user','mu-pass','mu-pass2','mu-avatar'].forEach(function(id){_cfgSet(id,'');});
+  document.getElementById('mu-role').value='Técnico';
+  document.getElementById('mu-erro').style.display='none';
+  document.getElementById('modal-usuario').classList.add('open');
+}
+function editarUsuario(i){
+  _editUserIdx=i;var u=USUARIOS[i];
+  document.getElementById('modal-usuario-title').textContent='✏️ Editar Usuário';
+  _cfgSet('mu-nome',u.nome);_cfgSet('mu-user',u.user);
+  _cfgSet('mu-pass','');_cfgSet('mu-pass2','');
+  _cfgSet('mu-avatar',u.avatar);
+  document.getElementById('mu-role').value=u.role;
+  document.getElementById('mu-erro').style.display='none';
+  document.getElementById('modal-usuario').classList.add('open');
+}
+function fecharModalUsuario(){document.getElementById('modal-usuario').classList.remove('open');}
+function excluirUsuario(i){
+  if(USUARIOS.length<=1){alert('Deve haver pelo menos 1 usuário no sistema.');return;}
+  if(!confirm('Excluir usuário "'+USUARIOS[i].nome+'"?'))return;
+  USUARIOS.splice(i,1);salvarCFG();renderTabelaUsuarios();
+}
+function salvarUsuario(){
+  var nome=_cfgGet('mu-nome'),user=_cfgGet('mu-user').toLowerCase(),
+      pass=_cfgGet('mu-pass'),pass2=_cfgGet('mu-pass2'),
+      role=document.getElementById('mu-role').value,
+      avatar=_cfgGet('mu-avatar').toUpperCase().substring(0,2)||user.substring(0,2).toUpperCase();
+  var erroEl=document.getElementById('mu-erro');
+  erroEl.style.display='none';
+  if(!nome||!user){erroEl.textContent='Nome e login são obrigatórios.';erroEl.style.display='block';return;}
+  if(_editUserIdx===null&&!pass){erroEl.textContent='Informe uma senha.';erroEl.style.display='block';return;}
+  if(pass&&pass.length<4){erroEl.textContent='A senha deve ter pelo menos 4 caracteres.';erroEl.style.display='block';return;}
+  if(pass&&pass!==pass2){erroEl.textContent='As senhas não coincidem.';erroEl.style.display='block';return;}
+  // Verifica login duplicado
+  var dupIdx=USUARIOS.findIndex(function(u,i){return u.user===user&&i!==_editUserIdx;});
+  if(dupIdx>=0){erroEl.textContent='Este login já está em uso.';erroEl.style.display='block';return;}
+  if(_editUserIdx!==null){
+    var u=USUARIOS[_editUserIdx];
+    u.nome=nome;u.user=user;u.role=role;u.avatar=avatar;
+    if(pass)u.pass=pass;
+  } else {
+    USUARIOS.push({user:user,pass:pass,nome:nome,role:role,avatar:avatar});
+  }
+  salvarCFG();fecharModalUsuario();renderTabelaUsuarios();
+  _cfgToast('✅ Usuário '+nome+' salvo com sucesso!');
+}
+
+// ── Backup ──
+function exportarBackup(){
+  var backup={
+    versao:'1.0',data:new Date().toISOString(),
+    clientes:clientes,orcamentos:orcamentos,recibos:recibos,
+    financeiro:financeiro,materiais:materiais,templates:templates,
+    notasFiscais:notasFiscais,cfg:CFG,usuarios:USUARIOS
+  };
+  var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  var dt=new Date();
+  var ds=(dt.getDate()<10?'0':'')+dt.getDate()+'_'+(dt.getMonth()+1<10?'0':'')+(dt.getMonth()+1)+'_'+dt.getFullYear();
+  a.href=url;a.download='ADS_Backup_'+ds+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  _cfgToast('✅ Backup exportado! Arquivo salvo no seu dispositivo.');
+}
+
+function importarBackup(evt){
+  var file=evt.target.files[0];if(!file)return;
+  if(!confirm('ATENÇÃO: Importar o backup vai substituir TODOS os dados atuais. Continuar?')){evt.target.value='';return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var bk=JSON.parse(e.target.result);
+      if(bk.clientes)clientes=bk.clientes;
+      if(bk.orcamentos)orcamentos=bk.orcamentos;
+      if(bk.recibos)recibos=bk.recibos;
+      if(bk.financeiro)financeiro=bk.financeiro;
+      if(bk.materiais)materiais=bk.materiais;
+      if(bk.templates)templates=bk.templates;
+      if(bk.notasFiscais)notasFiscais=bk.notasFiscais;
+      if(bk.cfg){CFG.empresa=Object.assign({},CFG.empresa,bk.cfg.empresa||{});CFG.doc=Object.assign({},CFG.doc,bk.cfg.doc||{});}
+      if(bk.usuarios&&Array.isArray(bk.usuarios)&&bk.usuarios.length>0)USUARIOS=bk.usuarios;
+      salvarLocal();salvarCFG();
+      renderizarTudo();renderConfiguracoes();
+      _cfgToast('✅ Backup importado com sucesso! Dados restaurados.');
+    }catch(err){alert('Erro ao ler o arquivo de backup. Verifique se é um arquivo JSON válido exportado pelo ADS Gestão.');}
+    evt.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function renderResumoDados(){
+  var el=document.getElementById('cfg-resumo-dados');if(!el)return;
+  var itens=[
+    {ic:'👥',nm:'Clientes',qtd:clientes.length,cor:'var(--blue3)'},
+    {ic:'📋',nm:'Orçamentos',qtd:orcamentos.length,cor:'var(--amber)'},
+    {ic:'🧾',nm:'Recibos',qtd:recibos.length,cor:'var(--green2)'},
+    {ic:'💰',nm:'Financeiro',qtd:financeiro.length,cor:'var(--purple)'},
+  ];
+  el.innerHTML=itens.map(function(it){
+    return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center">'+
+      '<div style="font-size:18px;margin-bottom:3px">'+it.ic+'</div>'+
+      '<div style="font-size:18px;font-weight:900;color:'+it.cor+'">'+it.qtd+'</div>'+
+      '<div style="font-size:10px;color:var(--silver)">'+it.nm+'</div>'+
+      '</div>';
+  }).join('');
+}
+
+function resetarTudo(){
+  if(!confirm('⚠️ ATENÇÃO: Isso vai apagar TODOS os dados do sistema (clientes, orçamentos, recibos, financeiro). Esta ação é IRREVERSÍVEL.\n\nTem certeza absoluta?'))return;
+  if(!confirm('Segunda confirmação: apagar tudo mesmo?'))return;
+  clientes=[];orcamentos=[];financeiro=[];recibos=[];notasFiscais=[];
+  templates=[];materiais=[];
+  localStorage.clear();
+  renderizarTudo();renderConfiguracoes();
+  _cfgToast('⚠️ Sistema reiniciado. Todos os dados foram apagados.');
+}
+
+// ── PDFs usam CFG ── (funções auxiliares para os PDFs lerem CFG)
+function cfgEmpresa(){return CFG.empresa||{};}
+function cfgDoc(){return CFG.doc||{};}
 
 (function(){
   var mesEl=document.getElementById('fin-filter-mes');
