@@ -297,7 +297,7 @@ td.bold{color:var(--white);font-weight:700}
   .fg3{grid-template-columns:1fr 1fr}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -1759,6 +1759,8 @@ function carregarLocal(){
 // localStorage = cache offline apenas.
 // ════════════════════════════════════════════════════════════
 var SUPABASE_URL = 'https://realiuwjctmqgrwanmpx.supabase.co';
+// Chave publicável — novo formato do Supabase (sb_publishable_...)
+// compatível com @supabase/supabase-js@2 mais recente
 var SUPABASE_KEY = 'sb_publishable_Cqgc1Iw1EJqgLm7VqSXXJQ_-7hewU15';
 
 var sb = null;
@@ -3278,7 +3280,7 @@ function calcTotalRecibo(){
   if(tVal)tVal.textContent=fmtVal(total);
 }
 
-function nrEmitirRecibo(){
+async function nrEmitirRecibo(){
   var nome=(document.getElementById('nr-cli-nome').value||'').trim();
   var tel=(document.getElementById('nr-cli-tel').value||'').trim();
   var end=(document.getElementById('nr-cli-end').value||'').trim();
@@ -3298,11 +3300,14 @@ function nrEmitirRecibo(){
   var matTotais=getNrMatTotais();
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc};
   recibos.unshift(recibo);
-  sbSalvarRecibo(recibo);
+  // BUG FIX: aguardar ambas as operações assíncronas do Supabase antes de
+  // chamar salvarLocal(), garantindo que os sbId retornados sejam gravados
+  // nos objetos em memória — evita race condition que fazia recibos sumirem
+  if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
   var deslocR=parseFloat((document.getElementById('nr-desloc')||{}).value||0);
   var lancFin={desc:serv+' — '+nome,cli:nome,val:valorFinal,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:matTotais.custo,desloc:deslocR,num:numR};
   financeiro.unshift(lancFin);
-  sbSalvarFinanceiro(lancFin);
+  if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
   salvarLocal();
   atualizarContadores();
   fecharNovoRecibo();
@@ -3534,7 +3539,7 @@ function calcDescontoNof(){
   if(finalEl)finalEl.textContent=fmtVal(final);
 }
 
-function nofSalvarGerarPDF(){
+async function nofSalvarGerarPDF(){
   var cli=NOF.cli;
   var nome=(document.getElementById('nof-cli-nome').value||'').trim();
   var tel=(document.getElementById('nof-cli-tel').value||cli&&cli.tel||'').trim();
@@ -3562,9 +3567,17 @@ function nofSalvarGerarPDF(){
     val:valorFinal,gtia:gtia,pgto:pgto,status:'pendente',data:data,obs:obs,
     custoPecas:matTotais.custo};
   var oExist=orcamentos.find(function(o){return o.num===num;});
-  if(oExist){Object.assign(oExist,novoOrc);}
-  else{orcamentos.unshift(novoOrc);}
-  if(SUPABASE_ATIVO)sbSalvarOrcamento(oExist||novoOrc);
+  // BUG FIX: ao atualizar orçamento existente preservar sbId; ao criar novo
+  // aguardar o Supabase para que o sbId retornado seja gravado no objeto em
+  // memória antes de chamar salvarLocal() — evita race condition que fazia
+  // o orçamento sumir ao recarregar o app
+  if(oExist){
+    Object.assign(oExist,novoOrc);
+    if(SUPABASE_ATIVO)await sbSalvarOrcamento(oExist);
+  } else {
+    orcamentos.unshift(novoOrc);
+    if(SUPABASE_ATIVO)await sbSalvarOrcamento(novoOrc);
+  }
   salvarLocal();
   atualizarContadores();
   fecharNovoOrcFlow();
@@ -4363,7 +4376,9 @@ function saveTpl(){
   if(STATE.editTplId){
     var idx=templates.findIndex(function(x){return x.id==STATE.editTplId||x.id===STATE.editTplId;});
     t.id=STATE.editTplId;
-    if(idx>=0)templates[idx]=t;
+    // BUG FIX: preservar sbId do registro original para que sbSalvarTemplate
+    // execute UPDATE em vez de INSERT, evitando duplicatas e perda de dados ao recarregar
+    if(idx>=0){t.sbId=templates[idx].sbId;templates[idx]=t;}
     else templates.push(t);
     sbSalvarTemplate(t);
   } else {
@@ -4463,7 +4478,7 @@ function renderOrcTable(){
   var busca=((document.getElementById('orc-search')||{}).value||'').toLowerCase();
   var filtroStatus=((document.getElementById('orc-filter-status')||{}).value||'');
   var lista=orcamentos.filter(function(o){
-    var matchBusca=!busca||((o.cli||'').toLowerCase().includes(busca)||(o.serv||'').toLowerCase().includes(busca)||('#'+(o.num||'')).includes(busca));
+    var matchBusca=!busca||(o.cli.toLowerCase().includes(busca)||o.serv.toLowerCase().includes(busca)||('#'+o.num).includes(busca));
     var matchStatus=!filtroStatus||o.status===filtroStatus;
     return matchBusca&&matchStatus;
   });
@@ -5127,12 +5142,14 @@ var SIG_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPMAAACwCAYAAADaOlj
 
 renderTemplates();
 renderOrcTable();
+// BUG FIX: carregar dados do localStorage imediatamente para que a UI mostre
+// os dados em cache enquanto o Supabase responde (evita tela em branco de ~1s
+// e garante exibição correta quando o Supabase está offline ou falha)
+carregarLocal();
+renderizarTudo();
+// initSupabase carrega os dados do servidor e chama renderizarTudo() novamente
+// quando concluído — sobrepõe o cache local com dados atualizados do Supabase
 initSupabase();
-// carregarLocal() não precisa ser chamado aqui:
-// initSupabase() já chama carregarLocal() no catch (fallback offline).
-// Ao iniciar, a UI fica vazia por ≈1s até o Supabase responder — aceitável.
-renderClients();
-atualizarContadores();
 // Inicializa na aba Clientes
 renderClientesPage();
 // Marca item de menu Clientes como ativo
@@ -5342,7 +5359,7 @@ nrProxRecibo = function(){
 
 // Patch no nrEmitirRecibo para usar custo de serralheria
 var _nrEmitirReciboOriginal = nrEmitirRecibo;
-nrEmitirRecibo = function(){
+nrEmitirRecibo = async function(){
   if(_nrSerrAtivo && window._nrSerrCusto){
     // O campo desloc já foi copiado; o custo de peças vem de _nrSerrCusto
     // Como nrEmitirRecibo usa getNrMatTotais(), precisamos que o custo de serralheria
@@ -5353,7 +5370,7 @@ nrEmitirRecibo = function(){
       var t = _origGetNrMatTotais();
       return {custo: t.custo+_extra, venda: t.venda};
     };
-    _nrEmitirReciboOriginal();
+    await _nrEmitirReciboOriginal();
     getNrMatTotais = _origGetNrMatTotais;
     // Reset serralheria
     _nrSerrAtivo = false;
