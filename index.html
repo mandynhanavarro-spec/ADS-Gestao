@@ -2211,6 +2211,8 @@ async function carregarTodosDados() {
 
   // Salva cache local
   salvarLocal();
+  // Carrega configurações do Supabase (empresa, doc, usuarios)
+  await sbCarregarCFG();
   // Atualiza UI completa
   renderizarTudo();
 }
@@ -2234,7 +2236,7 @@ function renderizarTudo() {
 // ── SINCRONIZAÇÃO REALTIME (Supabase Realtime) ───────────────
 function ativarSincronizacaoRealtime() {
   // Tabelas a monitorar
-  var tabelas = ['orcamentos','recibos','financeiro','clientes','templates','materiais'];
+  var tabelas = ['orcamentos','recibos','financeiro','clientes','templates','materiais','configuracoes'];
   tabelas.forEach(function(tabela) {
     sb.channel('realtime-'+tabela)
       .on('postgres_changes', { event: '*', schema: 'public', table: tabela }, function(payload) {
@@ -5064,6 +5066,35 @@ function carregarCFG(){
   }catch(e){}
 }
 
+// ── SUPABASE: ler configurações ──────────────────────────────
+async function sbCarregarCFG(){
+  if(!SUPABASE_ATIVO||!sb)return;
+  try{
+    const {data,error}=await sb.from('configuracoes').select('*');
+    if(error||!data)return;
+    data.forEach(function(row){
+      if(row.id==='empresa'&&row.dados){CFG.empresa=Object.assign({},CFG.empresa,row.dados);}
+      if(row.id==='doc'&&row.dados){CFG.doc=Object.assign({},CFG.doc,row.dados);}
+      if(row.id==='usuarios'&&row.dados&&Array.isArray(row.dados)&&row.dados.length>0){USUARIOS=row.dados;}
+    });
+    salvarCFG(); // atualiza cache local
+    // Se página de configurações estiver aberta, recarrega campos
+    var pg=document.querySelector('.page.active');
+    if(pg&&pg.id==='page-configuracoes')renderConfiguracoes();
+  }catch(e){console.warn('sbCarregarCFG erro:',e);}
+}
+
+// ── SUPABASE: gravar uma configuração (upsert) ───────────────
+async function sbSalvarCFG(chave, valor){
+  if(!SUPABASE_ATIVO||!sb)return;
+  try{
+    await sb.from('configuracoes').upsert(
+      {id:chave, dados:valor, atualizado_em:new Date().toISOString()},
+      {onConflict:'id'}
+    );
+  }catch(e){console.warn('sbSalvarCFG erro:',e);}
+}
+
 function aplicarUsuario(found){
   document.getElementById('login-screen').classList.add('hide');
   document.getElementById('user-name').textContent=found.nome;
@@ -6110,6 +6141,7 @@ function salvarDadosEmpresa(){
     cargo:_cfgGet('cfg-empresa-cargo')
   };
   salvarCFG();
+  sbSalvarCFG('empresa', CFG.empresa);
   _cfgToast('✅ Dados da empresa salvos! Os PDFs já usam as novas informações.');
 }
 
@@ -6123,6 +6155,7 @@ function salvarPadraoDocumentos(){
     rodape:_cfgGet('cfg-doc-rodape')
   };
   salvarCFG();
+  sbSalvarCFG('doc', CFG.doc);
   _cfgToast('✅ Padrão dos documentos salvo! Novos orçamentos e recibos já aplicam as configurações.');
 }
 
@@ -6177,7 +6210,7 @@ function fecharModalUsuario(){document.getElementById('modal-usuario').classList
 function excluirUsuario(i){
   if(USUARIOS.length<=1){alert('Deve haver pelo menos 1 usuário no sistema.');return;}
   if(!confirm('Excluir usuário "'+USUARIOS[i].nome+'"?'))return;
-  USUARIOS.splice(i,1);salvarCFG();renderTabelaUsuarios();
+  USUARIOS.splice(i,1);salvarCFG();sbSalvarCFG('usuarios',USUARIOS);renderTabelaUsuarios();
 }
 function salvarUsuario(){
   var nome=_cfgGet('mu-nome'),user=_cfgGet('mu-user').toLowerCase(),
@@ -6201,6 +6234,7 @@ function salvarUsuario(){
     USUARIOS.push({user:user,pass:pass,nome:nome,role:role,avatar:avatar});
   }
   salvarCFG();fecharModalUsuario();renderTabelaUsuarios();
+  sbSalvarCFG('usuarios', USUARIOS);
   _cfgToast('✅ Usuário '+nome+' salvo com sucesso!');
 }
 
@@ -6239,6 +6273,7 @@ function importarBackup(evt){
       if(bk.cfg){CFG.empresa=Object.assign({},CFG.empresa,bk.cfg.empresa||{});CFG.doc=Object.assign({},CFG.doc,bk.cfg.doc||{});}
       if(bk.usuarios&&Array.isArray(bk.usuarios)&&bk.usuarios.length>0)USUARIOS=bk.usuarios;
       salvarLocal();salvarCFG();
+      if(SUPABASE_ATIVO){sbSalvarCFG('empresa',CFG.empresa);sbSalvarCFG('doc',CFG.doc);sbSalvarCFG('usuarios',USUARIOS);}
       renderizarTudo();renderConfiguracoes();
       _cfgToast('✅ Backup importado com sucesso! Dados restaurados.');
     }catch(err){alert('Erro ao ler o arquivo de backup. Verifique se é um arquivo JSON válido exportado pelo ADS Gestão.');}
