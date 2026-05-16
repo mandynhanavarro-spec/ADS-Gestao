@@ -1362,6 +1362,24 @@ td.bold{color:var(--white);font-weight:700}
           </div>
         </div>
       </div>
+      <!-- Assinatura -->
+      <div style="margin-bottom:12px">
+        <div class="fl" style="margin-bottom:6px">✍️ Assinatura (exibida no rodapé inferior direito dos PDFs)</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="cfg-doc-sig-preview" style="width:140px;height:52px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0">
+            <span id="cfg-doc-sig-empty" style="font-size:22px;opacity:.5">✍️</span>
+            <img id="cfg-doc-sig-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">
+              📤 Carregar assinatura
+              <input type="file" id="cfg-doc-sig-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleSigUpload(this)" style="display:none">
+            </label>
+            <button class="btn btn-red btn-sm" id="cfg-doc-sig-remove" onclick="removerSig()" style="display:none;width:fit-content">🗑️ Remover assinatura</button>
+            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG com fundo transparente é ideal · fica no canto inferior direito, acima da linha de assinatura</span>
+          </div>
+        </div>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
         <button class="btn btn-primary btn-sm" onclick="salvarPadraoDocumentos()">💾 Salvar Padrão dos Documentos</button>
       </div>
@@ -3242,7 +3260,7 @@ function gerarPDFRecibo(idx){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
   doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,fy+6,22,22);}
@@ -3363,7 +3381,7 @@ function gerarPDF(){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
   doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
 
@@ -5072,7 +5090,7 @@ var USUARIOS=[
 // ════════════ CONFIGURAÇÕES DO SISTEMA ════════════
 var CFG = {
   empresa:{nome:'ADS Portões Automáticos',cnpj:'20.989.538/0001-88',tel:'(11) 96770-4116',email:'ads.pg@hotmail.com',end:'São Paulo / SP',resp:'Ananias Santos',cargo:'Técnico Responsável'},
-  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:''}
+  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:'',sigB64:''}
 };
 function salvarCFG(){try{localStorage.setItem('ads_cfg',JSON.stringify(CFG));localStorage.setItem('ads_usuarios',JSON.stringify(USUARIOS));}catch(e){}}
 function carregarCFG(){
@@ -5466,7 +5484,7 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   doc.text('Sao Paulo, '+fmtDateLong(r.dataRaw||new Date().toISOString().split('T')[0])+'.',ML,y);
   y+=10;doc.setDrawColor(0,0,0);doc.line(ML,y,ML+70,y);y+=4;
   doc.setFontSize(8);doc.text('ADS Portoes Automaticos',ML,y);
-  doc.addImage(SIG_B64,'PNG',ML,y+3,35,14);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),ML,y+3,35,14);
   doc.save('recibo_serralheria_'+r.num.replace('#','')+'.pdf');
 }
 
@@ -5560,7 +5578,7 @@ function gerarPDFSerrOrc(){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
   doc.text('Ananias Santos',sx+35,fy+30,{align:'center'});
   doc.save('OrcSerralheria_ADS_'+num+'_'+cli.split(' ')[0]+'.pdf');
@@ -6156,6 +6174,15 @@ function carregarConfiguracoes(){
     if(d.qrWpp){qrImg.src=d.qrWpp;qrImg.style.display='block';qrEmpty.style.display='none';qrRemove.style.display='';}
     else{qrImg.src='';qrImg.style.display='none';qrEmpty.style.display='';qrRemove.style.display='none';}
   }
+  // Assinatura preview
+  window._sigPendente=undefined;
+  var sigImg=document.getElementById('cfg-doc-sig-img');
+  var sigEmpty=document.getElementById('cfg-doc-sig-empty');
+  var sigRemove=document.getElementById('cfg-doc-sig-remove');
+  if(sigImg&&sigEmpty&&sigRemove){
+    if(d.sigB64){sigImg.src=d.sigB64;sigImg.style.display='block';sigEmpty.style.display='none';sigRemove.style.display='';}
+    else{sigImg.src='';sigImg.style.display='none';sigEmpty.style.display='';sigRemove.style.display='none';}
+  }
 }
 function _cfgSet(id,val){var el=document.getElementById(id);if(el)el.value=val||'';}
 function _cfgGet(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
@@ -6174,6 +6201,7 @@ function salvarDadosEmpresa(){
 
 function salvarPadraoDocumentos(){
   var qrVal=(typeof window._qrPendente!=='undefined')?window._qrPendente:(CFG.doc.qrWpp||'');
+  var sigVal=(typeof window._sigPendente!=='undefined')?window._sigPendente:(CFG.doc.sigB64||'');
   CFG.doc={
     validade:parseInt(_cfgGet('cfg-doc-validade'))||30,
     garantia:_cfgGet('cfg-doc-garantia'),
@@ -6181,9 +6209,11 @@ function salvarPadraoDocumentos(){
     pix:_cfgGet('cfg-doc-pix'),
     banco:_cfgGet('cfg-doc-banco'),
     rodape:_cfgGet('cfg-doc-rodape'),
-    qrWpp:qrVal
+    qrWpp:qrVal,
+    sigB64:sigVal
   };
   window._qrPendente=undefined;
+  window._sigPendente=undefined;
   salvarCFG();
   sbSalvarCFG('doc', CFG.doc);
   _cfgToast('✅ Padrão dos documentos salvo! Novos orçamentos e recibos já aplicam as configurações.');
@@ -6216,6 +6246,35 @@ function removerQRCode(){
   if(qrEmpty)qrEmpty.style.display='';
   if(qrRemove)qrRemove.style.display='none';
   if(qrFile)qrFile.value='';
+}
+
+function handleSigUpload(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>3*1024*1024){alert('Imagem muito grande. Use uma imagem menor que 3 MB.');input.value='';return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var b64=e.target.result;
+    window._sigPendente=b64;
+    var sigImg=document.getElementById('cfg-doc-sig-img');
+    var sigEmpty=document.getElementById('cfg-doc-sig-empty');
+    var sigRemove=document.getElementById('cfg-doc-sig-remove');
+    if(sigImg){sigImg.src=b64;sigImg.style.display='block';}
+    if(sigEmpty)sigEmpty.style.display='none';
+    if(sigRemove)sigRemove.style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerSig(){
+  window._sigPendente='';
+  var sigImg=document.getElementById('cfg-doc-sig-img');
+  var sigEmpty=document.getElementById('cfg-doc-sig-empty');
+  var sigRemove=document.getElementById('cfg-doc-sig-remove');
+  var sigFile=document.getElementById('cfg-doc-sig-file');
+  if(sigImg){sigImg.src='';sigImg.style.display='none';}
+  if(sigEmpty)sigEmpty.style.display='';
+  if(sigRemove)sigRemove.style.display='none';
+  if(sigFile)sigFile.value='';
 }
 
 function _getImgFmt(b64){
