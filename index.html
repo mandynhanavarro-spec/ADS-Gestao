@@ -1344,6 +1344,24 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Texto de rodapé / observação padrão nos documentos</div>
         <textarea class="ft" id="cfg-doc-rodape" rows="2" placeholder="Ex: Qualquer dúvida estamos à disposição. Obrigado pela preferência!"></textarea></div>
       </div>
+      <!-- QR Code WhatsApp -->
+      <div style="margin-bottom:12px">
+        <div class="fl" style="margin-bottom:6px">📲 QR Code WhatsApp (exibido no rodapé dos PDFs)</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="cfg-doc-qr-preview" style="width:76px;height:76px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0;position:relative">
+            <span id="cfg-doc-qr-empty" style="font-size:26px;opacity:.5">📷</span>
+            <img id="cfg-doc-qr-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">
+              📤 Carregar imagem
+              <input type="file" id="cfg-doc-qr-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleQRUpload(this)" style="display:none">
+            </label>
+            <button class="btn btn-red btn-sm" id="cfg-doc-qr-remove" onclick="removerQRCode()" style="display:none;width:fit-content">🗑️ Remover QR Code</button>
+            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG ou JPG recomendado · aparece no canto inferior esquerdo dos orçamentos e recibos em PDF</span>
+          </div>
+        </div>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
         <button class="btn btn-primary btn-sm" onclick="salvarPadraoDocumentos()">💾 Salvar Padrão dos Documentos</button>
       </div>
@@ -3227,7 +3245,7 @@ function gerarPDFRecibo(idx){
   doc.addImage(SIG_B64,'PNG',sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
   doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
-  doc.addImage(QR_WPP_B64,'PNG',ML,fy+6,22,22);
+  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,fy+6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,fy+30);
   doc.save('Recibo_ADS_'+r.num+'_'+r.cli.split(' ')[0]+'.pdf');
@@ -3335,7 +3353,7 @@ function gerarPDF(){
 
   // === QR CODE + TELEFONE (canto inferior esquerdo) ===
   y+=10;
-  doc.addImage(QR_WPP_B64,'PNG',ML,y-6,22,22);
+  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
 
@@ -3385,7 +3403,7 @@ function previewPDF(){
       ${f.obs?'<div style="font-size:11px;color:#555;font-style:italic;margin-bottom:20px">Obs: '+f.obs+'</div>':''}
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px">
         <div>
-          <img src="${QR_WPP_B64}" style="width:70px;height:70px">
+          ${CFG.doc.qrWpp?'<img src="'+CFG.doc.qrWpp+'" style="width:70px;height:70px;border-radius:4px">':''}
           <div style="font-size:10px;margin-top:4px">${CFG.empresa.tel||'(11) 96770-4116'}</div>
         </div>
         <div style="text-align:center">
@@ -5054,7 +5072,7 @@ var USUARIOS=[
 // ════════════ CONFIGURAÇÕES DO SISTEMA ════════════
 var CFG = {
   empresa:{nome:'ADS Portões Automáticos',cnpj:'20.989.538/0001-88',tel:'(11) 96770-4116',email:'ads.pg@hotmail.com',end:'São Paulo / SP',resp:'Ananias Santos',cargo:'Técnico Responsável'},
-  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!'}
+  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:''}
 };
 function salvarCFG(){try{localStorage.setItem('ads_cfg',JSON.stringify(CFG));localStorage.setItem('ads_usuarios',JSON.stringify(USUARIOS));}catch(e){}}
 function carregarCFG(){
@@ -5536,7 +5554,7 @@ function gerarPDFSerrOrc(){
   doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
   if(obs){y+=5;doc.setFontSize(9);doc.setTextColor(80,80,80);var ol=doc.splitTextToSize('Obs: '+obs,CW);doc.text(ol,ML+2,y);doc.setTextColor(0,0,0);y+=ol.length*5;}
   y+=10;
-  doc.addImage(QR_WPP_B64,'PNG',ML,y-6,22,22);
+  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);doc.text('(11) 96770-4116',ML,y+18);
   var fy=y-8,sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
@@ -6129,6 +6147,15 @@ function carregarConfiguracoes(){
   _cfgSet('cfg-doc-rodape',d.rodape);
   var pgSel=document.getElementById('cfg-doc-pgto');
   if(pgSel)pgSel.value=d.pgto;
+  // QR Code preview
+  window._qrPendente=undefined;
+  var qrImg=document.getElementById('cfg-doc-qr-img');
+  var qrEmpty=document.getElementById('cfg-doc-qr-empty');
+  var qrRemove=document.getElementById('cfg-doc-qr-remove');
+  if(qrImg&&qrEmpty&&qrRemove){
+    if(d.qrWpp){qrImg.src=d.qrWpp;qrImg.style.display='block';qrEmpty.style.display='none';qrRemove.style.display='';}
+    else{qrImg.src='';qrImg.style.display='none';qrEmpty.style.display='';qrRemove.style.display='none';}
+  }
 }
 function _cfgSet(id,val){var el=document.getElementById(id);if(el)el.value=val||'';}
 function _cfgGet(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
@@ -6146,17 +6173,57 @@ function salvarDadosEmpresa(){
 }
 
 function salvarPadraoDocumentos(){
+  var qrVal=(typeof window._qrPendente!=='undefined')?window._qrPendente:(CFG.doc.qrWpp||'');
   CFG.doc={
     validade:parseInt(_cfgGet('cfg-doc-validade'))||30,
     garantia:_cfgGet('cfg-doc-garantia'),
     pgto:_cfgGet('cfg-doc-pgto'),
     pix:_cfgGet('cfg-doc-pix'),
     banco:_cfgGet('cfg-doc-banco'),
-    rodape:_cfgGet('cfg-doc-rodape')
+    rodape:_cfgGet('cfg-doc-rodape'),
+    qrWpp:qrVal
   };
+  window._qrPendente=undefined;
   salvarCFG();
   sbSalvarCFG('doc', CFG.doc);
   _cfgToast('✅ Padrão dos documentos salvo! Novos orçamentos e recibos já aplicam as configurações.');
+}
+
+function handleQRUpload(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>3*1024*1024){alert('Imagem muito grande. Use uma imagem menor que 3 MB.');input.value='';return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var b64=e.target.result;
+    window._qrPendente=b64;
+    var qrImg=document.getElementById('cfg-doc-qr-img');
+    var qrEmpty=document.getElementById('cfg-doc-qr-empty');
+    var qrRemove=document.getElementById('cfg-doc-qr-remove');
+    if(qrImg){qrImg.src=b64;qrImg.style.display='block';}
+    if(qrEmpty)qrEmpty.style.display='none';
+    if(qrRemove)qrRemove.style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerQRCode(){
+  window._qrPendente='';
+  var qrImg=document.getElementById('cfg-doc-qr-img');
+  var qrEmpty=document.getElementById('cfg-doc-qr-empty');
+  var qrRemove=document.getElementById('cfg-doc-qr-remove');
+  var qrFile=document.getElementById('cfg-doc-qr-file');
+  if(qrImg){qrImg.src='';qrImg.style.display='none';}
+  if(qrEmpty)qrEmpty.style.display='';
+  if(qrRemove)qrRemove.style.display='none';
+  if(qrFile)qrFile.value='';
+}
+
+function _getImgFmt(b64){
+  if(!b64)return'PNG';
+  if(b64.indexOf('image/jpeg')>-1||b64.indexOf('image/jpg')>-1)return'JPEG';
+  if(b64.indexOf('image/gif')>-1)return'GIF';
+  if(b64.indexOf('image/webp')>-1)return'WEBP';
+  return'PNG';
 }
 
 function _cfgToast(msg){
