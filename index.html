@@ -4463,7 +4463,7 @@ function renderOrcTable(){
   var busca=((document.getElementById('orc-search')||{}).value||'').toLowerCase();
   var filtroStatus=((document.getElementById('orc-filter-status')||{}).value||'');
   var lista=orcamentos.filter(function(o){
-    var matchBusca=!busca||(o.cli.toLowerCase().includes(busca)||o.serv.toLowerCase().includes(busca)||('#'+o.num).includes(busca));
+    var matchBusca=!busca||((o.cli||'').toLowerCase().includes(busca)||(o.serv||'').toLowerCase().includes(busca)||('#'+(o.num||'')).includes(busca));
     var matchStatus=!filtroStatus||o.status===filtroStatus;
     return matchBusca&&matchStatus;
   });
