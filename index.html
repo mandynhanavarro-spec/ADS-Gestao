@@ -1042,7 +1042,17 @@ td.bold{color:var(--white);font-weight:700}
               💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-nof-key" style="color:var(--white)"></span>
             </div>
           </div>
-          <div><div class="fl">Validade</div><input class="fi" id="nof-val" readonly style="color:var(--green2);cursor:default"></div>
+          <div>
+            <div class="fl">Validade do Orçamento</div>
+            <select class="fs" id="nof-val-sel" onchange="nofAtualizarValidade()" style="margin-bottom:5px">
+              <option value="30">30 Dias</option>
+              <option value="15">15 Dias</option>
+              <option value="custom">📅 Data Editável</option>
+            </select>
+            <input type="date" class="fi" id="nof-val-custom" style="display:none;color:var(--green2);margin-bottom:3px" onchange="nofAtualizarValidade()">
+            <div id="nof-val-info" style="font-size:10px;color:var(--green2);padding:2px 0;font-weight:600"></div>
+            <input type="hidden" id="nof-val">
+          </div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
           <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="number" id="nof-desloc" placeholder="0,00" step="0.01" value="0"></div>
@@ -3437,7 +3447,8 @@ function gerarPDF(numOrc){
   var descQtdF=parseFloat((document.getElementById('f-desc-qtd')||{}).value||0);
   var descF=descTipoF==='valor'?descQtdF:(descTipoF==='perc'?f.valor*(descQtdF/100):0);
   var valorFinal=Math.max(0,f.valor-descF);
-  var valDias=CFG.doc.validade||30;
+  var valDias=(typeof window._nofValDias!=='undefined')?window._nofValDias:(CFG.doc.validade||30);
+  window._nofValDias=undefined;
   var pixKey=CFG.doc.pix||'ads.pg@hotmail.com';
   var bancoInfo=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
   var respNome=CFG.empresa.resp||'Ananias Antonio dos Santos';
@@ -4219,7 +4230,10 @@ function nofProxOrc(){
   var dv=new Date(d);dv.setDate(dv.getDate()+30);
   var fmtShow=function(x){return (x.getDate()<10?'0':'')+x.getDate()+'/'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'/'+x.getFullYear();};
   document.getElementById('nof-data').value=fmtD(d);
-  document.getElementById('nof-val').value='30 dias — até '+fmtShow(dv);
+  // Inicializa select de validade
+  var _selV=document.getElementById('nof-val-sel');
+  if(_selV){_selV.value='30';var _ci=document.getElementById('nof-val-custom');if(_ci){_ci.style.display='none';_ci.value='';}nofAtualizarValidade();}
+  else{document.getElementById('nof-val').value='30 dias — até '+fmtShow(dv);}
   if(NOF.tpl){
     document.getElementById('nof-valor').value=NOF.tpl.val;
     document.getElementById('nof-gtia').value=NOF.tpl.gtia;
@@ -4236,6 +4250,40 @@ function nofVoltarMat(){
   document.getElementById('nof-blk-orc').style.display='none';
   document.getElementById('nof-blk-mat').style.display='block';
   nofSetStep(3);
+}
+
+function nofAtualizarValidade(){
+  var sel=document.getElementById('nof-val-sel');
+  var customInput=document.getElementById('nof-val-custom');
+  var info=document.getElementById('nof-val-info');
+  var hidden=document.getElementById('nof-val');
+  if(!sel)return;
+  var v=sel.value;
+  var hoje=new Date();
+  var fmtShow=function(x){return(x.getDate()<10?'0':'')+x.getDate()+'/'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'/'+x.getFullYear();};
+  var fmtD=function(x){return x.getFullYear()+'-'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'-'+(x.getDate()<10?'0':'')+x.getDate();};
+  if(v==='custom'){
+    if(customInput)customInput.style.display='block';
+    if(customInput&&!customInput.value){
+      var dv=new Date(hoje);dv.setDate(dv.getDate()+30);
+      customInput.value=fmtD(dv);
+    }
+    if(customInput&&customInput.value){
+      var parts=customInput.value.split('-');
+      var dataSel=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+      var diff=Math.max(1,Math.round((dataSel-hoje)/(1000*60*60*24)));
+      window._nofValDias=diff;
+      if(info)info.textContent='📅 Até '+fmtShow(dataSel)+' ('+diff+' dias)';
+      if(hidden)hidden.value=diff+' dias — até '+fmtShow(dataSel);
+    }
+  } else {
+    if(customInput)customInput.style.display='none';
+    var dias=parseInt(v)||30;
+    window._nofValDias=dias;
+    var dv=new Date(hoje);dv.setDate(dv.getDate()+dias);
+    if(info)info.textContent='📅 Até '+fmtShow(dv);
+    if(hidden)hidden.value=dias+' dias — até '+fmtShow(dv);
+  }
 }
 
 function calcDescontoNof(){
@@ -4292,6 +4340,8 @@ async function nofSalvarGerarPDF(){
   salvarLocal();
   atualizarContadores();
   fecharNovoOrcFlow();
+  // Garante validade selecionada no PDF
+  nofAtualizarValidade();
   // Gera PDF usando form intermediário
   document.getElementById('f-num').value=num;
   document.getElementById('f-data').value=data;
