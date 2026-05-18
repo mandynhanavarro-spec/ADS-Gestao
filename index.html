@@ -1962,6 +1962,28 @@ td.bold{color:var(--white);font-weight:700}
           </select>
         </div>
       </div>
+      <!-- MATERIAIS — EDITAR ORÇAMENTO -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--silver2);font-weight:700;text-transform:uppercase;letter-spacing:1px">📦 Peças / Materiais do orçamento</div>
+          <button class="btn btn-ghost btn-sm" onclick="adicionarLinhaMatEO()">+ Adicionar peça</button>
+        </div>
+        <div id="eo-mat-linhas"></div>
+        <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="color:var(--silver2)">Custo das peças:</span>
+            <span style="color:var(--red);font-weight:700" id="eo-mat-custo">R$ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="color:var(--silver2)">Valor de venda das peças:</span>
+            <span style="color:var(--green2);font-weight:700" id="eo-mat-venda">R$ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:4px">
+            <span style="color:var(--white);font-weight:700">Lucro nas peças:</span>
+            <span style="color:var(--blue3);font-weight:900" id="eo-mat-lucro">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
       <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;display:flex;gap:20px;flex-wrap:wrap">
         <div style="font-size:12px"><span style="color:var(--silver2)">Valor: </span><span style="color:var(--green2);font-weight:700" id="eo-show-val">R$ 0,00</span></div>
         <div style="font-size:12px"><span style="color:var(--silver2)">Custo: </span><span style="color:var(--red);font-weight:700" id="eo-show-custo">R$ 0,00</span></div>
@@ -3535,13 +3557,25 @@ function gerarPDF(numOrc){
       y+=26;
 
     } else if(b.id==='cliente'){
-      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
-      doc.setFont('helvetica','normal');doc.text(f.cliente,ML+18,y);
-      y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
-      doc.setFont('helvetica','normal');
-      var endLines=doc.splitTextToSize(f.endereco,CW-30);
-      doc.text(endLines,ML+24,y);
-      y+=endLines.length*5+6;
+      doc.setFontSize(10);
+      if(f.cliente&&f.cliente.trim()){
+        doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
+        doc.setFont('helvetica','normal');doc.text(f.cliente,ML+18,y);
+        y+=7;
+      }
+      if(f.tel&&f.tel.trim()){
+        doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);
+        doc.setFont('helvetica','normal');doc.text(f.tel,ML+24,y);
+        y+=7;
+      }
+      if(f.endereco&&f.endereco.trim()){
+        doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
+        doc.setFont('helvetica','normal');
+        var endLines=doc.splitTextToSize(f.endereco,CW-30);
+        doc.text(endLines,ML+24,y);
+        y+=endLines.length*5;
+      }
+      y+=6;
 
     } else if(b.id==='servico'){
       doc.setFont('helvetica','bold');doc.setFontSize(10);
@@ -4249,7 +4283,7 @@ function recalcMatNof(){
   nofMatLinhas.forEach(function(rowId){
     var selEl=document.getElementById('nofsel-'+rowId);var qtdEl=document.getElementById('nofqtd-'+rowId);var subEl=document.getElementById('nofsub-'+rowId);
     if(!selEl||!qtdEl)return;
-    var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
+    var matId=parseInt(selEl.value);var qtd=parseFloat(qtdEl.value||1);
     if(!matId||isNaN(qtd)||qtd<1)return;
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
     totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
@@ -4283,12 +4317,45 @@ function nofProxOrc(){
   var _selV=document.getElementById('nof-val-sel');
   if(_selV){_selV.value='30';var _ci=document.getElementById('nof-val-custom');if(_ci){_ci.style.display='none';_ci.value='';}nofAtualizarValidade();}
   else{document.getElementById('nof-val').value='30 dias — até '+fmtShow(dv);}
+  // Calcula totais de materiais para incluir no valor
+  var matTotais=recalcMatNof()||{custo:0,venda:0};
+  var valorServico=NOF.tpl?parseFloat(NOF.tpl.val||0):0;
+  var valorComMat=valorServico+matTotais.venda;
   if(NOF.tpl){
-    document.getElementById('nof-valor').value=NOF.tpl.val;
+    // Valor = serviço + peças (venda)
+    document.getElementById('nof-valor').value=valorComMat>0?valorComMat.toFixed(2):NOF.tpl.val;
     document.getElementById('nof-gtia').value=NOF.tpl.gtia;
     var pgEl=document.getElementById('nof-pgto');
     for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NOF.tpl.pgto){pgEl.selectedIndex=i;break;}}
     document.getElementById('nof-desc').value=descTxt;
+  } else {
+    // Serviço manual: se já havia valor digitado, mantém; soma materiais
+    var valAtual=parseFloat(document.getElementById('nof-valor').value||0);
+    if(matTotais.venda>0&&valAtual===0){
+      document.getElementById('nof-valor').value=matTotais.venda.toFixed(2);
+    } else if(matTotais.venda>0){
+      // Mantém o valor que o usuário digitou (não sobrescreve)
+    }
+  }
+  // Mostra resumo de materiais no step 4 se houver
+  var nofMatBox=document.getElementById('nof-mat-resumo-step4');
+  if(matTotais.venda>0){
+    if(!nofMatBox){
+      nofMatBox=document.createElement('div');
+      nofMatBox.id='nof-mat-resumo-step4';
+      nofMatBox.style.cssText='background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px';
+      var refEl=document.getElementById('nof-desc').closest('.fgrid');
+      if(refEl)refEl.parentNode.insertBefore(nofMatBox,refEl);
+    }
+    nofMatBox.innerHTML='<div style="font-size:10px;color:var(--green2);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📦 Materiais incluídos</div>'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap">'+
+      '<span style="color:var(--silver2)">Custo: <strong style="color:var(--red)">'+fmtVal(matTotais.custo)+'</strong></span>'+
+      '<span style="color:var(--silver2)">Venda: <strong style="color:var(--green2)">'+fmtVal(matTotais.venda)+'</strong></span>'+
+      '<span style="color:var(--silver2)">Lucro peças: <strong style="color:var(--blue3)">'+fmtVal(matTotais.venda-matTotais.custo)+'</strong></span>'+
+      '</div>';
+    nofMatBox.style.display='block';
+  } else if(nofMatBox){
+    nofMatBox.style.display='none';
   }
   document.getElementById('nof-blk-mat').style.display='none';
   document.getElementById('nof-blk-orc').style.display='block';
@@ -4750,6 +4817,11 @@ function abrirEditarOrc(num){
   // status
   var stEl=document.getElementById('eo-status');
   for(var i=0;i<stEl.options.length;i++){if(stEl.options[i].value===(o.status||'')){stEl.selectedIndex=i;break;}}
+  // Limpa materiais do modal editar
+  eoMatLinhas=[];
+  var eoMatEl=document.getElementById('eo-mat-linhas');
+  if(eoMatEl)eoMatEl.innerHTML='';
+  recalcMatEO();
   calcResumoEO();
   document.getElementById('modal-edit-orc').classList.add('open');
   // store ref
@@ -4784,7 +4856,9 @@ function salvarEdicaoOrc(){
   o.desc=document.getElementById('eo-desc').value.trim();
   o.serv=o.desc.split('\n')[0];
   o.val=parseFloat(document.getElementById('eo-val').value||0);
-  o.custoPecas=parseFloat(document.getElementById('eo-custo').value||0);
+  // Custo: usa materiais selecionados se houver, senão o campo manual
+  var eoMatTotais=recalcMatEO()||{custo:0,venda:0};
+  o.custoPecas=eoMatTotais.custo>0?eoMatTotais.custo:parseFloat(document.getElementById('eo-custo').value||0);
   o.gtia=document.getElementById('eo-gtia').value.trim();
   o.pgto=document.getElementById('eo-pgto').value;
   o.data=dataRaw;
@@ -5744,6 +5818,60 @@ document.getElementById('modal-usuario').addEventListener('click',function(e){if
 document.getElementById('modal-novo-orc-flow').addEventListener('click',function(e){if(e.target===this)fecharNovoOrcFlow();});
 
 
+
+// ════════════ MATERIAIS — EDITAR ORÇAMENTO (EO) ════════════
+var eoMatLinhas=[];
+
+function adicionarLinhaMatEO(){
+  var rowId='eomat-'+Date.now();
+  var opts=materiais.map(function(m){
+    return '<option value="'+m.id+'">'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+  }).join('');
+  if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
+  var div=document.createElement('div');
+  div.id=rowId;
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatEO()" id="eosel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="eoqtd-'+rowId+'" oninput="recalcMatEO()">'+
+    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="eosub-'+rowId+'">R$ 0,00</span>'+
+    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatEO(\''+rowId+'\')">✕</button>';
+  document.getElementById('eo-mat-linhas').appendChild(div);
+  eoMatLinhas.push(rowId);
+  recalcMatEO();
+}
+
+function removerLinhaMatEO(rowId){
+  var el=document.getElementById(rowId);if(el)el.remove();
+  eoMatLinhas=eoMatLinhas.filter(function(r){return r!==rowId;});
+  recalcMatEO();
+}
+
+function recalcMatEO(){
+  var totalCusto=0,totalVenda=0;
+  eoMatLinhas.forEach(function(rowId){
+    var selEl=document.getElementById('eosel-'+rowId);
+    var qtdEl=document.getElementById('eoqtd-'+rowId);
+    var subEl=document.getElementById('eosub-'+rowId);
+    if(!selEl||!qtdEl)return;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(qtd)||qtd<1)return;
+    var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
+    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
+    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+  });
+  var cEl=document.getElementById('eo-mat-custo');
+  var vEl=document.getElementById('eo-mat-venda');
+  var lEl=document.getElementById('eo-mat-lucro');
+  if(cEl)cEl.textContent=fmtVal(totalCusto);
+  if(vEl)vEl.textContent=fmtVal(totalVenda);
+  if(lEl)lEl.textContent=fmtVal(totalVenda-totalCusto);
+  // Atualiza custo no resumo
+  var custoCampo=document.getElementById('eo-custo');
+  if(custoCampo&&totalCusto>0)custoCampo.value=totalCusto.toFixed(2);
+  calcResumoEO();
+  return{custo:totalCusto,venda:totalVenda};
+}
 
 // ════════════ DESCONTO ORÇAMENTO ════════════
 function calcDescontoOrc(){
