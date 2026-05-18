@@ -3232,10 +3232,18 @@ async function emitirDoc(){
       '<div class="doc-row"><span class="doc-dl">Pagamento</span><span class="doc-dv">'+f.pagamento+'</span></div>'+
       '<div class="doc-total"><span style="font-size:12px;color:var(--silver2);font-weight:700">VALOR RECEBIDO</span>'+
       '<span style="font-size:20px;font-weight:900;color:var(--green2)">'+fmtVal(f.valor)+'</span></div></div>'+
-      '<div class="doc-ft">'+
-      '<button class="btn btn-primary" onclick="gerarPDFRecibo(0)">📄 Baixar PDF Recibo</button>'+
+      '<div class="doc-ft" style="flex-direction:column;gap:8px">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
+      '<button class="btn btn-primary" onclick="gerarPDFRecibo(0);document.getElementById(\'pgto-box-rec\').style.display=\'block\'">📄 Baixar PDF Recibo</button>'+
       '<button class="btn btn-green" onclick="enviarWpp()">📲 WhatsApp</button>'+
       '<button class="btn btn-ghost" style="margin-left:auto" onclick="resetFlow()">⚡ Novo orçamento</button>'+
+      '</div>'+
+      '<div id="pgto-box-rec" style="display:none;width:100%;background:rgba(37,99,235,.08);border:1px solid var(--border2);border-radius:8px;padding:10px 14px">'+
+      '<div style="font-size:10px;color:var(--blue3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">💳 Forma de Pagamento</div>'+
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<select class="fs" id="pgto-rec-sel" style="flex:1;min-width:160px">'+_pgtoOpts(f.pagamento)+'</select>'+
+      '<button class="btn btn-primary btn-sm" onclick="atualizarPgtoRecibo()">🔄 Atualizar e gerar PDF</button>'+
+      '</div></div>'+
       '</div></div>';
     showBlock('doc');setStep(5);
     document.getElementById('blk-doc').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -3269,14 +3277,55 @@ async function emitirDoc(){
       '<div class="doc-row" style="border:none"><span class="doc-dl">Status</span><span class="doc-dv" style="color:var(--amber)">Aguardando envio prefeitura</span></div></div>'+
       '<div class="doc-total"><span style="font-size:12px;color:var(--silver2);font-weight:700">VALOR TOTAL</span>'+
       '<span style="font-size:20px;font-weight:900;color:var(--green2)">'+fmtVal(f.valor)+'</span></div></div>'+
-      '<div class="doc-ft">'+
+      '<div class="doc-ft" style="flex-direction:column;gap:8px">'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
       '<button class="btn btn-ghost" onclick="enviarWpp()">📲 WhatsApp</button>'+
       '<button class="btn btn-ghost" style="margin-left:auto" onclick="resetFlow()">⚡ Novo orçamento</button>'+
+      '</div>'+
+      '<div style="width:100%;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 14px">'+
+      '<div style="font-size:10px;color:var(--purple);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">💳 Forma de Pagamento</div>'+
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+      '<select class="fs" id="pgto-nf-sel" style="flex:1;min-width:160px">'+_pgtoOpts(f.pagamento)+'</select>'+
+      '<button class="btn btn-primary btn-sm" onclick="atualizarPgtoNF()">✅ Confirmar pagamento</button>'+
+      '</div></div>'+
       '</div></div>';
     showBlock('doc');setStep(5);
     document.getElementById('blk-doc').scrollIntoView({behavior:'smooth',block:'nearest'});
     return;
   }
+}
+
+// ════════════ HELPERS — FORMA DE PAGAMENTO (Recibo / NF) ════════════
+function _pgtoOpts(current){
+  var lista=['Pix','Dinheiro','Parcelado','Sinal de 50% / Restante 50%','Cartão Crédito','Cartão Débito','Pendente'];
+  return lista.map(function(p){
+    return '<option value="'+p+'"'+(p===current?' selected':'')+'>'+p+'</option>';
+  }).join('');
+}
+
+function atualizarPgtoRecibo(){
+  var sel=document.getElementById('pgto-rec-sel');
+  if(!sel)return;
+  var novoPgto=sel.value;
+  if(recibos.length>0){
+    recibos[0].pgto=novoPgto;
+    salvarLocal();
+    if(SUPABASE_ATIVO)sbSalvarRecibo(recibos[0]);
+  }
+  gerarPDFRecibo(0);
+}
+
+function atualizarPgtoNF(){
+  var sel=document.getElementById('pgto-nf-sel');
+  if(!sel)return;
+  var novoPgto=sel.value;
+  if(notasFiscais.length>0){
+    notasFiscais[0].pgto=novoPgto;
+    salvarLocal();
+  }
+  var el=document.getElementById('pgto-nf-sel');
+  if(el)el.style.borderColor='var(--green)';
+  setTimeout(function(){if(el)el.style.borderColor='';},1500);
 }
 
 // ════════════ PDF RECIBO (jsPDF) ════════════
