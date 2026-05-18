@@ -1353,6 +1353,24 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Texto de rodapé / observação padrão nos documentos</div>
         <textarea class="ft" id="cfg-doc-rodape" rows="2" placeholder="Ex: Qualquer dúvida estamos à disposição. Obrigado pela preferência!"></textarea></div>
       </div>
+      <!-- Logo da Empresa -->
+      <div style="margin-bottom:12px">
+        <div class="fl" style="margin-bottom:6px">🖼️ Logo da Empresa (exibida no cabeçalho dos PDFs, abaixo do nome e CNPJ)</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="cfg-doc-logo-preview" style="width:120px;height:52px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0">
+            <span id="cfg-doc-logo-empty" style="font-size:22px;opacity:.5">🖼️</span>
+            <img id="cfg-doc-logo-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">
+              📤 Carregar logo
+              <input type="file" id="cfg-doc-logo-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleLogoUpload(this)" style="display:none">
+            </label>
+            <button class="btn btn-red btn-sm" id="cfg-doc-logo-remove" onclick="removerLogo()" style="display:none;width:fit-content">🗑️ Remover logo</button>
+            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG com fundo transparente é ideal · aparece no canto superior direito dos PDFs, abaixo do nome e CNPJ</span>
+          </div>
+        </div>
+      </div>
       <!-- QR Code WhatsApp -->
       <div style="margin-bottom:12px">
         <div class="fl" style="margin-bottom:6px">📲 QR Code WhatsApp (exibido no rodapé dos PDFs)</div>
@@ -1395,7 +1413,39 @@ td.bold{color:var(--white);font-weight:700}
     </div>
   </div>
 
-  <!-- ── 3. USUÁRIOS ── -->
+  <!-- ── 3. ORDEM DOS BLOCOS DO PDF ── -->
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-hd">
+      <div class="panel-title">📄 Layout dos PDFs — Ordem dos Blocos</div>
+      <span style="font-size:10px;color:var(--silver2)">Arraste para reordenar • a ordem é respeitada na geração do PDF</span>
+    </div>
+    <div class="panel-bd">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+        <!-- ORÇAMENTO -->
+        <div>
+          <div style="font-size:10px;color:var(--blue3);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px">📋 Orçamento — Ordem dos blocos</div>
+          <div id="pdf-order-orc" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-primary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="salvarOrdemPDF('orc')">💾 Salvar ordem do Orçamento</button>
+          <button class="btn btn-ghost btn-sm" style="margin-top:6px;width:100%;justify-content:center" onclick="resetOrdemPDF('orc')">↺ Restaurar padrão</button>
+        </div>
+
+        <!-- RECIBO -->
+        <div>
+          <div style="font-size:10px;color:var(--blue3);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:10px">🧾 Recibo — Ordem dos blocos</div>
+          <div id="pdf-order-rec" style="display:flex;flex-direction:column;gap:6px"></div>
+          <button class="btn btn-primary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="salvarOrdemPDF('rec')">💾 Salvar ordem do Recibo</button>
+          <button class="btn btn-ghost btn-sm" style="margin-top:6px;width:100%;justify-content:center" onclick="resetOrdemPDF('rec')">↺ Restaurar padrão</button>
+        </div>
+
+      </div>
+      <div style="margin-top:14px;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--silver2)">
+        💡 <strong style="color:var(--blue3)">Dica:</strong> Arraste os blocos para cima ou para baixo para alterar a posição no PDF. Blocos com 🔒 são fixos (cabeçalho e rodapé). O botão <strong>👁 Ocultar</strong> remove o bloco do PDF gerado.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. USUÁRIOS ── -->
   <div class="panel" style="margin-bottom:16px">
     <div class="panel-hd">
       <div class="panel-title">👤 Usuários e Acesso</div>
@@ -3220,6 +3270,299 @@ async function emitirDoc(){
 }
 
 // ════════════ PDF RECIBO (jsPDF) ════════════
+// ════════════ ORDEM DOS BLOCOS DO PDF ════════════
+
+var PDF_BLOCOS_ORC_PADRAO = [
+  {id:'cabecalho',  label:'🏢 Cabeçalho (empresa + logo)',  fixo:true,  visivel:true},
+  {id:'titulo',     label:'📋 Título "Orçamento"',          fixo:false, visivel:true},
+  {id:'cliente',    label:'👤 Dados do cliente',            fixo:false, visivel:true},
+  {id:'servico',    label:'🔧 Serviço / Característica',    fixo:false, visivel:true},
+  {id:'valor',      label:'💰 Valor e desconto',            fixo:false, visivel:true},
+  {id:'garantia',   label:'🛡️ Garantia',                   fixo:false, visivel:true},
+  {id:'pagamento',  label:'💳 Forma de pagamento',          fixo:false, visivel:true},
+  {id:'obs',        label:'📝 Observações',                 fixo:false, visivel:true},
+  {id:'rodape',     label:'✍️ Rodapé (assinatura + QR)',    fixo:true,  visivel:true},
+];
+
+var PDF_BLOCOS_REC_PADRAO = [
+  {id:'cabecalho',  label:'🏢 Cabeçalho (empresa + logo)',  fixo:true,  visivel:true},
+  {id:'titulo',     label:'🧾 Título "RECIBO"',             fixo:false, visivel:true},
+  {id:'cliente',    label:'👤 Dados do cliente',            fixo:false, visivel:true},
+  {id:'servico',    label:'🔧 Referente a (serviço)',       fixo:false, visivel:true},
+  {id:'valor',      label:'💰 Valor recebido',              fixo:false, visivel:true},
+  {id:'garantia',   label:'🛡️ Garantia',                   fixo:false, visivel:true},
+  {id:'pagamento',  label:'💳 Forma de pagamento',          fixo:false, visivel:true},
+  {id:'rodape',     label:'✍️ Rodapé (assinatura + QR)',    fixo:true,  visivel:true},
+];
+
+function getOrdemPDF(tipo){
+  var key='ads_pdf_ordem_'+tipo;
+  try{
+    var s=localStorage.getItem(key);
+    if(s) return JSON.parse(s);
+  }catch(e){}
+  return JSON.parse(JSON.stringify(tipo==='orc'?PDF_BLOCOS_ORC_PADRAO:PDF_BLOCOS_REC_PADRAO));
+}
+
+function setOrdemPDF(tipo, blocos){
+  try{localStorage.setItem('ads_pdf_ordem_'+tipo, JSON.stringify(blocos));}catch(e){}
+}
+
+function salvarOrdemPDF(tipo){
+  var container=document.getElementById('pdf-order-'+tipo);
+  if(!container)return;
+  var items=container.querySelectorAll('[data-bloco-id]');
+  var padrao=tipo==='orc'?PDF_BLOCOS_ORC_PADRAO:PDF_BLOCOS_REC_PADRAO;
+  var nova=[];
+  items.forEach(function(el){
+    var id=el.getAttribute('data-bloco-id');
+    var orig=padrao.find(function(b){return b.id===id;})||{id:id,label:id,fixo:false,visivel:true};
+    var vis=!el.querySelector('.bloco-vis-btn')||el.querySelector('.bloco-vis-btn').getAttribute('data-vis')==='1';
+    nova.push({id:id,label:orig.label,fixo:orig.fixo,visivel:vis});
+  });
+  setOrdemPDF(tipo,nova);
+  _cfgToast('✅ Ordem do '+(tipo==='orc'?'Orçamento':'Recibo')+' salva! Próximos PDFs gerados já usam o novo layout.');
+}
+
+function resetOrdemPDF(tipo){
+  localStorage.removeItem('ads_pdf_ordem_'+tipo);
+  renderOrdemPDF(tipo);
+  _cfgToast('↺ Ordem restaurada para o padrão.');
+}
+
+function toggleBlocoVisivel(btn, tipo){
+  var vis=btn.getAttribute('data-vis')==='1';
+  vis=!vis;
+  btn.setAttribute('data-vis', vis?'1':'0');
+  btn.textContent=vis?'👁 Visível':'🙈 Oculto';
+  btn.style.color=vis?'var(--green2)':'var(--red)';
+  var row=btn.closest('[data-bloco-id]');
+  if(row) row.style.opacity=vis?'1':'0.45';
+}
+
+function renderOrdemPDF(tipo){
+  var container=document.getElementById('pdf-order-'+tipo);
+  if(!container)return;
+  var blocos=getOrdemPDF(tipo);
+  container.innerHTML='';
+  blocos.forEach(function(b){
+    var div=document.createElement('div');
+    div.setAttribute('data-bloco-id', b.id);
+    div.style.cssText='background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px;opacity:'+(b.visivel?'1':'0.45')+';transition:opacity .2s';
+    if(!b.fixo){
+      div.setAttribute('draggable','true');
+      div.style.cursor='grab';
+    }
+    var handle=document.createElement('span');
+    handle.textContent=b.fixo?'🔒':'⠿';
+    handle.style.cssText='font-size:'+(b.fixo?'13px':'18px')+';color:'+(b.fixo?'var(--silver)':'var(--silver2)')+';flex-shrink:0;line-height:1';
+    var label=document.createElement('span');
+    label.textContent=b.label;
+    label.style.cssText='flex:1;font-size:12px;font-weight:600;color:'+(b.fixo?'var(--silver)':'var(--white)');
+    div.appendChild(handle);
+    div.appendChild(label);
+    if(!b.fixo){
+      var visBtn=document.createElement('button');
+      visBtn.className='btn btn-ghost btn-sm';
+      visBtn.classList.add('bloco-vis-btn');
+      visBtn.textContent=b.visivel?'👁 Visível':'🙈 Oculto';
+      visBtn.setAttribute('data-vis', b.visivel?'1':'0');
+      visBtn.style.cssText='font-size:10px;padding:3px 8px;color:'+(b.visivel?'var(--green2)':'var(--red)');
+      visBtn.onclick=function(){toggleBlocoVisivel(visBtn,tipo);};
+      div.appendChild(visBtn);
+    }
+    container.appendChild(div);
+  });
+  // Drag-and-drop
+  _initDragDrop(container);
+}
+
+function _initDragDrop(container){
+  var dragging=null;
+  container.querySelectorAll('[draggable="true"]').forEach(function(el){
+    el.addEventListener('dragstart',function(e){
+      dragging=el;
+      el.style.opacity='0.4';
+      e.dataTransfer.effectAllowed='move';
+    });
+    el.addEventListener('dragend',function(){
+      if(dragging)dragging.style.opacity=dragging.querySelector('.bloco-vis-btn')&&dragging.querySelector('.bloco-vis-btn').getAttribute('data-vis')==='0'?'0.45':'1';
+      dragging=null;
+      container.querySelectorAll('[data-bloco-id]').forEach(function(r){r.style.borderColor='';});
+    });
+    el.addEventListener('dragover',function(e){
+      e.preventDefault();
+      e.dataTransfer.dropEffect='move';
+      if(!dragging||dragging===el)return;
+      // fixed blocks: don't allow drop before cabecalho or after rodape
+      var fixoEl=el.querySelector('span:first-child');
+      if(el.getAttribute('draggable')!=='true')return;
+      var rect=el.getBoundingClientRect();
+      var mid=rect.top+rect.height/2;
+      if(e.clientY<mid){
+        container.insertBefore(dragging, el);
+      } else {
+        container.insertBefore(dragging, el.nextSibling);
+      }
+    });
+  });
+  // Allow drop on fixed items only for visual feedback (don't reorder them)
+  container.addEventListener('dragover',function(e){e.preventDefault();});
+}
+
+function initOrdemPDFPanel(){
+  renderOrdemPDF('orc');
+  renderOrdemPDF('rec');
+}
+
+// ════════════ gerarPDF — respeita ordem dos blocos ════════════
+function gerarPDF(numOrc){
+  var f;
+  if(numOrc){
+    var o=orcamentos.find(function(x){return x.num===numOrc;});
+    if(!o){alert('Orçamento não encontrado.');return;}
+    f={numero:o.num,cliente:o.cli,tel:o.tel||'',endereco:o.end||'',
+       descricao:o.desc||o.serv||'',valor:o.val,garantia:o.gtia||'',
+       pagamento:o.pgto,data:o.data,obs:o.obs||'',desloc:o.desloc||0};
+  } else {
+    f=getFormData();
+  }
+  if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  doc.setFont('times','normal');
+  var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
+
+  var descTipoF=(document.getElementById('f-desc-tipo')||{}).value||'';
+  var descQtdF=parseFloat((document.getElementById('f-desc-qtd')||{}).value||0);
+  var descF=descTipoF==='valor'?descQtdF:(descTipoF==='perc'?f.valor*(descQtdF/100):0);
+  var valorFinal=Math.max(0,f.valor-descF);
+  var valDias=CFG.doc.validade||30;
+  var pixKey=CFG.doc.pix||'ads.pg@hotmail.com';
+  var bancoInfo=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
+  var respNome=CFG.empresa.resp||'Ananias Antonio dos Santos';
+  var pg=f.pagamento;
+
+  var blocos=getOrdemPDF('orc');
+  var y=MT;
+
+  // Cabeçalho sempre primeiro (fixo)
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8);
+  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
+  if(CFG.doc.logoB64){
+    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-42,MT+7,42,18);
+  } else {
+    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-42,MT+7,42,18);
+  }
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
+  doc.text('Orcamento N\xba '+f.numero,ML,MT);
+  doc.setTextColor(0,0,0);doc.setFontSize(9);
+  doc.text('Sao Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
+  doc.text('Validade do Orcamento: '+valDias+' dias (ate '+addDays(f.data,valDias)+')',ML,MT+13);
+  y=MT+28;
+
+  // Blocos reordenáveis
+  blocos.forEach(function(b){
+    if(b.fixo)return; // cabecalho e rodape tratados separado
+    if(!b.visivel)return;
+
+    if(b.id==='titulo'){
+      doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
+      doc.text('Orcamento',PW/2,y+18,{align:'center'});
+      doc.setTextColor(0,0,0);
+      y+=26;
+
+    } else if(b.id==='cliente'){
+      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
+      doc.setFont('helvetica','normal');doc.text(f.cliente,ML+18,y);
+      y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
+      doc.setFont('helvetica','normal');
+      var endLines=doc.splitTextToSize(f.endereco,CW-30);
+      doc.text(endLines,ML+24,y);
+      y+=endLines.length*5+6;
+
+    } else if(b.id==='servico'){
+      doc.setFont('helvetica','bold');doc.setFontSize(10);
+      doc.text('Caracteristica',ML+4,y);y+=7;
+      doc.setFont('helvetica','normal');
+      var items=f.descricao.split('\n').filter(function(l){return l.trim();});
+      items.forEach(function(it){
+        var lines=doc.splitTextToSize('- '+it.trim(),CW-12);
+        doc.text(lines,ML+7,y);y+=lines.length*6;
+      });
+      y+=2;
+
+    } else if(b.id==='valor'){
+      y+=2;doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
+      if(descF>0){
+        doc.setFont('helvetica','normal');
+        doc.text('Valor base: R$ '+f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+        doc.text('Desconto: R$ '+descF.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+      }
+      var valorFmt='R$ '+valorFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(valorFinal)+').';
+      var valorLines=doc.splitTextToSize(valorFmt,CW-6);
+      doc.setFont('helvetica',descF>0?'bold':'normal');doc.text(valorLines,ML+4,y);
+      y+=valorLines.length*6+4;
+
+    } else if(b.id==='garantia'){
+      if(f.garantia&&f.garantia.trim()&&f.garantia.trim()!=='—'){
+        doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
+        doc.line(ML,y-2,PW-MR,y-2);y+=4;
+        doc.setFont('helvetica','bold');doc.text('Garantia',ML,y);
+        doc.setFont('helvetica','normal');doc.text(' de '+f.garantia+', Contra defeito de Fabricacao.',ML+23,y);
+        y+=10;
+      }
+
+    } else if(b.id==='pagamento'){
+      doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
+      doc.line(ML,y-2,PW-MR,y-2);y+=4;
+      doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
+      doc.setFont('helvetica','normal');
+      if(pg==='Parcelado'||pg==='Sinal de 50% / Restante 50%'){
+        doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
+        doc.text('Sendo Pix '+pixKey+' ou '+bancoInfo,ML+2,y);y+=6;
+      } else if(pg==='Pix'){
+        doc.text('via Pix: '+pixKey,ML+2,y);y+=6;
+        doc.text('ou '+bancoInfo,ML+2,y);y+=6;
+      } else if(pg==='Pendente'){
+        doc.text('Pagamento Pendente — via Pix: '+pixKey,ML+2,y);y+=6;
+        doc.text('ou '+bancoInfo,ML+2,y);y+=6;
+      } else if(pg==='Dinheiro'){
+        doc.text('Pagamento em dinheiro na entrega do servico.',ML+2,y);y+=6;
+      } else {
+        doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
+      }
+      doc.text(respNome,ML+2,y);y+=6;
+
+    } else if(b.id==='obs'){
+      if(f.obs){
+        doc.setFontSize(9);doc.setTextColor(80,80,80);
+        var obsLines=doc.splitTextToSize('Obs: '+f.obs,CW);
+        doc.text(obsLines,ML+2,y);
+        doc.setTextColor(0,0,0);y+=obsLines.length*5+4;
+      }
+    }
+  });
+
+  // Rodapé sempre fixo no final
+  y+=6;
+  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+  doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
+  var fy=y-8;var sx=PW-MR-70;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
+  doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+15,fy+6,40,14);
+  doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
+  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+26,{align:'center'});
+
+  doc.save('Orcamento_ADS_'+f.numero+'_'+f.cliente.split(' ')[0]+'.pdf');
+}
+
+// ════════════ gerarPDFRecibo — respeita ordem dos blocos ════════════
 function gerarPDFRecibo(idx){
   var r=recibos[idx];
   if(!r){alert('Recibo não encontrado.');return;}
@@ -3227,189 +3570,119 @@ function gerarPDFRecibo(idx){
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
-  doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
+
+  var blocos=getOrdemPDF('rec');
+  var y=MT;
+  var pixKeyR=CFG.doc.pix||'ads.pg@hotmail.com';
+  var bancoInfoR=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
+  var respNomeR=CFG.empresa.resp||'Ananias Antonio dos Santos';
+
+  // Cabeçalho fixo
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
+  if(CFG.doc.logoB64){
+    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-42,MT+7,42,18);
+  } else {
+    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-42,MT+7,42,18);
+  }
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo '+r.num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
   doc.text('Sao Paulo, '+fmtDateLong(r.dataRaw||r.data)+'.',ML,MT+7);
-  doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
-  doc.text('RECIBO',PW/2,MT+32,{align:'center'});
-  doc.setTextColor(0,0,0);
-  var y=MT+47;
-  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Recebi de:',ML,y);
-  doc.setFont('helvetica','normal');doc.text(' '+r.cli,ML+28,y);
-  y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);
-  doc.setFont('helvetica','normal');doc.text(' '+(r.tel||''),ML+24,y);
-  y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
-  doc.setFont('helvetica','normal');
-  var endLines=doc.splitTextToSize(' '+(r.end||''),CW-30);
-  doc.text(endLines,ML+24,y);y+=endLines.length*5+4;
-  doc.setFont('helvetica','bold');doc.setFontSize(10);
-  doc.text('Referente a:',ML,y);y+=7;
-  doc.setFont('helvetica','normal');
-  var items=(r.desc||r.serv).split('\n').filter(function(l){return l.trim();});
-  items.forEach(function(it){
-    var lines=doc.splitTextToSize('- '+it.trim(),CW-12);
-    doc.text(lines,ML+7,y);y+=lines.length*6;
+  y=MT+28;
+
+  // Blocos reordenáveis
+  blocos.forEach(function(b){
+    if(b.fixo)return;
+    if(!b.visivel)return;
+
+    if(b.id==='titulo'){
+      doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
+      doc.text('RECIBO',PW/2,y+12,{align:'center'});
+      doc.setTextColor(0,0,0);
+      y+=22;
+
+    } else if(b.id==='cliente'){
+      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Recebi de:',ML,y);
+      doc.setFont('helvetica','normal');doc.text(' '+r.cli,ML+28,y);
+      y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);
+      doc.setFont('helvetica','normal');doc.text(' '+(r.tel||''),ML+24,y);
+      y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
+      doc.setFont('helvetica','normal');
+      var endLines=doc.splitTextToSize(' '+(r.end||''),CW-30);
+      doc.text(endLines,ML+24,y);y+=endLines.length*5+6;
+
+    } else if(b.id==='servico'){
+      doc.setFont('helvetica','bold');doc.setFontSize(10);
+      doc.text('Referente a:',ML,y);y+=7;
+      doc.setFont('helvetica','normal');
+      var items=(r.desc||r.serv).split('\n').filter(function(l){return l.trim();});
+      items.forEach(function(it){
+        var lines=doc.splitTextToSize('- '+it.trim(),CW-12);
+        doc.text(lines,ML+7,y);y+=lines.length*6;
+      });
+      y+=2;
+
+    } else if(b.id==='valor'){
+      var valorFmt='R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(r.val)+').';
+      if(r.descV&&r.descV>0&&r.descBase&&r.descBase>0){
+        doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
+        doc.setFont('helvetica','normal');
+        doc.text('Valor base: R$ '+r.descBase.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+        doc.text('Desconto: R$ '+r.descV.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+        var totalFmt='Total: R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(r.val)+').';
+        doc.setFont('helvetica','bold');var vLines=doc.splitTextToSize(totalFmt,CW-6);doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
+      } else {
+        doc.setFont('helvetica','bold');doc.text('Valor recebido:',ML,y);y+=6;
+        var vLines=doc.splitTextToSize(valorFmt,CW-6);
+        doc.setFont('helvetica','normal');doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
+      }
+
+    } else if(b.id==='garantia'){
+      if(r.gtia&&r.gtia.trim()&&r.gtia.trim()!=='—'){
+        doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
+        doc.setFont('helvetica','bold');doc.text('Garantia:',ML,y);
+        doc.setFont('helvetica','normal');doc.text(' '+r.gtia+', Contra defeito de Fabricacao.',ML+26,y);y+=10;
+      }
+
+    } else if(b.id==='pagamento'){
+      doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
+      doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
+      doc.setFont('helvetica','normal');
+      if(r.pgto==='Pix'){
+        doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
+        doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
+        doc.text(respNomeR,ML+2,y);y+=6;
+      } else if(r.pgto==='Pendente'){
+        doc.text('Pagamento Pendente — via Pix: '+pixKeyR,ML+2,y);y+=6;
+        doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
+        doc.text(respNomeR,ML+2,y);y+=6;
+      } else if(r.pgto==='Parcelado'||r.pgto==='Sinal de 50% / Restante 50%'){
+        doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
+        doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
+        doc.text(respNomeR,ML+2,y);y+=6;
+      } else {
+        doc.text(r.pgto,ML+2,y);y+=6;
+      }
+      doc.line(ML,y-2,PW-MR,y-2);y+=4;
+    }
   });
-  y+=4;
-  var valorFmt='R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(r.val)+').';
-  if(r.descV&&r.descV>0&&r.descBase&&r.descBase>0){
-    doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
-    doc.setFont('helvetica','normal');
-    doc.text('Valor base: R$ '+r.descBase.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
-    doc.text('Desconto: R$ '+r.descV.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
-    var totalFmt='Total: R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(r.val)+').';
-    doc.setFont('helvetica','bold');var vLines=doc.splitTextToSize(totalFmt,CW-6);doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
-  } else {
-    doc.setFont('helvetica','bold');doc.text('Valor recebido:',ML,y);y+=6;
-    var vLines=doc.splitTextToSize(valorFmt,CW-6);
-    doc.setFont('helvetica','normal');doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
-  }
-  // === GARANTIA RECIBO (somente se preenchida) ===
-  if(r.gtia&&r.gtia.trim()&&r.gtia.trim()!=='—'){
-    doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
-    doc.setFont('helvetica','bold');doc.text('Garantia:',ML,y);
-    doc.setFont('helvetica','normal');doc.text(' '+r.gtia+', Contra defeito de Fabricacao.',ML+26,y);y+=10;
-  }
-  doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
-  doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);
-  doc.setFont('helvetica','normal');doc.text(' '+r.pgto,ML+52,y);y+=10;
-  doc.line(ML,y-2,PW-MR,y-2);y+=6;
-  var fy=y+10;var sx=PW-MR-70;
+
+  // Rodapé fixo
+  var fy=y+8;var sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
-  doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
-  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+15,fy+6,40,14);
+  doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
+  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+26,{align:'center'});
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,fy+6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,fy+30);
+
   doc.save('Recibo_ADS_'+r.num+'_'+r.cli.split(' ')[0]+'.pdf');
-}
-
-// ════════════ PDF ORÇAMENTO ════════════
-function gerarPDF(){
-  var f=getFormData();
-  if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
-  var {jsPDF}=window.jspdf;
-  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  doc.setFont('times','normal'); // Times suporta acentos nativamente
-  var PW=210,ML=22,MR=20,MT=18;
-  var CW=PW-ML-MR;
-
-  // === LOGO ADS (transparente) ===
-  doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
-
-  // === HEADER ===
-  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
-  doc.setFont('helvetica','normal');doc.setFontSize(8);
-  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
-  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text('Orcamento N\xba '+f.numero,ML,MT);
-  doc.setTextColor(0,0,0);doc.setFontSize(9);
-  var valDias=CFG.doc.validade||30;
-  doc.text('Sao Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
-  doc.text('Validade do Orcamento: '+valDias+' dias (ate '+addDays(f.data,valDias)+')',ML,MT+13);
-
-  // === TÍTULO ===
-  doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
-  doc.text('Orcamento',PW/2,MT+32,{align:'center'});
-  doc.setTextColor(0,0,0);
-
-  // === CLIENTE ===
-  var y=MT+47;
-  doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
-  doc.setFont('helvetica','normal');doc.text(f.cliente,ML+18,y);
-  y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
-  doc.setFont('helvetica','normal');
-  var endLines=doc.splitTextToSize(f.endereco,CW-30);
-  doc.text(endLines,ML+24,y);
-  y+=endLines.length*5+4;
-
-  // === SERVIÇO ===
-  doc.setFont('helvetica','bold');doc.setFontSize(10);
-  doc.text('Caracteristica',ML+4,y);y+=7;
-  doc.setFont('helvetica','normal');
-  var items=f.descricao.split('\n').filter(function(l){return l.trim();});
-  items.forEach(function(it){
-    var lines=doc.splitTextToSize('- '+it.trim(),CW-12);
-    doc.text(lines,ML+7,y);
-    y+=lines.length*6;
-  });
-
-  // === VALOR ===
-  y+=4;doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
-  var descTipoF=(document.getElementById('f-desc-tipo')||{}).value||'';
-  var descQtdF=parseFloat((document.getElementById('f-desc-qtd')||{}).value||0);
-  var descF=descTipoF==='valor'?descQtdF:(descTipoF==='perc'?f.valor*(descQtdF/100):0);
-  var valorFinal=Math.max(0,f.valor-descF);
-  if(descF>0){
-    doc.setFont('helvetica','normal');
-    doc.text('Valor base: R$ '+f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
-    doc.text('Desconto: R$ '+descF.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
-  }
-  var valorFmt='R$ '+valorFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(valorFinal)+').';
-  var valorLines=doc.splitTextToSize(valorFmt,CW-6);
-  doc.setFont('helvetica',descF>0?'bold':'normal');doc.text(valorLines,ML+4,y);
-  y+=valorLines.length*6+4;
-
-  // === GARANTIA (somente se preenchida) ===
-  if(f.garantia&&f.garantia.trim()&&f.garantia.trim()!=='—'){
-    doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
-    doc.line(ML,y-2,PW-MR,y-2);y+=4;
-    doc.setFont('helvetica','bold');doc.text('Garantia',ML,y);
-    doc.setFont('helvetica','normal');doc.text(' de '+f.garantia+', Contra defeito de Fabricacao.',ML+23,y);
-    y+=10;
-  }
-
-  // === PAGAMENTO ===
-  doc.line(ML,y-2,PW-MR,y-2);y+=4;
-  doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
-  doc.setFont('helvetica','normal');
-  var pg=f.pagamento;
-  var pixKey=CFG.doc.pix||'ads.pg@hotmail.com';
-  var bancoInfo=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
-  var respNome=CFG.empresa.resp||'Ananias Antonio dos Santos';
-  if(pg==='Parcelado'||pg==='Sinal de 50% / Restante 50%'){
-    doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
-    doc.text('Sendo Pix '+pixKey+' ou '+bancoInfo,ML+2,y);y+=6;
-  } else if(pg==='Pix'){
-    doc.text('Pix: '+pixKey,ML+2,y);y+=6;
-  } else if(pg==='Dinheiro'){
-    doc.text('Pagamento em dinheiro na entrega do servico.',ML+2,y);y+=6;
-  } else {
-    doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
-  }
-  doc.text(respNome,ML+2,y);y+=4;
-  if(f.obs){y+=5;doc.setFontSize(9);doc.setTextColor(80,80,80);
-    var obsLines=doc.splitTextToSize('Obs: '+f.obs,CW);
-    doc.text(obsLines,ML+2,y);
-    doc.setTextColor(0,0,0);y+=obsLines.length*5;}
-
-  // === QR CODE + TELEFONE (canto inferior esquerdo) ===
-  y+=10;
-  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
-  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
-
-  // === ASSINATURA (linha inferior direita) ===
-  var fy=y-8;
-  var sx=PW-MR-70;
-  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
-  doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
-  doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
-  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+30,{align:'center'});
-
-  doc.save('Orcamento_ADS_'+f.numero+'_'+f.cliente.split(' ')[0]+'.pdf');
 }
 
 // ════════════ PREVIEW PDF ════════════
@@ -4029,7 +4302,7 @@ async function nofSalvarGerarPDF(){
   document.getElementById('f-valor').value=valorFinal;
   document.getElementById('f-gtia').value=gtia;
   document.getElementById('f-obs').value=obs;
-  setTimeout(function(){_gerarPDFOriginal();},150);
+  setTimeout(function(){gerarPDF();},150);
   alert('✅ Orçamento #'+num+' salvo! PDF sendo gerado.');
   renderOrcTable();
 }
@@ -4250,7 +4523,7 @@ function salvarEGerarPDFOrc(){
   salvarLocal();
   atualizarContadores();
   // Gera PDF do orçamento
-  _gerarPDFOriginal();
+  gerarPDF();
   // Mostra confirmação
   var docRender=document.getElementById('doc-render');
   if(docRender){
@@ -5214,10 +5487,6 @@ var _gerarPDFByNum=function(num){
   },300);
 };
 
-// Override gerarPDF to handle both cases
-var _gerarPDFOriginal=gerarPDF;
-gerarPDF=function(num){if(num){_gerarPDFByNum(num);}else{_gerarPDFOriginal();}};
-
 // ════════════ MENU MOBILE ════════════
 function toggleMenu(){
   var s=document.querySelector('.sidebar');
@@ -5278,7 +5547,7 @@ var USUARIOS=[
 // ════════════ CONFIGURAÇÕES DO SISTEMA ════════════
 var CFG = {
   empresa:{nome:'ADS Portões Automáticos',cnpj:'20.989.538/0001-88',tel:'(11) 96770-4116',email:'ads.pg@hotmail.com',end:'São Paulo / SP',resp:'Ananias Santos',cargo:'Técnico Responsável'},
-  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:'',sigB64:''}
+  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:'',sigB64:'',logoB64:''}
 };
 function salvarCFG(){try{localStorage.setItem('ads_cfg',JSON.stringify(CFG));localStorage.setItem('ads_usuarios',JSON.stringify(USUARIOS));}catch(e){}}
 function carregarCFG(){
@@ -6341,6 +6610,7 @@ function renderConfiguracoes(){
   carregarConfiguracoes();
   renderTabelaUsuarios();
   renderResumoDados();
+  initOrdemPDFPanel();
 }
 
 function carregarConfiguracoes(){
@@ -6375,6 +6645,15 @@ function carregarConfiguracoes(){
     if(d.sigB64){sigImg.src=d.sigB64;sigImg.style.display='block';sigEmpty.style.display='none';sigRemove.style.display='';}
     else{sigImg.src='';sigImg.style.display='none';sigEmpty.style.display='';sigRemove.style.display='none';}
   }
+  // Logo preview
+  window._logoPendente=undefined;
+  var logoImg=document.getElementById('cfg-doc-logo-img');
+  var logoEmpty=document.getElementById('cfg-doc-logo-empty');
+  var logoRemove=document.getElementById('cfg-doc-logo-remove');
+  if(logoImg&&logoEmpty&&logoRemove){
+    if(d.logoB64){logoImg.src=d.logoB64;logoImg.style.display='block';logoEmpty.style.display='none';logoRemove.style.display='';}
+    else{logoImg.src='';logoImg.style.display='none';logoEmpty.style.display='';logoRemove.style.display='none';}
+  }
 }
 function _cfgSet(id,val){var el=document.getElementById(id);if(el)el.value=val||'';}
 function _cfgGet(id){var el=document.getElementById(id);return el?(el.value||'').trim():'';}
@@ -6394,6 +6673,7 @@ function salvarDadosEmpresa(){
 function salvarPadraoDocumentos(){
   var qrVal=(typeof window._qrPendente!=='undefined')?window._qrPendente:(CFG.doc.qrWpp||'');
   var sigVal=(typeof window._sigPendente!=='undefined')?window._sigPendente:(CFG.doc.sigB64||'');
+  var logoVal=(typeof window._logoPendente!=='undefined')?window._logoPendente:(CFG.doc.logoB64||'');
   CFG.doc={
     validade:parseInt(_cfgGet('cfg-doc-validade'))||30,
     garantia:_cfgGet('cfg-doc-garantia'),
@@ -6402,10 +6682,12 @@ function salvarPadraoDocumentos(){
     banco:_cfgGet('cfg-doc-banco'),
     rodape:_cfgGet('cfg-doc-rodape'),
     qrWpp:qrVal,
-    sigB64:sigVal
+    sigB64:sigVal,
+    logoB64:logoVal
   };
   window._qrPendente=undefined;
   window._sigPendente=undefined;
+  window._logoPendente=undefined;
   salvarCFG();
   sbSalvarCFG('doc', CFG.doc);
   _cfgToast('✅ Padrão dos documentos salvo! Novos orçamentos e recibos já aplicam as configurações.');
@@ -6467,6 +6749,35 @@ function removerSig(){
   if(sigEmpty)sigEmpty.style.display='';
   if(sigRemove)sigRemove.style.display='none';
   if(sigFile)sigFile.value='';
+}
+
+function handleLogoUpload(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>3*1024*1024){alert('Imagem muito grande. Use uma imagem menor que 3 MB.');input.value='';return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var b64=e.target.result;
+    window._logoPendente=b64;
+    var logoImg=document.getElementById('cfg-doc-logo-img');
+    var logoEmpty=document.getElementById('cfg-doc-logo-empty');
+    var logoRemove=document.getElementById('cfg-doc-logo-remove');
+    if(logoImg){logoImg.src=b64;logoImg.style.display='block';}
+    if(logoEmpty)logoEmpty.style.display='none';
+    if(logoRemove)logoRemove.style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removerLogo(){
+  window._logoPendente='';
+  var logoImg=document.getElementById('cfg-doc-logo-img');
+  var logoEmpty=document.getElementById('cfg-doc-logo-empty');
+  var logoRemove=document.getElementById('cfg-doc-logo-remove');
+  var logoFile=document.getElementById('cfg-doc-logo-file');
+  if(logoImg){logoImg.src='';logoImg.style.display='none';}
+  if(logoEmpty)logoEmpty.style.display='';
+  if(logoRemove)logoRemove.style.display='none';
+  if(logoFile)logoFile.value='';
 }
 
 function _getImgFmt(b64){
