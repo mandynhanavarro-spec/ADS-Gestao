@@ -2449,13 +2449,14 @@ function ativarSincronizacaoRealtime() {
 }
 
 // ── SALVAR TEMPLATE ──────────────────────────────────────────
-async function sbSalvarTemplate(t) {
+async function sbSalvarTemplate(t, ordem) {
   if (!SUPABASE_ATIVO) return;
   const payload = {
     nome: t.nm, descricao: t.desc, valor: t.val,
     garantia: t.gtia, pagamento: t.pgto,
     icone: t.ic, categoria: t.cat
   };
+  if (typeof ordem === 'number') payload.ordem = ordem;
   try {
     if (t.sbId) {
       // Registro existente: UPDATE direto pelo id do banco
@@ -2468,6 +2469,19 @@ async function sbSalvarTemplate(t) {
       else if (data) t.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar template:', e); }
+}
+
+// Salva a ordem de todos os templates no Supabase após reordenação
+async function sbSalvarOrdemTemplates() {
+  if (!SUPABASE_ATIVO) return;
+  try {
+    for (var _oi = 0; _oi < templates.length; _oi++) {
+      var _ot = templates[_oi];
+      if (_ot.sbId) {
+        await sb.from('templates').update({ordem: _oi}).eq('id', _ot.sbId);
+      }
+    }
+  } catch(e) { console.warn('Erro ao salvar ordem dos templates:', e); }
 }
 
 async function sbDeletarTemplate(sbId) {
@@ -2780,6 +2794,7 @@ function renderTplManage(){
       var moved=templates.splice(fromIdx,1)[0];
       templates.splice(toIdx,0,moved);
       salvarLocal();
+      sbSalvarOrdemTemplates();
       renderTemplates();
       renderTplManage();
     });
@@ -2846,6 +2861,7 @@ function _tplInitTouchDrag(grid){
           var moved=templates.splice(touchFromIdx,1)[0];
           templates.splice(toIdx,0,moved);
           salvarLocal();
+          sbSalvarOrdemTemplates();
           renderTemplates();
           renderTplManage();
           return;
@@ -4054,7 +4070,6 @@ function nrProxServico(){
       d.className='tpl-card '+t.cat;
       d.innerHTML='<div class="tpl-ic">'+t.ic+'</div>'+
         '<div class="tpl-nm">'+t.nm+'</div>'+
-        '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
         '<div class="tpl-gt">Gtia: '+t.gtia+'</div>';
       d.onclick=(function(tt){return function(){
         g.querySelectorAll('.tpl-card').forEach(function(c){c.classList.remove('sel');});
@@ -4339,7 +4354,6 @@ function nofProxServico(){
       var d=document.createElement('div');
       d.className='tpl-card '+t.cat;
       d.innerHTML='<div class="tpl-ic">'+t.ic+'</div><div class="tpl-nm">'+t.nm+'</div>'+
-        '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
         '<div class="tpl-gt">Gtia: '+t.gtia+'</div>';
       d.onclick=(function(tt){return function(){
         g.querySelectorAll('.tpl-card').forEach(function(c){c.classList.remove('sel');});
@@ -5584,11 +5598,11 @@ async function saveTpl(){
     // Preservar sbId do registro original para UPDATE correto no Supabase
     if(idx>=0){t.sbId=templates[idx].sbId;templates[idx]=t;}
     else templates.push(t);
-    await sbSalvarTemplate(t);
+    await sbSalvarTemplate(t, idx>=0?idx:templates.length-1);
   } else {
     t.id=Date.now();
     templates.push(t);
-    await sbSalvarTemplate(t);
+    await sbSalvarTemplate(t, templates.length-1);
   }
   closeTplModal();
   salvarLocal();
