@@ -222,6 +222,13 @@ td.bold{color:var(--white);font-weight:700}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
 
+/* DRAG & DROP — templates */
+.tpl-drag-handle{position:absolute;top:6px;left:6px;cursor:grab;color:var(--silver);font-size:13px;opacity:0;transition:opacity .15s;line-height:1;padding:2px 3px;border-radius:4px;user-select:none}
+.tpl-manage-card:hover .tpl-drag-handle{opacity:1}
+.tpl-manage-card.dragging{opacity:.4;border-style:dashed;transform:scale(.97)}
+.tpl-manage-card.drag-over{border-color:var(--blue2)!important;background:rgba(37,99,235,.18)!important;box-shadow:0 0 0 2px var(--blue2)}
+.tpl-drag-hint{font-size:10px;color:var(--silver);display:flex;align-items:center;gap:5px;margin-bottom:10px;padding:6px 10px;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:7px;width:fit-content}
+
 /* MOBILE */
 .hamburger{display:none;background:none;border:none;color:var(--white);font-size:22px;cursor:pointer;padding:0 4px;line-height:1}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200}
@@ -559,6 +566,7 @@ td.bold{color:var(--white);font-weight:700}
       <button class="btn btn-ghost btn-sm" onclick="abrirSerrRec()">🧾 Novo Recibo Serralheria</button>
     </div>
   </div>
+  <div class="tpl-drag-hint" id="tpl-drag-hint" style="display:none">⠿ Arraste pelo ícone para reordenar os templates</div>
   <div class="tpl-grid" id="tpl-manage-render"></div>
 </div>
 
@@ -2690,22 +2698,35 @@ function renderTemplates(){
   g.appendChild(add);
 }
 
-// ════════════ RENDER TEMPLATES (gerenciar) ════════════
+// ════════════ RENDER TEMPLATES (gerenciar) — com drag-and-drop ════════════
+var _tplDragSrc = null; // card sendo arrastado
+
 function renderTplManage(){
   var g=document.getElementById('tpl-manage-render');
   if(!g)return;
   g.innerHTML='';
-  templates.forEach(function(t){
+
+  // Mostra/oculta dica de arrastar conforme quantidade de templates
+  var hint=document.getElementById('tpl-drag-hint');
+  if(hint)hint.style.display=templates.length>1?'flex':'none';
+
+  templates.forEach(function(t,i){
     var d=document.createElement('div');
-    d.className='tpl-card '+t.cat;
-    d.style.cursor='default';
-    d.innerHTML='<div class="tpl-ic">'+t.ic+'</div>'+
+    d.className='tpl-card tpl-manage-card '+t.cat;
+    d.style.cssText='cursor:default;position:relative';
+    d.draggable=true;
+    d.dataset.tplIdx=i;
+
+    d.innerHTML=
+      '<div class="tpl-drag-handle" title="Arrastar para reordenar">⠿</div>'+
+      '<div class="tpl-ic" style="margin-top:4px">'+t.ic+'</div>'+
       '<div class="tpl-nm">'+t.nm+'</div>'+
       '<div class="tpl-gt">Gtia: '+t.gtia+'</div>'+
       '<div style="margin-top:8px;display:flex;gap:5px">'+
         '<button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 6px">✏️ Editar</button>'+
         '<button class="btn btn-red btn-sm" style="padding:4px 8px">🗑</button>'+
       '</div>';
+
     var btns=d.querySelectorAll('button');
     (function(tref){
       btns[0].onclick=function(e){e.stopPropagation();editTpl(tref.id);};
@@ -2722,13 +2743,117 @@ function renderTplManage(){
         renderTplManage();
       };
     })(t);
+
+    // ── Drag events ──
+    d.addEventListener('dragstart',function(e){
+      // Só inicia drag se o alvo for a alça ou o card em si (não os botões)
+      if(e.target.tagName==='BUTTON'){e.preventDefault();return;}
+      _tplDragSrc=d;
+      d.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain',i);
+    });
+    d.addEventListener('dragend',function(){
+      d.classList.remove('dragging');
+      g.querySelectorAll('.tpl-manage-card').forEach(function(c){c.classList.remove('drag-over');});
+      _tplDragSrc=null;
+    });
+    d.addEventListener('dragover',function(e){
+      e.preventDefault();
+      e.dataTransfer.dropEffect='move';
+      if(_tplDragSrc&&_tplDragSrc!==d){
+        g.querySelectorAll('.tpl-manage-card').forEach(function(c){c.classList.remove('drag-over');});
+        d.classList.add('drag-over');
+      }
+    });
+    d.addEventListener('dragleave',function(){
+      d.classList.remove('drag-over');
+    });
+    d.addEventListener('drop',function(e){
+      e.preventDefault();
+      d.classList.remove('drag-over');
+      if(!_tplDragSrc||_tplDragSrc===d)return;
+      var fromIdx=parseInt(_tplDragSrc.dataset.tplIdx);
+      var toIdx=parseInt(d.dataset.tplIdx);
+      if(isNaN(fromIdx)||isNaN(toIdx)||fromIdx===toIdx)return;
+      // Reordena o array
+      var moved=templates.splice(fromIdx,1)[0];
+      templates.splice(toIdx,0,moved);
+      salvarLocal();
+      renderTemplates();
+      renderTplManage();
+    });
+
     g.appendChild(d);
   });
+
   var add=document.createElement('div');
   add.className='tpl-add';
   add.innerHTML='<span style="font-size:22px">+</span><span style="font-size:11px;font-weight:700">Novo template</span>';
   add.onclick=openTplModal;
   g.appendChild(add);
+
+  // ── Suporte touch (mobile) ──
+  _tplInitTouchDrag(g);
+}
+
+// Touch drag-and-drop para mobile
+function _tplInitTouchDrag(grid){
+  var cards=Array.from(grid.querySelectorAll('.tpl-manage-card'));
+  var touchSrc=null,touchClone=null,touchFromIdx=-1,touchOverCard=null;
+
+  cards.forEach(function(card){
+    var handle=card.querySelector('.tpl-drag-handle');
+    if(!handle)return;
+
+    handle.addEventListener('touchstart',function(e){
+      e.preventDefault();
+      touchSrc=card;
+      touchFromIdx=parseInt(card.dataset.tplIdx);
+      card.classList.add('dragging');
+      // Cria clone visual
+      touchClone=card.cloneNode(true);
+      touchClone.style.cssText='position:fixed;opacity:.85;pointer-events:none;z-index:9999;width:'+card.offsetWidth+'px;transform:scale(1.04);transition:none;border:1.5px solid var(--blue2)';
+      document.body.appendChild(touchClone);
+      var t=e.touches[0];
+      touchClone.style.left=(t.clientX-card.offsetWidth/2)+'px';
+      touchClone.style.top=(t.clientY-card.offsetHeight/2)+'px';
+    },{passive:false});
+
+    handle.addEventListener('touchmove',function(e){
+      e.preventDefault();
+      if(!touchSrc||!touchClone)return;
+      var t=e.touches[0];
+      touchClone.style.left=(t.clientX-touchSrc.offsetWidth/2)+'px';
+      touchClone.style.top=(t.clientY-touchSrc.offsetHeight/2)+'px';
+      // Encontra card sob o dedo
+      touchClone.style.display='none';
+      var el=document.elementFromPoint(t.clientX,t.clientY);
+      touchClone.style.display='';
+      var overCard=el?el.closest('.tpl-manage-card'):null;
+      if(touchOverCard&&touchOverCard!==overCard)touchOverCard.classList.remove('drag-over');
+      if(overCard&&overCard!==touchSrc){overCard.classList.add('drag-over');touchOverCard=overCard;}
+    },{passive:false});
+
+    handle.addEventListener('touchend',function(e){
+      e.preventDefault();
+      if(touchClone){touchClone.remove();touchClone=null;}
+      if(touchSrc)touchSrc.classList.remove('dragging');
+      if(touchOverCard){
+        touchOverCard.classList.remove('drag-over');
+        var toIdx=parseInt(touchOverCard.dataset.tplIdx);
+        if(!isNaN(toIdx)&&toIdx!==touchFromIdx){
+          var moved=templates.splice(touchFromIdx,1)[0];
+          templates.splice(toIdx,0,moved);
+          salvarLocal();
+          renderTemplates();
+          renderTplManage();
+          return;
+        }
+      }
+      touchSrc=null;touchClone=null;touchFromIdx=-1;touchOverCard=null;
+    },{passive:false});
+  });
 }
 
 // ════════════ RENDER CLIENTS (acesso rápido) ════════════
@@ -3629,10 +3754,14 @@ function gerarPDF(numOrc){
 
     } else if(b.id==='obs'){
       if(f.obs){
-        doc.setFontSize(10);doc.setTextColor(80,80,80);
-        var obsLines=doc.splitTextToSize('Obs: '+f.obs,CW);
+        doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
+        doc.line(ML,y-2,PW-MR,y-2);y+=4;
+        doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(0,0,0);
+        doc.text('Observa\xe7\xf5es:',ML,y);y+=6;
+        doc.setFont('helvetica','normal');
+        var obsLines=doc.splitTextToSize(f.obs,CW-4);
         doc.text(obsLines,ML+2,y);
-        doc.setTextColor(0,0,0);y+=obsLines.length*6+4;
+        y+=obsLines.length*6+4;
       }
     }
   });
@@ -3806,7 +3935,7 @@ function previewPDF(){
       <hr style="border:none;border-top:1px solid #ccc;margin:8px 0">
       <div style="font-weight:bold;font-size:13px;margin-bottom:4px">Forma de Pagamento:</div>
       <div style="font-size:13px;margin-left:10px;margin-bottom:${f.obs?'6px':'20px'}">${pgtoTxt}</div>
-      ${f.obs?'<div style="font-size:11px;color:#555;font-style:italic;margin-bottom:20px">Obs: '+f.obs+'</div>':''}
+      ${f.obs?'<hr style="border:none;border-top:1px solid #ccc;margin:8px 0"><div style="font-size:13px;font-weight:bold;margin-bottom:3px">Observa&#xE7;&#xF5;es:</div><div style="font-size:13px;margin-left:10px;margin-bottom:20px">'+f.obs+'</div>':''}
       <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px">
         <div>
           ${CFG.doc.qrWpp?'<img src="'+CFG.doc.qrWpp+'" style="width:70px;height:70px;border-radius:4px">':''}
@@ -6294,7 +6423,7 @@ function gerarPDFSerrOrc(){
   else if(pgto==='Dinheiro'){doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;}
   else {doc.text('Pagamento via '+pgto+'.',ML+2,y);y+=6;}
   doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
-  if(obs){y+=5;doc.setFontSize(10);doc.setTextColor(80,80,80);var ol=doc.splitTextToSize('Obs: '+obs,CW);doc.text(ol,ML+2,y);doc.setTextColor(0,0,0);y+=ol.length*6;}
+  if(obs){doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y+3,PW-MR,y+3);y+=8;doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(0,0,0);doc.text('Observa\xe7\xf5es:',ML,y);y+=6;doc.setFont('helvetica','normal');var ol=doc.splitTextToSize(obs,CW-4);doc.text(ol,ML+2,y);y+=ol.length*6;}
   y+=10;
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);doc.text('(11) 96770-4116',ML,y+18);
