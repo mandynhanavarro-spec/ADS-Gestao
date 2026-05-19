@@ -4813,17 +4813,28 @@ function salvarEGerarPDFOrc(){
   // Salva orçamento com status pendente
   var oExist=orcamentos.find(function(o){return o.num===f.numero;});
   var matTotais=getOrcMatTotais();
+  // Coleta a lista de peças para salvar junto ao orçamento
+  var matEditSalvo=orcMatLinhas.map(function(rowId){
+    var selEl=document.getElementById('sel-'+rowId);
+    var qtdEl=document.getElementById('qtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
       gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,
-      custoPecas:matTotais.custo});
+      custoPecas:matTotais.custo,matEdit:matEditSalvo});
   } else {
     orcamentos.unshift({
       num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
       gtia:f.garantia,pgto:f.pagamento,status:'pendente',data:f.data,
-      obs:f.obs,custoPecas:matTotais.custo
+      obs:f.obs,custoPecas:matTotais.custo,matEdit:matEditSalvo
     });
   }
   salvarLocal();
