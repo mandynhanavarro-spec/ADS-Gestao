@@ -3656,9 +3656,9 @@ function gerarPDF(numOrc){
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   if(CFG.doc.logoB64){
-    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+7,55,24);
+    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);
   } else {
-    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+7,55,24);
+    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);
   }
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Or\xe7amento N\xba '+f.numero,ML,MT);
@@ -3803,9 +3803,9 @@ function gerarPDFRecibo(idx){
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   if(CFG.doc.logoB64){
-    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+7,55,24);
+    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);
   } else {
-    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+7,55,24);
+    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);
   }
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo '+r.num,ML,MT);
@@ -6309,7 +6309,7 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
-  doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
+  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);}else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);}
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
@@ -6383,7 +6383,7 @@ function gerarPDFSerrOrc(){
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
-  doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
+  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);}else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);}
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
