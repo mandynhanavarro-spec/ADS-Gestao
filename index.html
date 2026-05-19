@@ -3656,9 +3656,9 @@ function gerarPDF(numOrc){
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   if(CFG.doc.logoB64){
-    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);
+    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+8,55,55);
   } else {
-    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);
+    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+8,55,55);
   }
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Or\xe7amento N\xba '+f.numero,ML,MT);
@@ -3775,7 +3775,7 @@ function gerarPDF(numOrc){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+15,fy+6,40,14);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+20,fy+6,30,12);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
   doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+26,{align:'center'});
 
@@ -3803,9 +3803,9 @@ function gerarPDFRecibo(idx){
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   if(CFG.doc.logoB64){
-    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);
+    doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+8,55,55);
   } else {
-    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);
+    doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+8,55,55);
   }
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo '+r.num,ML,MT);
@@ -3895,7 +3895,7 @@ function gerarPDFRecibo(idx){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+15,fy+6,40,14);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+20,fy+6,30,12);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
   doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+26,{align:'center'});
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,fy+6,22,22);}
@@ -6309,7 +6309,7 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
-  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);}else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);}
+  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+8,55,55);}else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+8,55,55);}
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
@@ -6335,9 +6335,17 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   doc.setTextColor(0,0,0);y+=20;
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
   doc.text('S\xe3o Paulo, '+fmtDateLong(r.dataRaw||new Date().toISOString().split('T')[0])+'.',ML,y);
-  y+=10;doc.setDrawColor(0,0,0);doc.line(ML,y,ML+70,y);y+=4;
-  doc.setFontSize(8);doc.text('ADS Port\xf5es Autom\xe1ticos',ML,y);
-  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),ML,y+3,35,14);
+  y+=8;
+  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+  doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
+  var fy=y-8;var sx=PW-MR-70;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
+  doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+20,fy+6,30,12);
+  doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
+  doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+26,{align:'center'});
   doc.save('recibo_serralheria_'+r.num.replace('#','')+'.pdf');
 }
 
@@ -6383,7 +6391,7 @@ function gerarPDFSerrOrc(){
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
-  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT,55,55);}else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT,55,55);}
+  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+8,55,55);}else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+8,55,55);}
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
@@ -6431,7 +6439,7 @@ function gerarPDFSerrOrc(){
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
-  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+20,fy+6,30,12);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
   doc.text('Ananias Santos',sx+35,fy+30,{align:'center'});
   doc.save('OrcSerralheria_ADS_'+num+'_'+cli.split(' ')[0]+'.pdf');
