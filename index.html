@@ -4319,13 +4319,43 @@ function adicionarLinhaMatRec(){
   if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
   var div=document.createElement('div');
   div.id=rowId;
-  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
-  div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatRec()" id="nrsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
-    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="nrqtd-'+rowId+'" oninput="recalcMatRec()">'+
-    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="nrsub-'+rowId+'">R$ 0,00</span>'+
-    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatRec(\''+rowId+'\')">✕</button>';
+  div.style.cssText='margin-bottom:8px';
+  div.innerHTML=
+    '<div style="display:flex;gap:6px;align-items:center">'+
+      '<select class="fs" style="flex:2" onchange="nrAutoFillEdit(\''+rowId+'\')" id="nrsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+      '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="nrqtd-'+rowId+'" oninput="recalcMatRec()">'+
+      '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="nrsub-'+rowId+'">R$ 0,00</span>'+
+      '<button class="btn btn-ghost btn-sm" style="padding:3px 7px;flex-shrink:0;font-size:12px;border-color:rgba(59,130,246,.4);color:var(--blue3)" title="Editar custo/venda desta peça" onclick="nrToggleEditMat(\''+rowId+'\')">✏️</button>'+
+      '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatRec(\''+rowId+'\')">✕</button>'+
+    '</div>'+
+    '<div id="nredit-'+rowId+'" style="display:none;margin-top:5px;background:rgba(37,99,235,.07);border:1px solid rgba(59,130,246,.25);border-radius:7px;padding:8px 10px">'+
+      '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
+        '<input class="fi" type="number" step="0.01" min="0" id="nrcusto-'+rowId+'" placeholder="0,00" oninput="recalcMatRec()"></div>'+
+        '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
+        '<input class="fi" type="number" step="0.01" min="0" id="nrvenda-'+rowId+'" placeholder="0,00" oninput="recalcMatRec()"></div>'+
+      '</div>'+
+    '</div>';
   document.getElementById('nr-mat-linhas').appendChild(div);
   nrMatLinhas.push(rowId);
+  recalcMatRec();
+}
+
+function nrToggleEditMat(rowId){
+  var el=document.getElementById('nredit-'+rowId);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function nrAutoFillEdit(rowId){
+  var selEl=document.getElementById('nrsel-'+rowId);
+  if(!selEl)return;
+  var matId=parseInt(selEl.value);
+  var m=materiais.find(function(x){return x.id===matId;});
+  var cEl=document.getElementById('nrcusto-'+rowId);
+  var vEl=document.getElementById('nrvenda-'+rowId);
+  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   recalcMatRec();
 }
 
@@ -4345,8 +4375,12 @@ function recalcMatRec(){
     var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
     if(!matId||isNaN(qtd)||qtd<1)return;
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
-    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
-    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+    var custoOverEl=document.getElementById('nrcusto-'+rowId);
+    var vendaOverEl=document.getElementById('nrvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
+    if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
   var cEl=document.getElementById('nr-mat-custo');var vEl=document.getElementById('nr-mat-venda');
   if(cEl)cEl.textContent=fmtVal(totalCusto);
@@ -4361,7 +4395,11 @@ function getNrMatTotais(){
     var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
     if(!matId||isNaN(qtd)||qtd<1)return;
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
-    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
+    var custoOverEl=document.getElementById('nrcusto-'+rowId);
+    var vendaOverEl=document.getElementById('nrvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
   });
   return{custo:totalCusto,venda:totalVenda};
 }
@@ -4404,7 +4442,11 @@ async function nrEmitirRecibo(){
     var qtd=parseFloat(qtdEl.value||1);
     if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
     var m=materiais.find(function(x){return x.id===matId;});
-    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+    var custoOverEl=document.getElementById('nrcusto-'+rowId);
+    var vendaOverEl=document.getElementById('nrvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec};
   recibos.unshift(recibo);
@@ -4569,13 +4611,43 @@ function adicionarLinhaMatNof(){
   if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
   var div=document.createElement('div');
   div.id=rowId;
-  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
-  div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatNof()" id="nofsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
-    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="nofqtd-'+rowId+'" oninput="recalcMatNof()">'+
-    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="nofsub-'+rowId+'">R$ 0,00</span>'+
-    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatNof(\''+rowId+'\')">✕</button>';
+  div.style.cssText='margin-bottom:8px';
+  div.innerHTML=
+    '<div style="display:flex;gap:6px;align-items:center">'+
+      '<select class="fs" style="flex:2" onchange="nofAutoFillEdit(\''+rowId+'\')" id="nofsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+      '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="nofqtd-'+rowId+'" oninput="recalcMatNof()">'+
+      '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="nofsub-'+rowId+'">R$ 0,00</span>'+
+      '<button class="btn btn-ghost btn-sm" style="padding:3px 7px;flex-shrink:0;font-size:12px;border-color:rgba(59,130,246,.4);color:var(--blue3)" title="Editar custo/venda desta peça" onclick="nofToggleEditMat(\''+rowId+'\')">✏️</button>'+
+      '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatNof(\''+rowId+'\')">✕</button>'+
+    '</div>'+
+    '<div id="nofedit-'+rowId+'" style="display:none;margin-top:5px;background:rgba(37,99,235,.07);border:1px solid rgba(59,130,246,.25);border-radius:7px;padding:8px 10px">'+
+      '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
+        '<input class="fi" type="number" step="0.01" min="0" id="nofcusto-'+rowId+'" placeholder="0,00" oninput="recalcMatNof()"></div>'+
+        '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
+        '<input class="fi" type="number" step="0.01" min="0" id="nofvenda-'+rowId+'" placeholder="0,00" oninput="recalcMatNof()"></div>'+
+      '</div>'+
+    '</div>';
   document.getElementById('nof-mat-linhas').appendChild(div);
   nofMatLinhas.push(rowId);
+  recalcMatNof();
+}
+
+function nofToggleEditMat(rowId){
+  var el=document.getElementById('nofedit-'+rowId);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function nofAutoFillEdit(rowId){
+  var selEl=document.getElementById('nofsel-'+rowId);
+  if(!selEl)return;
+  var matId=parseInt(selEl.value);
+  var m=materiais.find(function(x){return x.id===matId;});
+  var cEl=document.getElementById('nofcusto-'+rowId);
+  var vEl=document.getElementById('nofvenda-'+rowId);
+  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   recalcMatNof();
 }
 
@@ -4593,8 +4665,12 @@ function recalcMatNof(){
     var matId=parseInt(selEl.value);var qtd=parseFloat(qtdEl.value||1);
     if(!matId||isNaN(qtd)||qtd<1)return;
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
-    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
-    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+    var custoOverEl=document.getElementById('nofcusto-'+rowId);
+    var vendaOverEl=document.getElementById('nofvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
+    if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
   var cEl=document.getElementById('nof-mat-custo');var vEl=document.getElementById('nof-mat-venda');
   if(cEl)cEl.textContent=fmtVal(totalCusto);
@@ -4753,7 +4829,11 @@ async function nofSalvarGerarPDF(){
     var qtd=parseFloat(qtdEl.value||1);
     if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
     var m=materiais.find(function(x){return x.id===matId;});
-    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+    var custoOverEl=document.getElementById('nofcusto-'+rowId);
+    var vendaOverEl=document.getElementById('nofvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva orçamento
   var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
@@ -6600,13 +6680,43 @@ function serrAdicionarMat(){
   }).join('');
   if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
   var div=document.createElement('div');
-  div.id=rowId;div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
-  div.innerHTML='<select class="fs" style="flex:2" onchange="serrRecalcMat()" id="serrsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
-    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="serrqtd-'+rowId+'" oninput="serrRecalcMat()">'+
-    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="serrsub-'+rowId+'">R$ 0,00</span>'+
-    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="serrRemoverMat(\''+rowId+'\')">✕</button>';
+  div.id=rowId;div.style.cssText='margin-bottom:8px';
+  div.innerHTML=
+    '<div style="display:flex;gap:6px;align-items:center">'+
+      '<select class="fs" style="flex:2" onchange="serrAutoFillEdit(\''+rowId+'\')" id="serrsel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+      '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="serrqtd-'+rowId+'" oninput="serrRecalcMat()">'+
+      '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="serrsub-'+rowId+'">R$ 0,00</span>'+
+      '<button class="btn btn-ghost btn-sm" style="padding:3px 7px;flex-shrink:0;font-size:12px;border-color:rgba(59,130,246,.4);color:var(--blue3)" title="Editar custo/venda desta peça" onclick="serrToggleEditMat(\''+rowId+'\')">✏️</button>'+
+      '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="serrRemoverMat(\''+rowId+'\')">✕</button>'+
+    '</div>'+
+    '<div id="serredit-'+rowId+'" style="display:none;margin-top:5px;background:rgba(37,99,235,.07);border:1px solid rgba(59,130,246,.25);border-radius:7px;padding:8px 10px">'+
+      '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
+        '<input class="fi" type="number" step="0.01" min="0" id="serrcusto-'+rowId+'" placeholder="0,00" oninput="serrRecalcMat()"></div>'+
+        '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
+        '<input class="fi" type="number" step="0.01" min="0" id="serrvenda-'+rowId+'" placeholder="0,00" oninput="serrRecalcMat()"></div>'+
+      '</div>'+
+    '</div>';
   document.getElementById('serr-mat-linhas').appendChild(div);
   SERR.matLinhas.push(rowId);
+  serrRecalcMat();
+}
+
+function serrToggleEditMat(rowId){
+  var el=document.getElementById('serredit-'+rowId);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function serrAutoFillEdit(rowId){
+  var selEl=document.getElementById('serrsel-'+rowId);
+  if(!selEl)return;
+  var matId=parseInt(selEl.value);
+  var m=materiais.find(function(x){return x.id===matId;});
+  var cEl=document.getElementById('serrcusto-'+rowId);
+  var vEl=document.getElementById('serrvenda-'+rowId);
+  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   serrRecalcMat();
 }
 
@@ -6626,8 +6736,12 @@ function serrRecalcMat(){
     var matId=parseInt(selEl.value);var qtd=parseInt(qtdEl.value||1);
     if(!matId||isNaN(qtd)||qtd<1)return;
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
-    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
-    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+    var custoOverEl=document.getElementById('serrcusto-'+rowId);
+    var vendaOverEl=document.getElementById('serrvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
+    if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
   var cEl=document.getElementById('serr-mat-custo');var vEl=document.getElementById('serr-mat-venda');
   if(cEl)cEl.textContent=fmtVal(totalCusto);
@@ -6689,7 +6803,11 @@ async function serrEmitirRecibo(){
     var qtd=parseFloat(qtdEl.value||1);
     if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
     var m=materiais.find(function(x){return x.id===matId;});
-    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+    var custoOverEl=document.getElementById('serrcusto-'+rowId);
+    var vendaOverEl=document.getElementById('serrvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva recibo
   var numR='#R'+String(recibos.length+1).padStart(3,'0');
@@ -6814,7 +6932,11 @@ async function gerarPDFSerrOrc(){
     var qtdMat=parseFloat(qtdEl.value||1);
     if(!matId||isNaN(matId)||isNaN(qtdMat)||qtdMat<1)return null;
     var m=materiais.find(function(x){return x.id===matId;});
-    return{matId:matId,qtd:qtdMat,venda:m?m.venda:0,custo:m?m.custo:0};
+    var custoOverEl=document.getElementById('serrcusto-'+rowId);
+    var vendaOverEl=document.getElementById('serrvenda-'+rowId);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    return{matId:matId,qtd:qtdMat,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   var novoOrc={
     num:num,cli:cli,tel:tel,end:end,
