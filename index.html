@@ -2008,6 +2008,97 @@ td.bold{color:var(--white);font-weight:700}
   </div>
 </div>
 
+<!-- ══ MODAL: EDITAR RECIBO ══ -->
+<div class="modal-bg" id="modal-edit-rec">
+  <div class="modal" style="width:620px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">✏️ Editar Recibo <span id="er-num-label" style="color:var(--blue3)"></span></span>
+      <button class="modal-x" onclick="fecharEditarRec()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Cliente</div><input class="fi" id="er-cli" placeholder="Nome do cliente"></div>
+        <div><div class="fl">Telefone</div><input class="fi" id="er-tel" placeholder="11 99999-9999"></div>
+      </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">Endereço</div><input class="fi" id="er-end" placeholder="Rua, número, bairro"></div>
+      </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">Referente a (serviço)</div><input class="fi" id="er-serv" placeholder="Ex: Instalação de portão automático"></div>
+      </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">Descrição completa (uma linha = um item)</div>
+          <textarea class="ft" id="er-desc" rows="4" placeholder="Descreva os serviços realizados..."></textarea>
+        </div>
+      </div>
+      <div class="fgrid fg3" style="margin-bottom:10px">
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="er-val" step="0.01" oninput="calcResumoER()"></div>
+        <div><div class="fl">Custo peças (R$)</div><input class="fi" type="number" id="er-custo" step="0.01" value="0" oninput="calcResumoER()"></div>
+        <div><div class="fl">Data</div><input class="fi" type="date" id="er-data"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Garantia</div><input class="fi" id="er-gtia" placeholder="Ex: 12 meses"></div>
+        <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="er-desloc" step="0.01" value="0" placeholder="0,00"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Pagamento</div>
+          <select class="fs" id="er-pgto">
+            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
+            <option>Sinal de 50% / Restante 50%</option>
+            <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
+          </select>
+        </div>
+        <div><div class="fl">Desconto — Tipo</div>
+          <select class="fs" id="er-desc-tipo" onchange="calcDescontoER()">
+            <option value="">Sem desconto</option>
+            <option value="valor">R$ Valor fixo</option>
+            <option value="perc">% Percentual</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Valor do Desconto</div><input class="fi" type="number" id="er-desc-qtd" placeholder="0" step="0.01" value="0" oninput="calcDescontoER()"></div>
+        <div id="er-desc-preview" style="display:none">
+          <div class="fl">Valor com desconto</div>
+          <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:7px 10px;font-size:13px;font-weight:700;color:var(--green2)" id="er-desc-final">R$ 0,00</div>
+        </div>
+      </div>
+      <!-- MATERIAIS — EDITAR RECIBO -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--silver2);font-weight:700;text-transform:uppercase;letter-spacing:1px">📦 Peças / Materiais do recibo</div>
+          <button class="btn btn-ghost btn-sm" onclick="adicionarLinhaMatER()">+ Adicionar peça</button>
+        </div>
+        <div id="er-mat-linhas"></div>
+        <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="color:var(--silver2)">Custo das peças:</span>
+            <span style="color:var(--red);font-weight:700" id="er-mat-custo">R$ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="color:var(--silver2)">Valor de venda das peças:</span>
+            <span style="color:var(--green2);font-weight:700" id="er-mat-venda">R$ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:4px">
+            <span style="color:var(--white);font-weight:700">Lucro nas peças:</span>
+            <span style="color:var(--blue3);font-weight:900" id="er-mat-lucro">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+      <!-- RESUMO -->
+      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;display:flex;gap:20px;flex-wrap:wrap">
+        <div style="font-size:12px"><span style="color:var(--silver2)">Valor: </span><span style="color:var(--green2);font-weight:700" id="er-show-val">R$ 0,00</span></div>
+        <div style="font-size:12px"><span style="color:var(--silver2)">Custo: </span><span style="color:var(--red);font-weight:700" id="er-show-custo">R$ 0,00</span></div>
+        <div style="font-size:12px"><span style="color:var(--silver2)">Lucro: </span><span style="color:var(--blue3);font-weight:800" id="er-show-lucro">R$ 0,00</span></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharEditarRec()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoRec()">💾 Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL: LANÇAMENTO MANUAL FINANCEIRO ══ -->
 <div class="modal-bg" id="modal-lancamento">
   <div class="modal">
@@ -4239,7 +4330,18 @@ async function nrEmitirRecibo(){
   var serv=NR.tpl?NR.tpl.nm:manual;
   var numR='#R'+String(recibos.length+1).padStart(3,'0');
   var matTotais=getNrMatTotais();
-  var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,finLancado:false};
+  // Coleta lista de peças para persistência
+  var matEditRec=nrMatLinhas.map(function(rowId){
+    var selEl=document.getElementById('nrsel-'+rowId);
+    var qtdEl=document.getElementById('nrqtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
+  var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec};
   recibos.unshift(recibo);
   // BUG FIX: aguardar ambas as operações assíncronas do Supabase antes de
   // chamar salvarLocal(), garantindo que os sbId retornados sejam gravados
@@ -4577,10 +4679,21 @@ async function nofSalvarGerarPDF(){
   var descVal=descTipo==='valor'?descQtd:(descTipo==='perc'?valor*(descQtd/100):0);
   var valorFinal=Math.max(0,valor-descVal);
   var serv=NOF.tpl?NOF.tpl.nm:(desc.split('\n')[0]);
+  // Coleta lista de peças para persistência
+  var matEditNof=nofMatLinhas.map(function(rowId){
+    var selEl=document.getElementById('nofsel-'+rowId);
+    var qtdEl=document.getElementById('nofqtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
   // Salva orçamento
   var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
     val:valorFinal,gtia:gtia,pgto:pgto,status:'pendente',data:data,obs:obs,
-    custoPecas:matTotais.custo};
+    custoPecas:matTotais.custo,matEdit:matEditNof};
   var oExist=orcamentos.find(function(o){return o.num===num;});
   // BUG FIX: ao atualizar orçamento existente preservar sbId; ao criar novo
   // aguardar o Supabase para que o sbId retornado seja gravado no objeto em
@@ -4695,6 +4808,10 @@ function renderRecibosPage(){
     var btnPDF=document.createElement('button');btnPDF.className='btn btn-ghost btn-sm';btnPDF.textContent='📄 PDF';
     (function(idx){btnPDF.onclick=function(){gerarPDFRecibo(idx);};})(i);
 
+    var btnEdit=document.createElement('button');btnEdit.className='btn btn-ghost btn-sm';btnEdit.textContent='✏️';
+    btnEdit.title='Editar recibo';
+    (function(rRef){btnEdit.onclick=function(){abrirEditarRec(rRef.num);};})(r);
+
     var btnWpp=document.createElement('button');btnWpp.className='btn btn-green btn-sm';btnWpp.textContent='📲';
     (function(rRef){btnWpp.onclick=function(){enviarWppRecibo(rRef);};})(r);
 
@@ -4702,6 +4819,7 @@ function renderRecibosPage(){
     (function(idx){btnDel.onclick=function(){excluirRecibo(idx);};})(i);
 
     acoesDiv.appendChild(btnPDF);
+    acoesDiv.appendChild(btnEdit);
     acoesDiv.appendChild(btnWpp);
     acoesDiv.appendChild(btnDel);
     tdAcoes.appendChild(acoesDiv);
@@ -4752,12 +4870,14 @@ function renderRecibosPage(){
 
       var mb1=document.createElement('button');mb1.className='btn btn-ghost btn-sm';mb1.textContent='📄 PDF';
       (function(idx){mb1.onclick=function(){gerarPDFRecibo(idx);};})(i);
+      var mbEdit=document.createElement('button');mbEdit.className='btn btn-ghost btn-sm';mbEdit.textContent='✏️ Editar';
+      (function(rRef){mbEdit.onclick=function(){abrirEditarRec(rRef.num);};})(r);
       var mb2=document.createElement('button');mb2.className='btn btn-green btn-sm';mb2.textContent='📲 WhatsApp';
       (function(rRef){mb2.onclick=function(){enviarWppRecibo(rRef);};})(r);
       var mb3=document.createElement('button');mb3.className='btn btn-red btn-sm';mb3.textContent='🗑';
       (function(idx){mb3.onclick=function(){excluirRecibo(idx);};})(i);
 
-      mActions.appendChild(mb1);mActions.appendChild(mb2);mActions.appendChild(mb3);
+      mActions.appendChild(mb1);mActions.appendChild(mbEdit);mActions.appendChild(mb2);mActions.appendChild(mb3);
       card.appendChild(mobSel);
       card.appendChild(cardInner);
       card.appendChild(mActions);
@@ -4783,7 +4903,7 @@ async function confirmarPagamentoRecibo(i){
     desc:(r.serv||r.desc||'Serviço')+' — '+r.cli,
     cli:r.cli, val:r.val, pgto:r.pgto,
     data:r.data, dataRaw:dataRaw,
-    pecas:0, desloc:0, num:r.num
+    pecas:r.custoPecas||0, desloc:r.desloc||0, num:r.num
   };
   financeiro.unshift(lancFin);
   if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
@@ -4813,8 +4933,8 @@ function salvarEGerarPDFOrc(){
   // Salva orçamento com status pendente
   var oExist=orcamentos.find(function(o){return o.num===f.numero;});
   var matTotais=getOrcMatTotais();
-  // Coleta a lista de peças para salvar junto ao orçamento
-  var matEditSalvo=orcMatLinhas.map(function(rowId){
+  // Coleta lista de peças para persistência
+  var matEditOrc=orcMatLinhas.map(function(rowId){
     var selEl=document.getElementById('sel-'+rowId);
     var qtdEl=document.getElementById('qtd-'+rowId);
     if(!selEl||!qtdEl)return null;
@@ -4828,13 +4948,13 @@ function salvarEGerarPDFOrc(){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
       gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,
-      custoPecas:matTotais.custo,matEdit:matEditSalvo});
+      custoPecas:matTotais.custo,matEdit:matEditOrc});
   } else {
     orcamentos.unshift({
       num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
       gtia:f.garantia,pgto:f.pagamento,status:'pendente',data:f.data,
-      obs:f.obs,custoPecas:matTotais.custo,matEdit:matEditSalvo
+      obs:f.obs,custoPecas:matTotais.custo,matEdit:matEditOrc
     });
   }
   salvarLocal();
@@ -5089,7 +5209,188 @@ function salvarEdicaoOrc(){
   atualizarContadores();
 }
 
-// ════════════ LANÇAMENTO MANUAL ════════════
+// ════════════ EDITAR RECIBO ════════════
+var erMatLinhas=[];
+
+function abrirEditarRec(num){
+  var r=recibos.find(function(x){return x.num===num;});
+  if(!r)return;
+  document.getElementById('er-num-label').textContent=num;
+  document.getElementById('er-cli').value=r.cli||'';
+  document.getElementById('er-tel').value=r.tel||'';
+  document.getElementById('er-end').value=r.end||'';
+  document.getElementById('er-serv').value=r.serv||'';
+  document.getElementById('er-desc').value=r.desc||r.serv||'';
+  document.getElementById('er-val').value=r.val||0;
+  document.getElementById('er-custo').value=r.custoPecas||0;
+  document.getElementById('er-gtia').value=r.gtia||'';
+  document.getElementById('er-desloc').value=r.desloc||0;
+  document.getElementById('er-desc-qtd').value=r.descQtd||r.descV||0;
+  // data
+  var dataVal=r.dataRaw||'';
+  if(!dataVal&&r.data){
+    var p=r.data.split('/');
+    if(p.length===3)dataVal=p[2]+'-'+p[1]+'-'+p[0];
+  }
+  document.getElementById('er-data').value=dataVal;
+  // pagamento
+  var pgEl=document.getElementById('er-pgto');
+  for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===(r.pgto||'')||pgEl.options[i].value===(r.pgto||'')){pgEl.selectedIndex=i;break;}}
+  // desconto
+  var dTipoEl=document.getElementById('er-desc-tipo');
+  dTipoEl.value=r.descTipo||'';
+  calcDescontoER();
+  // Limpa e recarrega materiais
+  erMatLinhas=[];
+  var erMatEl=document.getElementById('er-mat-linhas');
+  if(erMatEl)erMatEl.innerHTML='';
+  if(r.matEdit&&r.matEdit.length>0){
+    r.matEdit.forEach(function(item){
+      var rowId='ermat-'+Date.now()+'-'+Math.random().toString(36).substr(2,5);
+      var opts=materiais.map(function(m){
+        return '<option value="'+m.id+'">'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+      }).join('');
+      if(!opts)return;
+      var div=document.createElement('div');
+      div.id=rowId;
+      div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+      div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatER()" id="ersel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+        '<input class="fi" type="number" min="1" value="'+item.qtd+'" style="width:65px;flex-shrink:0" id="erqtd-'+rowId+'" oninput="recalcMatER()">'+
+        '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="ersub-'+rowId+'">R$ 0,00</span>'+
+        '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatER(\''+rowId+'\')">✕</button>';
+      erMatEl.appendChild(div);
+      var selEl=document.getElementById('ersel-'+rowId);
+      if(selEl&&item.matId)selEl.value=String(item.matId);
+      erMatLinhas.push(rowId);
+    });
+  }
+  recalcMatER();
+  calcResumoER();
+  window._editRecNum=num;
+  document.getElementById('modal-edit-rec').classList.add('open');
+}
+
+function fecharEditarRec(){
+  document.getElementById('modal-edit-rec').classList.remove('open');
+  window._editRecNum=null;
+}
+
+function calcResumoER(){
+  var val=parseFloat(document.getElementById('er-val').value||0);
+  var custo=parseFloat(document.getElementById('er-custo').value||0);
+  document.getElementById('er-show-val').textContent=fmtVal(val);
+  document.getElementById('er-show-custo').textContent=fmtVal(custo);
+  document.getElementById('er-show-lucro').textContent=fmtVal(val-custo);
+}
+
+function calcDescontoER(){
+  var val=parseFloat(document.getElementById('er-val').value||0);
+  var tipo=document.getElementById('er-desc-tipo').value;
+  var qtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
+  var preview=document.getElementById('er-desc-preview');
+  var finalEl=document.getElementById('er-desc-final');
+  if(tipo&&qtd>0){
+    var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
+    var valorFinal=Math.max(0,val-descVal);
+    if(finalEl)finalEl.textContent=fmtVal(valorFinal);
+    if(preview)preview.style.display='block';
+  } else {
+    if(preview)preview.style.display='none';
+  }
+}
+
+function adicionarLinhaMatER(){
+  var rowId='ermat-'+Date.now();
+  var opts=materiais.map(function(m){
+    return '<option value="'+m.id+'">'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+  }).join('');
+  if(!opts){alert('Cadastre materiais primeiro na aba Materiais.');return;}
+  var div=document.createElement('div');
+  div.id=rowId;
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatER()" id="ersel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+    '<input class="fi" type="number" min="1" value="1" style="width:65px;flex-shrink:0" id="erqtd-'+rowId+'" oninput="recalcMatER()">'+
+    '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="ersub-'+rowId+'">R$ 0,00</span>'+
+    '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatER(\''+rowId+'\')">✕</button>';
+  document.getElementById('er-mat-linhas').appendChild(div);
+  erMatLinhas.push(rowId);
+  recalcMatER();
+}
+
+function removerLinhaMatER(rowId){
+  var el=document.getElementById(rowId);if(el)el.remove();
+  erMatLinhas=erMatLinhas.filter(function(r){return r!==rowId;});
+  recalcMatER();
+}
+
+function recalcMatER(){
+  var totalCusto=0,totalVenda=0;
+  erMatLinhas.forEach(function(rowId){
+    var selEl=document.getElementById('ersel-'+rowId);
+    var qtdEl=document.getElementById('erqtd-'+rowId);
+    var subEl=document.getElementById('ersub-'+rowId);
+    if(!selEl||!qtdEl)return;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return;
+    var m=materiais.find(function(x){return x.id==matId;});if(!m)return;
+    totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
+    if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
+  });
+  var cEl=document.getElementById('er-mat-custo');
+  var vEl=document.getElementById('er-mat-venda');
+  var lEl=document.getElementById('er-mat-lucro');
+  if(cEl)cEl.textContent=fmtVal(totalCusto);
+  if(vEl)vEl.textContent=fmtVal(totalVenda);
+  if(lEl)lEl.textContent=fmtVal(totalVenda-totalCusto);
+  var custoCampo=document.getElementById('er-custo');
+  if(custoCampo&&totalCusto>0)custoCampo.value=totalCusto.toFixed(2);
+  calcResumoER();
+  return{custo:totalCusto,venda:totalVenda};
+}
+
+async function salvarEdicaoRec(){
+  var num=window._editRecNum;
+  if(!num)return;
+  var r=recibos.find(function(x){return x.num===num;});
+  if(!r){alert('Recibo não encontrado.');return;}
+  var dataRaw=document.getElementById('er-data').value;
+  r.cli=document.getElementById('er-cli').value.trim();
+  r.tel=document.getElementById('er-tel').value.trim();
+  r.end=document.getElementById('er-end').value.trim();
+  r.serv=document.getElementById('er-serv').value.trim();
+  r.desc=document.getElementById('er-desc').value.trim();
+  r.val=parseFloat(document.getElementById('er-val').value||0);
+  r.gtia=document.getElementById('er-gtia').value.trim();
+  r.desloc=parseFloat(document.getElementById('er-desloc').value||0);
+  r.pgto=document.getElementById('er-pgto').value;
+  r.descTipo=document.getElementById('er-desc-tipo').value;
+  r.descQtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
+  r.descV=r.descTipo==='valor'?r.descQtd:(r.descTipo==='perc'?r.val*(r.descQtd/100):0);
+  r.descBase=r.descV>0?r.val:0;
+  r.dataRaw=dataRaw;
+  r.data=dataRaw?fmtDateBr(dataRaw):r.data;
+  // Materiais
+  var erMatTotais=recalcMatER()||{custo:0,venda:0};
+  r.custoPecas=erMatTotais.custo>0?erMatTotais.custo:parseFloat(document.getElementById('er-custo').value||0);
+  r.matEdit=erMatLinhas.map(function(rowId){
+    var selEl=document.getElementById('ersel-'+rowId);
+    var qtdEl=document.getElementById('erqtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
+  salvarLocal();
+  if(SUPABASE_ATIVO)await sbSalvarRecibo(r);
+  fecharEditarRec();
+  renderRecibosPage();
+  atualizarContadores();
+}
+
+
 function abrirLancamentoManual(){
   var today=new Date();
   var fmtD=function(x){return x.getFullYear()+'-'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'-'+(x.getDate()<10?'0':'')+x.getDate();};
@@ -6004,6 +6305,7 @@ document.getElementById('modal-mat').addEventListener('click',function(e){if(e.t
 document.getElementById('modal-novo-recibo').addEventListener('click',function(e){if(e.target===this)fecharNovoRecibo();});
 document.getElementById('modal-lancamento').addEventListener('click',function(e){if(e.target===this)fecharLancamentoManual();});
 document.getElementById('modal-edit-orc').addEventListener('click',function(e){if(e.target===this)fecharEditarOrc();});
+document.getElementById('modal-edit-rec').addEventListener('click',function(e){if(e.target===this)fecharEditarRec();});
 document.getElementById('modal-aprovacao').addEventListener('click',function(e){if(e.target===this)fecharAprovacaoModal();});
 document.getElementById('modal-serr-orc').addEventListener('click',function(e){if(e.target===this)fecharSerrOrc();});
 // modal-serr-rec é stub de compatibilidade — sem listener adicional
@@ -6304,12 +6606,24 @@ async function serrEmitirRecibo(){
   var pgto=document.getElementById('so-pgto').value;
   var desloc=parseFloat(document.getElementById('so-desloc').value||0);
   var matTotais=serrGetMatTotais();
+  // Coleta lista de peças para persistência
+  var matEditSerr=SERR.matLinhas.map(function(rowId){
+    var selEl=document.getElementById('serrsel-'+rowId);
+    var qtdEl=document.getElementById('serrqtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
   // Salva recibo
   var numR='#R'+String(recibos.length+1).padStart(3,'0');
   var novoRec={num:numR,cli:cli,tel:(document.getElementById('so-tel').value||'').trim(),
     end:(document.getElementById('so-end').value||'').trim(),
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
-    gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,finLancado:false};
+    gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,finLancado:false,
+    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr};
   recibos.unshift(novoRec);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(novoRec);
   // Só lança no financeiro se pagamento NÃO for Pendente
