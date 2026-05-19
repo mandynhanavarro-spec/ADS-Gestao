@@ -1756,26 +1756,9 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
 
-      <!-- PREÇOS -->
-      <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="number" id="mt-valor" placeholder="0,00" step="0.01" oninput="calcLucroTpl()"></div>
-        <div><div class="fl">Custo das peças (R$)</div><input class="fi" type="number" id="mt-custo-pecas" placeholder="0,00" step="0.01" value="0" oninput="calcLucroTpl()"></div>
-      </div>
-      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:20px;flex-wrap:wrap">
-        <div style="font-size:12px"><span style="color:var(--silver2)">Venda: </span><span style="color:var(--green2);font-weight:700" id="mt-show-venda">R$ 0,00</span></div>
-        <div style="font-size:12px"><span style="color:var(--silver2)">Custo peças: </span><span style="color:var(--red);font-weight:700" id="mt-show-custo">R$ 0,00</span></div>
-        <div style="font-size:12px"><span style="color:var(--silver2)">Lucro estimado: </span><span style="color:var(--blue3);font-weight:800" id="mt-show-lucro">R$ 0,00</span></div>
-        <div style="font-size:12px"><span style="color:var(--silver2)">Margem: </span><span style="color:var(--amber);font-weight:700" id="mt-show-margem">—</span></div>
-      </div>
-
-      <!-- GARANTIA E PAGAMENTO -->
-      <div class="fgrid fg2" style="margin-bottom:10px">
+      <!-- GARANTIA -->
+      <div class="fgrid" style="margin-bottom:10px">
         <div><div class="fl">Garantia padrão</div><input class="fi" id="mt-gtia" placeholder="Ex: 12 meses"></div>
-        <div><div class="fl">Pagamento padrão</div>
-          <select class="fs" id="mt-pgto">
-            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option><option>Cartão Crédito</option><option>Cartão Débito</option>
-          </select>
-        </div>
       </div>
     </div>
     <div class="modal-ft">
@@ -1940,6 +1923,9 @@ td.bold{color:var(--white);font-weight:700}
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Garantia</div><input class="fi" id="eo-gtia" placeholder="Ex: 12 meses"></div>
+        <div><div class="fl">Validade do Orçamento (dias)</div><input class="fi" type="number" id="eo-validade" placeholder="Ex: 30" min="1" step="1"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Pagamento</div>
           <select class="fs" id="eo-pgto" onchange="togglePixInfo('eo-pgto','pix-info-eo')">
             <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
@@ -1949,8 +1935,6 @@ td.bold{color:var(--white);font-weight:700}
             💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-eo-key" style="color:var(--white)"></span>
           </div>
         </div>
-      </div>
-      <div class="fgrid" style="margin-bottom:10px">
         <div><div class="fl">Status</div>
           <select class="fs" id="eo-status" onchange="calcResumoEO()">
             <option value="negociacao">Em Negociação</option>
@@ -1961,6 +1945,25 @@ td.bold{color:var(--white);font-weight:700}
             <option value="finalizado">Finalizado</option>
           </select>
         </div>
+      </div>
+      <!-- DESCONTO — EDITAR ORÇAMENTO -->
+      <div class="fgrid fg3" style="margin-bottom:10px">
+        <div><div class="fl">Tipo de Desconto</div>
+          <select class="fs" id="eo-desc-tipo" onchange="calcDescontoEO()">
+            <option value="">Sem desconto</option>
+            <option value="valor">R$ Valor fixo</option>
+            <option value="perc">% Percentual</option>
+          </select>
+        </div>
+        <div><div class="fl">Desconto</div><input class="fi" type="number" id="eo-desc-qtd" placeholder="0" step="0.01" value="0" oninput="calcDescontoEO()"></div>
+        <div id="eo-desc-preview" style="display:none">
+          <div class="fl">Valor com desconto</div>
+          <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:7px 10px;font-size:13px;font-weight:700;color:var(--green2)" id="eo-desc-final">R$ 0,00</div>
+        </div>
+      </div>
+      <!-- OBSERVAÇÕES — EDITAR ORÇAMENTO -->
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">Observações (opcional)</div><input class="fi" id="eo-obs" placeholder="Ex: Aguardando aprovação do cliente"></div>
       </div>
       <!-- MATERIAIS — EDITAR ORÇAMENTO -->
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
@@ -2672,7 +2675,6 @@ function renderTemplates(){
     d.innerHTML='<button class="tpl-edit-btn">✏️ editar</button>'+
       '<div class="tpl-ic">'+t.ic+'</div>'+
       '<div class="tpl-nm">'+t.nm+'</div>'+
-      '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
       '<div class="tpl-gt">Gtia: '+t.gtia+'</div>';
     // Wire via closures — UUID-safe
     (function(tt){
@@ -2697,14 +2699,8 @@ function renderTplManage(){
     var d=document.createElement('div');
     d.className='tpl-card '+t.cat;
     d.style.cursor='default';
-    var lucroTpl=(t.val||0)-(t.custoPecas||0);
     d.innerHTML='<div class="tpl-ic">'+t.ic+'</div>'+
       '<div class="tpl-nm">'+t.nm+'</div>'+
-      '<div class="tpl-vl">'+fmtVal(t.val)+'</div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:10px;margin:2px 0 4px">'+
-        '<span style="color:var(--red)">Custo: '+fmtVal(t.custoPecas||0)+'</span>'+
-        '<span style="color:var(--blue3)">Lucro: '+fmtVal(lucroTpl)+'</span>'+
-      '</div>'+
       '<div class="tpl-gt">Gtia: '+t.gtia+'</div>'+
       '<div style="margin-top:8px;display:flex;gap:5px">'+
         '<button class="btn btn-ghost btn-sm" style="flex:1;padding:4px 6px">✏️ Editar</button>'+
@@ -3504,7 +3500,8 @@ function gerarPDF(numOrc){
     if(!o){alert('Orçamento não encontrado.');return;}
     f={numero:o.num,cliente:o.cli,tel:o.tel||'',endereco:o.end||'',
        descricao:o.desc||o.serv||'',valor:o.val,garantia:o.gtia||'',
-       pagamento:o.pgto,data:o.data,obs:o.obs||'',desloc:o.desloc||0};
+       pagamento:o.pgto,data:o.data,obs:o.obs||'',desloc:o.desloc||0,
+       validade:o.validade||null,descTipo:o.descTipo||'',descQtd:o.descQtd||0};
   } else {
     f=getFormData();
   }
@@ -3514,11 +3511,11 @@ function gerarPDF(numOrc){
   doc.setFont('times','normal');
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
 
-  var descTipoF=(document.getElementById('f-desc-tipo')||{}).value||'';
-  var descQtdF=parseFloat((document.getElementById('f-desc-qtd')||{}).value||0);
+  var descTipoF=f.descTipo||(document.getElementById('f-desc-tipo')||{}).value||'';
+  var descQtdF=f.descQtd!=null&&f.descQtd>0?f.descQtd:parseFloat((document.getElementById('f-desc-qtd')||{}).value||0);
   var descF=descTipoF==='valor'?descQtdF:(descTipoF==='perc'?f.valor*(descQtdF/100):0);
   var valorFinal=Math.max(0,f.valor-descF);
-  var valDias=(typeof window._nofValDias!=='undefined')?window._nofValDias:(CFG.doc.validade||30);
+  var valDias=f.validade||(typeof window._nofValDias!=='undefined'?window._nofValDias:(CFG.doc.validade||30));
   window._nofValDias=undefined;
   var pixKey=CFG.doc.pix||'ads.pg@hotmail.com';
   var bancoInfo=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
@@ -3530,7 +3527,7 @@ function gerarPDF(numOrc){
 
   // Cabeçalho sempre primeiro (fixo)
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   if(CFG.doc.logoB64){
@@ -3539,10 +3536,10 @@ function gerarPDF(numOrc){
     doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+7,55,24);
   }
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text('Orcamento N\xba '+f.numero,ML,MT);
+  doc.text('Or\xe7amento N\xba '+f.numero,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
-  doc.text('Sao Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
-  doc.text('Validade do Orcamento: '+valDias+' dias (ate '+addDays(f.data,valDias)+')',ML,MT+13);
+  doc.text('S\xe3o Paulo, '+fmtDateLong(f.data)+'.',ML,MT+7);
+  doc.text('Validade do Or\xe7amento: '+valDias+' dias (at\xe9 '+addDays(f.data,valDias)+')',ML,MT+13);
   y=MT+34;
 
   // Blocos reordenáveis
@@ -3552,7 +3549,7 @@ function gerarPDF(numOrc){
 
     if(b.id==='titulo'){
       doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
-      doc.text('Orcamento',PW/2,y+18,{align:'center'});
+      doc.text('Or\xe7amento',PW/2,y+18,{align:'center'});
       doc.setTextColor(0,0,0);
       y+=26;
 
@@ -3569,7 +3566,7 @@ function gerarPDF(numOrc){
         y+=7;
       }
       if(f.endereco&&f.endereco.trim()){
-        doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
+        doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);
         doc.setFont('helvetica','normal');
         var endLines=doc.splitTextToSize(f.endereco,CW-30);
         doc.text(endLines,ML+24,y);
@@ -3605,7 +3602,7 @@ function gerarPDF(numOrc){
         doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
         doc.line(ML,y-2,PW-MR,y-2);y+=4;
         doc.setFont('helvetica','bold');doc.text('Garantia',ML,y);
-        doc.setFont('helvetica','normal');doc.text(' de '+f.garantia+', Contra defeito de Fabricacao.',ML+23,y);
+        doc.setFont('helvetica','normal');doc.text(' de '+f.garantia+', Contra defeito de Fabrica\xe7\xe3o.',ML+23,y);
         y+=10;
       }
 
@@ -3615,16 +3612,16 @@ function gerarPDF(numOrc){
       doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
       doc.setFont('helvetica','normal');
       if(pg==='Parcelado'||pg==='Sinal de 50% / Restante 50%'){
-        doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
+        doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
         doc.text('Sendo Pix '+pixKey+' ou '+bancoInfo,ML+2,y);y+=6;
       } else if(pg==='Pix'){
         doc.text('via Pix: '+pixKey,ML+2,y);y+=6;
         doc.text('ou '+bancoInfo,ML+2,y);y+=6;
       } else if(pg==='Pendente'){
-        doc.text('Pagamento Pendente — via Pix: '+pixKey,ML+2,y);y+=6;
+        doc.text('Pagamento Pendente \u2014 via Pix: '+pixKey,ML+2,y);y+=6;
         doc.text('ou '+bancoInfo,ML+2,y);y+=6;
       } else if(pg==='Dinheiro'){
-        doc.text('Pagamento em dinheiro na entrega do servico.',ML+2,y);y+=6;
+        doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;
       } else {
         doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
       }
@@ -3632,10 +3629,10 @@ function gerarPDF(numOrc){
 
     } else if(b.id==='obs'){
       if(f.obs){
-        doc.setFontSize(9);doc.setTextColor(80,80,80);
+        doc.setFontSize(10);doc.setTextColor(80,80,80);
         var obsLines=doc.splitTextToSize('Obs: '+f.obs,CW);
         doc.text(obsLines,ML+2,y);
-        doc.setTextColor(0,0,0);y+=obsLines.length*5+4;
+        doc.setTextColor(0,0,0);y+=obsLines.length*6+4;
       }
     }
   });
@@ -3647,13 +3644,13 @@ function gerarPDF(numOrc){
   doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
   var fy=y-8;var sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
+  doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
   doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+15,fy+6,40,14);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
   doc.text(CFG.empresa.resp||'Ananias Santos',sx+35,fy+26,{align:'center'});
 
-  doc.save('Orcamento_ADS_'+f.numero+'_'+f.cliente.split(' ')[0]+'.pdf');
+  doc.save('Or\xe7amento_ADS_'+f.numero+'_'+f.cliente.split(' ')[0]+'.pdf');
 }
 
 // ════════════ gerarPDFRecibo — respeita ordem dos blocos ════════════
@@ -3673,7 +3670,7 @@ function gerarPDFRecibo(idx){
 
   // Cabeçalho fixo
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   if(CFG.doc.logoB64){
@@ -3684,7 +3681,7 @@ function gerarPDFRecibo(idx){
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo '+r.num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
-  doc.text('Sao Paulo, '+fmtDateLong(r.dataRaw||r.data)+'.',ML,MT+7);
+  doc.text('S\xe3o Paulo, '+fmtDateLong(r.dataRaw||r.data)+'.',ML,MT+7);
   y=MT+34;
 
   // Blocos reordenáveis
@@ -3703,7 +3700,7 @@ function gerarPDFRecibo(idx){
       doc.setFont('helvetica','normal');doc.text(' '+r.cli,ML+28,y);
       y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);
       doc.setFont('helvetica','normal');doc.text(' '+(r.tel||''),ML+24,y);
-      y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);
+      y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);
       doc.setFont('helvetica','normal');
       var endLines=doc.splitTextToSize(' '+(r.end||''),CW-30);
       doc.text(endLines,ML+24,y);y+=endLines.length*5+6;
@@ -3738,7 +3735,7 @@ function gerarPDFRecibo(idx){
       if(r.gtia&&r.gtia.trim()&&r.gtia.trim()!=='—'){
         doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
         doc.setFont('helvetica','bold');doc.text('Garantia:',ML,y);
-        doc.setFont('helvetica','normal');doc.text(' '+r.gtia+', Contra defeito de Fabricacao.',ML+26,y);y+=10;
+        doc.setFont('helvetica','normal');doc.text(' '+r.gtia+', Contra defeito de Fabrica\xe7\xe3o.',ML+26,y);y+=10;
       }
 
     } else if(b.id==='pagamento'){
@@ -3754,7 +3751,7 @@ function gerarPDFRecibo(idx){
         doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
         doc.text(respNomeR,ML+2,y);y+=6;
       } else if(r.pgto==='Parcelado'||r.pgto==='Sinal de 50% / Restante 50%'){
-        doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
+        doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
         doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
         doc.text(respNomeR,ML+2,y);y+=6;
       } else {
@@ -3767,7 +3764,7 @@ function gerarPDFRecibo(idx){
   // Rodapé fixo
   var fy=y+8;var sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
+  doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
   doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+15,fy+6,40,14);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+22,sx+66,fy+22);
@@ -4804,6 +4801,8 @@ function abrirEditarOrc(num){
   document.getElementById('eo-val').value=o.val||0;
   document.getElementById('eo-custo').value=o.custoPecas||0;
   document.getElementById('eo-gtia').value=o.gtia||'';
+  document.getElementById('eo-validade').value=o.validade||CFG.doc.validade||30;
+  document.getElementById('eo-obs').value=o.obs||'';
   // data
   var dataVal=o.data||'';
   if(dataVal&&dataVal.includes('/')){
@@ -4817,10 +4816,35 @@ function abrirEditarOrc(num){
   // status
   var stEl=document.getElementById('eo-status');
   for(var i=0;i<stEl.options.length;i++){if(stEl.options[i].value===(o.status||'')){stEl.selectedIndex=i;break;}}
-  // Limpa materiais do modal editar
+  // desconto
+  var dTipoEl=document.getElementById('eo-desc-tipo');
+  var dQtdEl=document.getElementById('eo-desc-qtd');
+  dTipoEl.value=o.descTipo||'';
+  dQtdEl.value=o.descQtd||0;
+  calcDescontoEO();
+  // Limpa e recarrega materiais do modal editar
   eoMatLinhas=[];
   var eoMatEl=document.getElementById('eo-mat-linhas');
   if(eoMatEl)eoMatEl.innerHTML='';
+  // Restaura peças salvas anteriormente no orçamento
+  if(o.matEdit&&o.matEdit.length>0){
+    o.matEdit.forEach(function(item){
+      var rowId='eomat-'+Date.now()+'-'+Math.random().toString(36).substr(2,5);
+      var opts=materiais.map(function(m){
+        return '<option value="'+m.id+'"'+(m.id===item.matId?' selected':'')+'>'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+      }).join('');
+      if(!opts)return;
+      var div=document.createElement('div');
+      div.id=rowId;
+      div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+      div.innerHTML='<select class="fs" style="flex:2" onchange="recalcMatEO()" id="eosel-'+rowId+'"><option value="">-- Selecione --</option>'+opts+'</select>'+
+        '<input class="fi" type="number" min="1" value="'+item.qtd+'" style="width:65px;flex-shrink:0" id="eoqtd-'+rowId+'" oninput="recalcMatEO()">'+
+        '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="eosub-'+rowId+'">R$ 0,00</span>'+
+        '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatEO(\''+rowId+'\')">✕</button>';
+      eoMatEl.appendChild(div);
+      eoMatLinhas.push(rowId);
+    });
+  }
   recalcMatEO();
   calcResumoEO();
   document.getElementById('modal-edit-orc').classList.add('open');
@@ -4839,6 +4863,23 @@ function calcResumoEO(){
   document.getElementById('eo-show-val').textContent=fmtVal(val);
   document.getElementById('eo-show-custo').textContent=fmtVal(custo);
   document.getElementById('eo-show-lucro').textContent=fmtVal(val-custo);
+  calcDescontoEO();
+}
+
+function calcDescontoEO(){
+  var val=parseFloat(document.getElementById('eo-val').value||0);
+  var tipo=document.getElementById('eo-desc-tipo').value;
+  var qtd=parseFloat(document.getElementById('eo-desc-qtd').value||0);
+  var preview=document.getElementById('eo-desc-preview');
+  var finalEl=document.getElementById('eo-desc-final');
+  if(tipo&&qtd>0){
+    var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
+    var valorFinal=Math.max(0,val-descVal);
+    if(finalEl)finalEl.textContent=fmtVal(valorFinal);
+    if(preview)preview.style.display='block';
+  } else {
+    if(preview)preview.style.display='none';
+  }
 }
 
 function salvarEdicaoOrc(){
@@ -4859,8 +4900,22 @@ function salvarEdicaoOrc(){
   // Custo: usa materiais selecionados se houver, senão o campo manual
   var eoMatTotais=recalcMatEO()||{custo:0,venda:0};
   o.custoPecas=eoMatTotais.custo>0?eoMatTotais.custo:parseFloat(document.getElementById('eo-custo').value||0);
+  // Persiste a lista de materiais para recarregar ao reabrir
+  o.matEdit=eoMatLinhas.map(function(rowId){
+    var selEl=document.getElementById('eosel-'+rowId);
+    var qtdEl=document.getElementById('eoqtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(qtd))return null;
+    return{matId:matId,qtd:qtd};
+  }).filter(Boolean);
   o.gtia=document.getElementById('eo-gtia').value.trim();
+  o.validade=parseInt(document.getElementById('eo-validade').value||CFG.doc.validade||30);
+  o.obs=document.getElementById('eo-obs').value.trim();
   o.pgto=document.getElementById('eo-pgto').value;
+  o.descTipo=document.getElementById('eo-desc-tipo').value;
+  o.descQtd=parseFloat(document.getElementById('eo-desc-qtd').value||0);
   o.data=dataRaw;
   o.status=novoStatus;
 
@@ -5322,8 +5377,6 @@ function openTplModal(){
   document.getElementById('modal-tpl-title').textContent='Novo Template de Serviço';
   document.getElementById('mt-nome').value='';
   document.getElementById('mt-desc').value='';
-  document.getElementById('mt-valor').value='';
-  document.getElementById('mt-custo-pecas').value='0';
   document.getElementById('mt-gtia').value='';
   document.getElementById('mt-ic').value='🔧';
   document.getElementById('modal-delete-btn').style.display='none';
@@ -5332,7 +5385,6 @@ function openTplModal(){
   var cm=document.querySelector('.clr-opt[data-cat="cm"]');
   if(cm)cm.classList.add('sel');
   renderIconPicker('🔧');
-  calcLucroTpl();
   document.getElementById('modal-tpl').classList.add('open');
 }
 
@@ -5343,19 +5395,14 @@ function editTpl(id){
   document.getElementById('modal-tpl-title').textContent='Editar Template';
   document.getElementById('mt-nome').value=t.nm;
   document.getElementById('mt-desc').value=t.desc||'';
-  document.getElementById('mt-valor').value=t.val||0;
-  document.getElementById('mt-custo-pecas').value=t.custoPecas||0;
   document.getElementById('mt-gtia').value=t.gtia||'';
   document.getElementById('mt-ic').value=t.ic||'🔧';
-  var pgEl=document.getElementById('mt-pgto');
-  for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].value===t.pgto||pgEl.options[i].text===t.pgto){pgEl.selectedIndex=i;break;}}
   STATE.selCat=t.cat||'cm';
   document.querySelectorAll('.clr-opt').forEach(function(x){x.classList.remove('sel');});
   var cel=document.querySelector('.clr-opt[data-cat="'+STATE.selCat+'"]');
   if(cel)cel.classList.add('sel');
   document.getElementById('modal-delete-btn').style.display='inline-flex';
   renderIconPicker(t.ic||'🔧');
-  calcLucroTpl();
   document.getElementById('modal-tpl').classList.add('open');
 }
 
@@ -5389,27 +5436,16 @@ function renderIconPicker(selected){
   });
 }
 
-function calcLucroTpl(){
-  var venda=parseFloat(document.getElementById('mt-valor').value||0);
-  var custo=parseFloat(document.getElementById('mt-custo-pecas').value||0);
-  var lucro=venda-custo;
-  var margem=venda>0?Math.round(lucro/venda*100):0;
-  document.getElementById('mt-show-venda').textContent=fmtVal(venda);
-  document.getElementById('mt-show-custo').textContent=fmtVal(custo);
-  document.getElementById('mt-show-lucro').textContent=fmtVal(lucro);
-  document.getElementById('mt-show-margem').textContent=venda>0?margem+'%':'—';
-}
-
 async function saveTpl(){
   var nm=(document.getElementById('mt-nome').value||'').trim();
   if(!nm){alert('Informe o nome do serviço.');return;}
   var t={
     nm:nm,
     desc:document.getElementById('mt-desc').value.trim(),
-    val:parseFloat(document.getElementById('mt-valor').value||0),
-    custoPecas:parseFloat(document.getElementById('mt-custo-pecas').value||0),
+    val:0,
+    custoPecas:0,
     gtia:(document.getElementById('mt-gtia').value||'').trim()||'—',
-    pgto:document.getElementById('mt-pgto').value,
+    pgto:'Pix',
     ic:(document.getElementById('mt-ic').value||'').trim()||'🔧',
     cat:STATE.selCat
   };
@@ -6146,13 +6182,13 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
   doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text('Recibo Serralheria '+r.num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
-  doc.text('Sao Paulo, '+fmtDateLong(r.dataRaw)+'.',ML,MT+7);
+  doc.text('S\xe3o Paulo, '+fmtDateLong(r.dataRaw)+'.',ML,MT+7);
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(0,100,0);
   doc.text('Recibo — Serralheria',PW/2,MT+32,{align:'center'});
   doc.setTextColor(0,0,0);
@@ -6160,18 +6196,18 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
   doc.setFont('helvetica','normal');doc.text(r.cli,ML+18,y);
   if(r.tel){y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);doc.setFont('helvetica','normal');doc.text(r.tel,ML+24,y);}
-  if(r.end){y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);doc.setFont('helvetica','normal');var endLines=doc.splitTextToSize(r.end,CW-24);doc.text(endLines,ML+24,y);y+=(endLines.length-1)*5;}
-  y+=10;doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Servicos realizados:',ML,y);
-  y+=6;(descFull||r.desc||'').split('\n').forEach(function(ln){if(ln.trim()){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('• '+ln.trim(),ML+3,y);y+=6;}});
+  if(r.end){y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);doc.setFont('helvetica','normal');var endLines=doc.splitTextToSize(r.end,CW-24);doc.text(endLines,ML+24,y);y+=(endLines.length-1)*5;}
+  y+=10;doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Servi\xe7os realizados:',ML,y);
+  y+=6;(descFull||r.desc||'').split('\n').forEach(function(ln){if(ln.trim()){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('\u2022 '+ln.trim(),ML+3,y);y+=6;}});
   y+=6;doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('Forma de pagamento: ',ML,y);doc.setFont('helvetica','normal');doc.text(r.pgto||'',ML+52,y);
   y+=10;doc.setFillColor(0,120,0);doc.rect(ML,y,CW,10,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(255,255,255);
   doc.text('TOTAL RECEBIDO: R$ '+parseFloat(r.val||0).toLocaleString('pt-BR',{minimumFractionDigits:2}),PW/2,y+7,{align:'center'});
   doc.setTextColor(0,0,0);y+=20;
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);
-  doc.text('Sao Paulo, '+fmtDateLong(r.dataRaw||new Date().toISOString().split('T')[0])+'.',ML,y);
+  doc.text('S\xe3o Paulo, '+fmtDateLong(r.dataRaw||new Date().toISOString().split('T')[0])+'.',ML,y);
   y+=10;doc.setDrawColor(0,0,0);doc.line(ML,y,ML+70,y);y+=4;
-  doc.setFontSize(8);doc.text('ADS Portoes Automaticos',ML,y);
+  doc.setFontSize(8);doc.text('ADS Port\xf5es Autom\xe1ticos',ML,y);
   doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),ML,y+3,35,14);
   doc.save('recibo_serralheria_'+r.num.replace('#','')+'.pdf');
 }
@@ -6220,23 +6256,23 @@ function gerarPDFSerrOrc(){
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
   doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-46,MT,46,46);
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text(CFG.empresa.nome||'ADS Portoes Automaticos',PW-MR,MT,{align:'right'});
+  doc.text(CFG.empresa.nome||'ADS Port\xf5es Autom\xe1ticos',PW-MR,MT,{align:'right'});
   doc.setFont('helvetica','normal');doc.setFontSize(8);
   doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
-  doc.text('Orcamento Serralheria N\xba '+num,ML,MT);
+  doc.text('Or\xe7amento Serralheria N\xba '+num,ML,MT);
   doc.setTextColor(0,0,0);doc.setFontSize(9);
-  doc.text('Sao Paulo, '+fmtDateLong(dataRaw)+'.',ML,MT+7);
-  doc.text('Validade: 30 dias (ate '+validade+')',ML,MT+13);
+  doc.text('S\xe3o Paulo, '+fmtDateLong(dataRaw)+'.',ML,MT+7);
+  doc.text('Validade: 30 dias (at\xe9 '+validade+')',ML,MT+13);
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(0,51,153);
-  doc.text('Orcamento — Serralheria',PW/2,MT+32,{align:'center'});
+  doc.text('Or\xe7amento \u2014 Serralheria',PW/2,MT+32,{align:'center'});
   doc.setTextColor(0,0,0);
   var y=MT+47;
   doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
   doc.setFont('helvetica','normal');doc.text(cli,ML+18,y);
   if(tel){y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);doc.setFont('helvetica','normal');doc.text(tel,ML+24,y);}
-  if(end){y+=7;doc.setFont('helvetica','bold');doc.text('Endereco:',ML,y);doc.setFont('helvetica','normal');var eL=doc.splitTextToSize(end,CW-30);doc.text(eL,ML+24,y);y+=eL.length*5;}
-  y+=4;doc.setFont('helvetica','bold');doc.text('Descricao do servico:',ML,y);y+=7;
+  if(end){y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);doc.setFont('helvetica','normal');var eL=doc.splitTextToSize(end,CW-30);doc.text(eL,ML+24,y);y+=eL.length*5;}
+  y+=4;doc.setFont('helvetica','bold');doc.text('Descri\xe7\xe3o do servi\xe7o:',ML,y);y+=7;
   doc.setFont('helvetica','normal');
   var items=desc.split('\n').filter(function(l){return l.trim();});
   items.forEach(function(it){var ls=doc.splitTextToSize('- '+it.trim(),CW-12);doc.text(ls,ML+7,y);y+=ls.length*6;});
@@ -6252,19 +6288,19 @@ function gerarPDFSerrOrc(){
   doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
   doc.setFont('helvetica','normal');
   if(pgto==='Parcelado'||pgto==='Sinal de 50% / Restante 50%'){
-    doc.text('Sinal de 50% / Restante 50% na entrega do servico.',ML+2,y);y+=6;
+    doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
     doc.text('Sendo Pix ads.pg@hotmail.com ou Banco Itau AG 0466 CC 60864-3',ML+2,y);y+=6;
   } else if(pgto==='Pix'){doc.text('Pix: ads.pg@hotmail.com',ML+2,y);y+=6;}
-  else if(pgto==='Dinheiro'){doc.text('Pagamento em dinheiro na entrega do servico.',ML+2,y);y+=6;}
+  else if(pgto==='Dinheiro'){doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;}
   else {doc.text('Pagamento via '+pgto+'.',ML+2,y);y+=6;}
   doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
-  if(obs){y+=5;doc.setFontSize(9);doc.setTextColor(80,80,80);var ol=doc.splitTextToSize('Obs: '+obs,CW);doc.text(ol,ML+2,y);doc.setTextColor(0,0,0);y+=ol.length*5;}
+  if(obs){y+=5;doc.setFontSize(10);doc.setTextColor(80,80,80);var ol=doc.splitTextToSize('Obs: '+obs,CW);doc.text(ol,ML+2,y);doc.setTextColor(0,0,0);y+=ol.length*6;}
   y+=10;
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);doc.text('(11) 96770-4116',ML,y+18);
   var fy=y-8,sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
-  doc.text('Qualquer duvida estamos a disposicao',sx+35,fy,{align:'center'});
+  doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
   doc.text('Atenciosamente',sx+35,fy+6,{align:'center'});
   doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sx+6,fy+6,52,18);
   doc.setLineWidth(0.3);doc.line(sx+4,fy+26,sx+66,fy+26);
