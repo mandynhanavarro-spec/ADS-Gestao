@@ -2395,7 +2395,30 @@ async function carregarTodosDados() {
   // Orçamentos
   const {data:orcs, error:eOrc} = await sb.from('orcamentos').select('*').order('criado_em', {ascending:false});
   if (!eOrc && orcs && orcs.length > 0) {
+    // Indexa orçamentos em memória pelo número para preservar matEdit (campo local)
+    var _orcMem = {};
+    orcamentos.forEach(function(o){ if(o.num) _orcMem[String(o.num)] = o; });
+    // Tenta também carregar do localStorage para garantir matEdit mesmo após reload total
+    try {
+      var _orcLS = JSON.parse(localStorage.getItem('ads_orcamentos')||'[]');
+      _orcLS.forEach(function(o){
+        if(o.num && o.matEdit && o.matEdit.length){
+          if(!_orcMem[String(o.num)]) _orcMem[String(o.num)] = o;
+          else if(!_orcMem[String(o.num)].matEdit || !_orcMem[String(o.num)].matEdit.length)
+            _orcMem[String(o.num)].matEdit = o.matEdit;
+        }
+      });
+    } catch(e) {}
     orcamentos = orcs.map(function(o) {
+      var matEdit = [];
+      // 1º prioridade: coluna mat_edit do Supabase (quando existir)
+      if (o.mat_edit) {
+        try { matEdit = typeof o.mat_edit === 'string' ? JSON.parse(o.mat_edit) : (Array.isArray(o.mat_edit) ? o.mat_edit : []); } catch(e) { matEdit = []; }
+      }
+      // 2º fallback: preserva da memória/localStorage enquanto coluna não existe no banco
+      if (!matEdit.length && _orcMem[String(o.numero)] && _orcMem[String(o.numero)].matEdit && _orcMem[String(o.numero)].matEdit.length) {
+        matEdit = _orcMem[String(o.numero)].matEdit;
+      }
       return {
         sbId: o.id, num: o.numero||'???', cli: o.cliente_nome||'',
         tel: o.cliente_tel||'', end: o.cliente_end||'',
@@ -2403,7 +2426,8 @@ async function carregarTodosDados() {
         val: parseFloat(o.valor||0), gtia: o.garantia||'',
         pgto: o.pagamento||'Pix', status: o.status||'pendente',
         data: o.data_emissao||'', obs: o.observacoes||'',
-        custoPecas: parseFloat(o.custo_pecas||0)
+        custoPecas: parseFloat(o.custo_pecas||0),
+        matEdit: matEdit
       };
     });
   }
@@ -2606,16 +2630,42 @@ async function sbSalvarOrcamento(o) {
     numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
     cliente_end: o.end||'', descricao: o.desc, valor: o.val,
     garantia: o.gtia, pagamento: o.pgto, status: o.status,
-    data_emissao: o.data, observacoes: o.obs||''
+    data_emissao: o.data, observacoes: o.obs||'',
+    custo_pecas: parseFloat(o.custoPecas||0),
+    mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null
   };
   try {
     if (o.sbId) {
       const {error} = await sb.from('orcamentos').update(payload).eq('id', o.sbId);
-      if (error) console.warn('Erro ao atualizar orçamento:', error);
+      if (error) {
+        // Se a coluna mat_edit não existir ainda no banco, tenta sem ela
+        if (error.message && error.message.includes('mat_edit')) {
+          const {custo_pecas, ...payloadSemMat} = payload;
+          const payloadFallback = {...payloadSemMat, custo_pecas};
+          await sb.from('orcamentos').update(payloadFallback).eq('id', o.sbId);
+        } else {
+          console.warn('Erro ao atualizar orçamento:', error);
+        }
+      }
     } else {
       const {data, error} = await sb.from('orcamentos').insert(payload).select('id').single();
-      if (error) console.warn('Erro ao inserir orçamento:', error);
-      else if (data) o.sbId = data.id;
+      if (error) {
+        // Fallback sem mat_edit se coluna não existir
+        if (error.message && error.message.includes('mat_edit')) {
+          const payloadFallback = {
+            numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
+            cliente_end: o.end||'', descricao: o.desc, valor: o.val,
+            garantia: o.gtia, pagamento: o.pgto, status: o.status,
+            data_emissao: o.data, observacoes: o.obs||'',
+            custo_pecas: parseFloat(o.custoPecas||0)
+          };
+          const {data:d2, error:e2} = await sb.from('orcamentos').insert(payloadFallback).select('id').single();
+          if (e2) console.warn('Erro ao inserir orçamento (fallback):', e2);
+          else if (d2) o.sbId = d2.id;
+        } else {
+          console.warn('Erro ao inserir orçamento:', error);
+        }
+      } else if (data) o.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar orçamento:', e); }
 }
