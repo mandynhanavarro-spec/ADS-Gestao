@@ -1241,14 +1241,16 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">Nº Documento</div><input class="fi" id="so-num" placeholder="001"></div>
           <div><div class="fl">Data</div><input class="fi" type="date" id="so-data"></div>
         </div>
-        <!-- Botões de ação -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-          <button class="btn btn-primary" style="padding:14px;font-size:13px;flex-direction:column;gap:4px;height:auto" onclick="gerarPDFSerrOrc()">
+        <!-- Botões de ação — exibidos conforme o modo (orçamento ou recibo) -->
+        <div id="serr-btn-orc" style="margin-bottom:12px">
+          <button class="btn btn-primary" style="width:100%;padding:14px;font-size:13px;flex-direction:column;gap:4px;height:auto" onclick="gerarPDFSerrOrc()">
             <span style="font-size:20px">📄</span>
-            <span>Gerar Orçamento</span>
-            <span style="font-size:10px;color:rgba(255,255,255,.7);font-weight:400">Documento de proposta</span>
+            <span>Salvar e Gerar Orçamento</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.7);font-weight:400">Salva na lista e gera PDF</span>
           </button>
-          <button class="btn btn-green" style="padding:14px;font-size:13px;flex-direction:column;gap:4px;height:auto" onclick="serrEmitirRecibo()">
+        </div>
+        <div id="serr-btn-rec" style="margin-bottom:12px;display:none">
+          <button class="btn btn-green" style="width:100%;padding:14px;font-size:13px;flex-direction:column;gap:4px;height:auto" onclick="serrEmitirRecibo()">
             <span style="font-size:20px">🧾</span>
             <span>Emitir Recibo</span>
             <span style="font-size:10px;color:rgba(255,255,255,.7);font-weight:400">Lança no financeiro</span>
@@ -6515,7 +6517,16 @@ function serrClearCliSel(){
   if(g)g.querySelectorAll('.rc-card').forEach(function(x){x.classList.remove('sel');});
 }
 
+var _serrModo='orc'; // 'orc' ou 'rec'
 function abrirSerrOrc(){
+  _serrModo='orc';
+  // Atualiza título e botões do step 4
+  var tit=document.querySelector('#modal-serr-orc .modal-title');
+  if(tit)tit.textContent='🔨 Orçamento Serralheria';
+  var btnOrc=document.getElementById('serr-btn-orc');
+  var btnRec=document.getElementById('serr-btn-rec');
+  if(btnOrc)btnOrc.style.display='block';
+  if(btnRec)btnRec.style.display='none';
   SERR.cli=null;
   SERR.matLinhas=[];
   // Limpa campos
@@ -6532,7 +6543,7 @@ function abrirSerrOrc(){
   var yy=today.getFullYear(),mm=String(today.getMonth()+1).padStart(2,'0'),dd=String(today.getDate()).padStart(2,'0');
   var soDataEl=document.getElementById('so-data');if(soDataEl)soDataEl.value=yy+'-'+mm+'-'+dd;
   var soValEl=document.getElementById('so-val');if(soValEl)soValEl.value=addDays(yy+'-'+mm+'-'+dd,30);
-  // Número
+  // Número — usa contagem de orçamentos existentes
   var maxNum=orcamentos.reduce(function(mx,o){return Math.max(mx,parseInt(o.num||0));},0);
   var soNumEl=document.getElementById('so-num');if(soNumEl)soNumEl.value=String(maxNum+1).padStart(3,'0');
   // Limpa materiais
@@ -6774,7 +6785,7 @@ function calcSerrOrc(){
   } else {if(prev)prev.style.display='none';}
 }
 
-function gerarPDFSerrOrc(){
+async function gerarPDFSerrOrc(){
   var cli=document.getElementById('so-cli').value.trim();
   var desc=document.getElementById('so-desc').value.trim();
   var val=parseFloat(document.getElementById('so-valor').value||0);
@@ -6794,6 +6805,33 @@ function gerarPDFSerrOrc(){
   var obs=document.getElementById('so-obs').value.trim();
   var dataRaw=document.getElementById('so-data').value;
   var validade=document.getElementById('so-val').value;
+  // ── SALVAR ORÇAMENTO ──────────────────────────────────────────────────────
+  var matEditSerr=SERR.matLinhas.map(function(rowId){
+    var selEl=document.getElementById('serrsel-'+rowId);
+    var qtdEl=document.getElementById('serrqtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtdMat=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtdMat)||qtdMat<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtdMat,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
+  var novoOrc={
+    num:num,cli:cli,tel:tel,end:end,
+    serv:desc.split('\n')[0],desc:desc,val:valorFinal,
+    pgto:pgto,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
+    validade:validade,obs:obs,status:'pendente',
+    descBase:desc_val>0?val:0,descV:desc_val,
+    custoPecas:matTotais.custo,matEdit:matEditSerr,
+    tipo:'serralheria'
+  };
+  orcamentos.unshift(novoOrc);
+  if(SUPABASE_ATIVO)await sbSalvarOrcamento(novoOrc);
+  salvarLocal();
+  atualizarContadores();
+  fecharSerrOrc();
+  renderOrcTable();
+  // ── GERAR PDF ─────────────────────────────────────────────────────────────
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
@@ -6852,7 +6890,20 @@ function gerarPDFSerrOrc(){
 }
 
 // ════════════ SERRALHERIA — RECIBO (legacy stubs → novo fluxo unificado) ════════════
-function abrirSerrRec(){abrirSerrOrc();}
+function abrirSerrRec(){
+  _serrModo='rec';
+  abrirSerrOrc();
+  // Sobrepõe título e botões após abrirSerrOrc() ter inicializado tudo
+  var tit=document.querySelector('#modal-serr-orc .modal-title');
+  if(tit)tit.textContent='🧾 Recibo Serralheria';
+  var btnOrc=document.getElementById('serr-btn-orc');
+  var btnRec=document.getElementById('serr-btn-rec');
+  if(btnOrc)btnOrc.style.display='none';
+  if(btnRec)btnRec.style.display='block';
+  // Número do recibo
+  var maxNumR=recibos.reduce(function(mx,r){return Math.max(mx,parseInt((r.num||'R0').replace(/\D/g,'')||0));},0);
+  var soNumEl=document.getElementById('so-num');if(soNumEl)soNumEl.value=String(maxNumR+1).padStart(3,'0');
+}
 function fecharSerrRec(){fecharSerrOrc();}
 function calcSerrRec(){/* not used — lógica migrada para calcSerrOrc */}
 function emitirReciboSerralheira(){/* not used — migrado para serrEmitirRecibo */}
