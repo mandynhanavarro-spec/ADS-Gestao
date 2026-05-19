@@ -4974,7 +4974,7 @@ function abrirEditarOrc(num){
     o.matEdit.forEach(function(item){
       var rowId='eomat-'+Date.now()+'-'+Math.random().toString(36).substr(2,5);
       var opts=materiais.map(function(m){
-        return '<option value="'+m.id+'"'+(m.id===item.matId?' selected':'')+'>'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
+        return '<option value="'+m.id+'">'+m.titulo+' (R$ '+m.venda.toFixed(2)+'/un.)</option>';
       }).join('');
       if(!opts)return;
       var div=document.createElement('div');
@@ -4985,6 +4985,9 @@ function abrirEditarOrc(num){
         '<span style="font-size:11px;color:var(--silver2);min-width:80px;text-align:right" id="eosub-'+rowId+'">R$ 0,00</span>'+
         '<button class="btn btn-red btn-sm" style="padding:4px 8px;flex-shrink:0" onclick="removerLinhaMatEO(\''+rowId+'\')">✕</button>';
       eoMatEl.appendChild(div);
+      // Define o valor do select explicitamente após inserção no DOM
+      var selEl=document.getElementById('eosel-'+rowId);
+      if(selEl&&item.matId)selEl.value=String(item.matId);
       eoMatLinhas.push(rowId);
     });
   }
@@ -5050,8 +5053,9 @@ function salvarEdicaoOrc(){
     if(!selEl||!qtdEl)return null;
     var matId=parseInt(selEl.value);
     var qtd=parseFloat(qtdEl.value||1);
-    if(!matId||isNaN(qtd))return null;
-    return{matId:matId,qtd:qtd};
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
   }).filter(Boolean);
   o.gtia=document.getElementById('eo-gtia').value.trim();
   o.validade=parseInt(document.getElementById('eo-validade').value||CFG.doc.validade||30);
@@ -6034,8 +6038,8 @@ function recalcMatEO(){
     if(!selEl||!qtdEl)return;
     var matId=parseInt(selEl.value);
     var qtd=parseFloat(qtdEl.value||1);
-    if(!matId||isNaN(qtd)||qtd<1)return;
-    var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return;
+    var m=materiais.find(function(x){return x.id==matId;});if(!m)return;
     totalVenda+=m.venda*qtd;totalCusto+=m.custo*qtd;
     if(subEl)subEl.textContent=fmtVal(m.venda*qtd);
   });
