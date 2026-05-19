@@ -3396,16 +3396,29 @@ function salvarRascunho(){
 
 function showAprov(){
   var f=getFormData();
+  var matTotais=getOrcMatTotais();
+  var matEditOrc=orcMatLinhas.map(function(rowId){
+    var selEl=document.getElementById('sel-'+rowId);
+    var qtdEl=document.getElementById('qtd-'+rowId);
+    if(!selEl||!qtdEl)return null;
+    var matId=parseInt(selEl.value);
+    var qtd=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var m=materiais.find(function(x){return x.id===matId;});
+    return{matId:matId,qtd:qtd,venda:m?m.venda:0,custo:m?m.custo:0};
+  }).filter(Boolean);
   var oExist=orcamentos.find(function(o){return o.num===f.numero;});
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,desc:f.descricao,
-      val:f.valor,gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,status:'aprovado'});
+      val:f.valor,gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,status:'aprovado',
+      custoPecas:matTotais.custo,matEdit:matEditOrc});
     // sbId já está em oExist — o UPDATE vai funcionar corretamente
     sbSalvarOrcamento(oExist);
   } else {
     var novoOrc={num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,status:'aprovado',data:f.data,obs:f.obs};
+      gtia:f.garantia,pgto:f.pagamento,status:'aprovado',data:f.data,obs:f.obs,
+      custoPecas:matTotais.custo,matEdit:matEditOrc};
     orcamentos.unshift(novoOrc);
     sbSalvarOrcamento(novoOrc);
   }
