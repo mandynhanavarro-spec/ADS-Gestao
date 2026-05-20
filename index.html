@@ -4840,6 +4840,7 @@ async function nofSalvarGerarPDF(){
   // Salva orçamento
   var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
     val:valorFinal,gtia:gtia,pgto:pgto,status:'pendente',data:data,obs:obs,
+    descTipo:descTipo,descQtd:descQtd,descBase:descVal>0?valor:0,descV:descVal,
     custoPecas:matTotais.custo,matEdit:matEditNof};
   var oExist=orcamentos.find(function(o){return o.num===num;});
   // BUG FIX: ao atualizar orçamento existente preservar sbId; ao criar novo
@@ -5219,7 +5220,8 @@ function abrirEditarOrc(num){
   document.getElementById('eo-tel').value=o.tel||'';
   document.getElementById('eo-end').value=o.end||'';
   document.getElementById('eo-desc').value=o.desc||o.serv||'';
-  document.getElementById('eo-val').value=o.val||0;
+  // Se o orçamento já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
+  document.getElementById('eo-val').value=(o.descBase&&o.descBase>0?o.descBase:o.val)||0;
   document.getElementById('eo-custo').value=o.custoPecas||0;
   document.getElementById('eo-gtia').value=o.gtia||'';
   document.getElementById('eo-validade').value=o.validade||CFG.doc.validade||30;
@@ -5366,6 +5368,10 @@ function salvarEdicaoOrc(){
   o.pgto=document.getElementById('eo-pgto').value;
   o.descTipo=document.getElementById('eo-desc-tipo').value;
   o.descQtd=parseFloat(document.getElementById('eo-desc-qtd').value||0);
+  // Calcula desconto e atualiza val com o valor final com desconto aplicado
+  o.descV=o.descTipo==='valor'?o.descQtd:(o.descTipo==='perc'?o.val*(o.descQtd/100):0);
+  o.descBase=o.descV>0?o.val:0;
+  if(o.descV>0){o.val=Math.max(0,o.val-o.descV);}
   o.data=dataRaw;
   o.status=novoStatus;
 
@@ -5393,7 +5399,8 @@ function abrirEditarRec(num){
   document.getElementById('er-end').value=r.end||'';
   document.getElementById('er-serv').value=r.serv||'';
   document.getElementById('er-desc').value=r.desc||r.serv||'';
-  document.getElementById('er-val').value=r.val||0;
+  // Se o recibo já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
+  document.getElementById('er-val').value=(r.descBase&&r.descBase>0?r.descBase:r.val)||0;
   document.getElementById('er-custo').value=r.custoPecas||0;
   document.getElementById('er-gtia').value=r.gtia||'';
   document.getElementById('er-desloc').value=r.desloc||0;
@@ -5595,6 +5602,7 @@ async function salvarEdicaoRec(){
   r.descQtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
   r.descV=r.descTipo==='valor'?r.descQtd:(r.descTipo==='perc'?r.val*(r.descQtd/100):0);
   r.descBase=r.descV>0?r.val:0;
+  if(r.descV>0){r.val=Math.max(0,r.val-r.descV);}
   r.dataRaw=dataRaw;
   r.data=dataRaw?fmtDateBr(dataRaw):r.data;
   // Materiais
@@ -7063,7 +7071,7 @@ async function gerarPDFSerrOrc(){
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,
     pgto:pgto,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
     validade:validade,obs:obs,status:'pendente',
-    descBase:desc_val>0?val:0,descV:desc_val,
+    descTipo:tipo,descQtd:qtd,descBase:desc_val>0?val:0,descV:desc_val,
     custoPecas:matTotais.custo,matEdit:matEditSerr,
     tipo:'serralheria'
   };
