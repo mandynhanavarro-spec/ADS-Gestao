@@ -2291,7 +2291,7 @@ function carregarLocal(){
 var SUPABASE_URL = 'https://realiuwjctmqgrwanmpx.supabase.co';
 // Chave publicável — novo formato do Supabase (sb_publishable_...)
 // compatível com @supabase/supabase-js@2 mais recente
-var SUPABASE_KEY = 'sb_publishable_Cqgc1Iw1EJqgLm7VqSXXJQ_-7hewU15';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlYWxpdXdqY3RtcWdyd2FubXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTA5MDIsImV4cCI6MjA5NDE4NjkwMn0.8T_exTr__3XFoyu-ncqZESHjFZRlzNblcxzKSGUVsSc';
 
 var sb = null;
 var SUPABASE_ATIVO = false;
@@ -2709,7 +2709,9 @@ async function sbSalvarFinanceiro(f) {
   if (!SUPABASE_ATIVO) return;
   const payload = {
     descricao: f.desc, cliente: f.cli||'', valor: f.val,
-    pagamento: f.pgto, data: f.data
+    pagamento: f.pgto, data: f.data,
+    custo_pecas: parseFloat(f.pecas||0),
+    deslocamento: parseFloat(f.desloc||0)
   };
   try {
     if (f.sbId) {
