@@ -37,7 +37,10 @@
     sessionActive   : false,  // sessão autenticada?
     bioSupported    : false,   // Web Authn disponível?
     isMobile        : false,  // dispositivo móvel?
-    inactivityTimer : null,   // timer de inatividade
+   INACTIVITY_TIMEOUT_MS : 5 * 60 * 1000,   // 5 minutos (padrão)
+// Exemplos:
+// 3 * 60 * 1000  →  3 minutos
+// 10 * 60 * 1000 →  10 minutos
     bgHideTime      : null,   // quando o app foi para o background
     sensitiveUnlocked: false, // módulo sensível já desbloqueado nesta sessão
     pendingSensitiveCb: null, // callback após autenticação de área sensível
