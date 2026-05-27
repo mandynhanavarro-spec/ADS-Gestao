@@ -67,7 +67,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
 .btn-ghost{background:transparent;color:var(--silver2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--bg3);color:var(--white)}
 .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#059669}
-.btn-amber{background:var(--amber);color:#fff}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{background:#d97706}
 .btn-red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
 .btn-sm{padding:4px 9px;font-size:11px;border-radius:6px}
 .btn-lg{padding:11px 20px;font-size:13px}
@@ -183,6 +183,12 @@ td.bold{color:var(--white);font-weight:700}
 #orc-table-body tr td:first-child{border-left:3px solid transparent}
 .badge-exec{background:rgba(6,182,212,.18);color:#67e8f9}
 .badge-final{background:rgba(16,185,129,.25);color:#6ee7b7}
+/* STATUS FINANCEIRO BADGES */
+.badge-fin-pago{background:rgba(16,185,129,.18);color:var(--green2);border:1px solid rgba(16,185,129,.3)}
+.badge-fin-parcial{background:rgba(245,158,11,.18);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.badge-fin-pix{background:rgba(59,130,246,.18);color:var(--blue3);border:1px solid rgba(59,130,246,.3)}
+.badge-fin-pendente{background:rgba(120,120,140,.18);color:var(--silver2);border:1px solid rgba(120,120,140,.3)}
+.badge-fin-vencido{background:rgba(239,68,68,.18);color:var(--red);border:1px solid rgba(239,68,68,.3)}
 
 /* EDIT BANNER */
 .edit-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:7px;padding:8px 13px;display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--amber)}
@@ -534,7 +540,7 @@ td.bold{color:var(--white);font-weight:700}
   <div class="panel desktop-table">
     <div class="panel-bd" style="padding:0 16px">
       <table>
-        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status</th><th width="160">Ações</th></tr></thead>
+        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status Serviço</th><th>Fin.</th><th width="160">Ações</th></tr></thead>
         <tbody id="orc-table-body"></tbody>
       </table>
     </div>
@@ -680,7 +686,7 @@ td.bold{color:var(--white);font-weight:700}
   <!-- Desktop table -->
   <div class="panel desktop-table"><div class="panel-bd" style="padding:0 16px">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Referente a</th><th>Valor</th><th>Pgto</th><th>Data</th><th>Ações</th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Referente a</th><th>Valor</th><th>Status Fin.</th><th>Data</th><th>Ações</th></tr></thead>
       <tbody id="rec-table-body"></tbody>
     </table>
     <div id="rec-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum recibo emitido ainda.</div>
@@ -1262,6 +1268,162 @@ td.bold{color:var(--white);font-weight:700}
       </div>
 
     </div><!-- /modal-bd -->
+  </div>
+</div>
+
+<!-- ══ MODAL: INFORMAÇÕES DE PAGAMENTO (obrigatório antes de gerar Recibo/NF) ══ -->
+<div class="modal-bg" id="modal-pgto-info">
+  <div class="modal" style="width:520px;max-width:98vw">
+    <div class="modal-hd">
+      <div>
+        <span class="modal-title">💳 Informações de Pagamento</span>
+        <div style="font-size:11px;color:var(--silver2);margin-top:2px">Preencha antes de emitir o documento</div>
+      </div>
+      <button class="modal-x" onclick="fecharModalPgtoInfo()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <!-- Resumo orçamento -->
+      <div style="background:rgba(37,99,235,.08);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px">
+        <strong style="color:var(--blue3)">Cliente:</strong> <span id="pgto-info-cli" style="color:var(--white)"></span><br>
+        <strong style="color:var(--blue3)">Valor total:</strong> <span id="pgto-info-val" style="color:var(--green2);font-weight:700"></span>
+      </div>
+
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Forma de Pagamento</div>
+          <select class="fs" id="pgto-info-forma" onchange="togglePixInfoPgtoModal()">
+            <option value="Pix">Pix</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Parcelado">Parcelado</option>
+            <option value="Sinal de 50% / Restante 50%">Sinal 50% / Restante 50%</option>
+            <option value="Cartão Crédito">Cartão Crédito</option>
+            <option value="Cartão Débito">Cartão Débito</option>
+            <option value="Transferência Bancária">Transferência Bancária</option>
+          </select>
+        </div>
+        <div>
+          <div class="fl">Status do Pagamento</div>
+          <select class="fs" id="pgto-info-status" onchange="atualizarBadgePgtoInfo()">
+            <option value="pendente">Pagamento Pendente</option>
+            <option value="aguardando_pix">Aguardando Pix</option>
+            <option value="parcial">Pago Parcial</option>
+            <option value="pago">Pago</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Badge de status em tempo real -->
+      <div style="margin-bottom:12px" id="pgto-info-badge-wrap">
+        <span id="pgto-info-badge" class="badge badge-fin-pendente">⚪ Pagamento Pendente</span>
+      </div>
+
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Valor Pago (R$) — opcional</div>
+          <input class="fi" type="number" id="pgto-info-valor-pago" placeholder="0,00" step="0.01" min="0" oninput="calcSaldoPgtoInfo()">
+        </div>
+        <div>
+          <div class="fl">Data de Vencimento — opcional</div>
+          <input class="fi" type="date" id="pgto-info-vencimento">
+        </div>
+      </div>
+
+      <!-- Saldo restante calculado automaticamente -->
+      <div id="pgto-info-saldo-box" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:var(--silver2)">Valor total:</span>
+          <span style="color:var(--white);font-weight:700" id="pgto-info-saldo-total"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:var(--silver2)">Valor pago:</span>
+          <span style="color:var(--green2);font-weight:700" id="pgto-info-saldo-pago"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(245,158,11,.3);padding-top:6px;margin-top:4px">
+          <span style="color:var(--white);font-weight:700">Saldo pendente:</span>
+          <span style="color:var(--amber);font-weight:900" id="pgto-info-saldo-rest"></span>
+        </div>
+      </div>
+
+      <!-- Pix info -->
+      <div id="pgto-info-pix-box" style="display:none;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--green2)">
+        💚 <strong>Pagamento via Pix</strong><br><span id="pgto-info-pix-key" style="color:var(--white)"></span>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharModalPgtoInfo()">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmarPgtoInfoEEmitir()">✅ Confirmar e Emitir →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ATUALIZAR PAGAMENTO (aba Recibos) ══ -->
+<div class="modal-bg" id="modal-atualizar-pgto">
+  <div class="modal" style="width:460px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">💰 Atualizar Pagamento</span>
+      <button class="modal-x" onclick="fecharModalAtualizarPgto()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div style="background:rgba(37,99,235,.08);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px">
+        <strong style="color:var(--blue3)">Recibo:</strong> <span id="atpgto-num" style="color:var(--white)"></span><br>
+        <strong style="color:var(--blue3)">Cliente:</strong> <span id="atpgto-cli" style="color:var(--white)"></span><br>
+        <strong style="color:var(--blue3)">Valor total:</strong> <span id="atpgto-val" style="color:var(--green2);font-weight:700"></span>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Novo Status</div>
+          <select class="fs" id="atpgto-status" onchange="atualizarBadgeAtPgto()">
+            <option value="pendente">Pagamento Pendente</option>
+            <option value="aguardando_pix">Aguardando Pix</option>
+            <option value="parcial">Pago Parcial</option>
+            <option value="pago">Pago</option>
+          </select>
+        </div>
+        <div>
+          <div class="fl">Forma de Pagamento</div>
+          <select class="fs" id="atpgto-forma">
+            <option value="Pix">Pix</option>
+            <option value="Dinheiro">Dinheiro</option>
+            <option value="Parcelado">Parcelado</option>
+            <option value="Sinal de 50% / Restante 50%">Sinal 50% / Restante 50%</option>
+            <option value="Cartão Crédito">Cartão Crédito</option>
+            <option value="Cartão Débito">Cartão Débito</option>
+            <option value="Transferência Bancária">Transferência Bancária</option>
+          </select>
+        </div>
+      </div>
+      <div id="atpgto-badge-wrap" style="margin-bottom:12px">
+        <span id="atpgto-badge" class="badge badge-fin-pendente">⚪ Pagamento Pendente</span>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Valor Pago (R$) — opcional</div>
+          <input class="fi" type="number" id="atpgto-valor-pago" placeholder="0,00" step="0.01" min="0" oninput="calcSaldoAtPgto()">
+        </div>
+        <div>
+          <div class="fl">Data de Vencimento — opcional</div>
+          <input class="fi" type="date" id="atpgto-vencimento">
+        </div>
+      </div>
+      <div id="atpgto-saldo-box" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 14px;margin-bottom:4px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:var(--silver2)">Valor total:</span>
+          <span style="color:var(--white);font-weight:700" id="atpgto-saldo-total"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="color:var(--silver2)">Valor pago:</span>
+          <span style="color:var(--green2);font-weight:700" id="atpgto-saldo-pago"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid rgba(245,158,11,.3);padding-top:6px;margin-top:4px">
+          <span style="color:var(--white);font-weight:700">Saldo pendente:</span>
+          <span style="color:var(--amber);font-weight:900" id="atpgto-saldo-rest"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharModalAtualizarPgto()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAtualizacaoPgto()">💾 Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -1885,7 +2047,7 @@ td.bold{color:var(--white);font-weight:700}
         <div class="aprov-opt aprov-modal-opt" onclick="pickAprovModal(this,'recibo')">
           <div class="ao-ic">🧾</div>
           <div class="ao-lb">Recibo</div>
-          <div class="ao-sb">Pagamento confirmado</div>
+          <div class="ao-sb">Emitir documento</div>
         </div>
         <div class="aprov-opt aprov-modal-opt" onclick="pickAprovModal(this,'nf')">
           <div class="ao-ic">📑</div>
@@ -4896,10 +5058,8 @@ function renderRecibosPage(){
   var PGTOS=['Pix','Dinheiro','Parcelado','Sinal de 50% / Restante 50%','Cartão Crédito','Cartão Débito','Pendente'];
 
   recibos.forEach(function(r,i){
-    var isPendente=(r.pgto==='Pendente'||r.finLancado===false);
-    var pgtoOpts=PGTOS.map(function(p){
-      return '<option value="'+p+'"'+(r.pgto===p?' selected':'')+'>'+p+'</option>';
-    }).join('');
+    var statusFin=r.statusFin||'pendente';
+    var isPendente=(statusFin!=='pago');
 
     // ── Desktop row ──
     var tr=document.createElement('tr');
@@ -4918,21 +5078,10 @@ function renderRecibosPage(){
     var tdVal=document.createElement('td');
     tdVal.innerHTML='<span style="color:var(--green2);font-weight:700">'+fmtVal(r.val)+'</span>';
 
-    // Pagamento: select sempre editável
+    // Status Financeiro: badge colorido
     var tdPgto=document.createElement('td');
-    var pgSel=document.createElement('select');
-    pgSel.className='fs';
-    pgSel.style.cssText='font-size:10px;padding:3px 5px;min-width:110px;background:'+(isPendente?'rgba(245,158,11,.15)':'var(--bg3)')+';border-color:'+(isPendente?'rgba(245,158,11,.5)':'var(--border2)');
-    pgSel.innerHTML=pgtoOpts;
-    (function(rRef,selEl){
-      selEl.onchange=function(){
-        rRef.pgto=selEl.value;
-        salvarLocal();
-        if(SUPABASE_ATIVO)sbSalvarRecibo(rRef);
-        renderRecibosPage();
-      };
-    })(r,pgSel);
-    tdPgto.appendChild(pgSel);
+    tdPgto.innerHTML=_badgeFinHtml(statusFin)+
+      '<div style="font-size:10px;color:var(--silver);margin-top:2px">'+( r.pgto||'—')+'</div>';
 
     var tdData=document.createElement('td');
     tdData.textContent=r.data;
@@ -4941,20 +5090,20 @@ function renderRecibosPage(){
     var acoesDiv=document.createElement('div');
     acoesDiv.style.cssText='display:flex;gap:4px;flex-wrap:wrap';
 
-    // Botão confirmar pagamento (só aparece se ainda não lançado ou pendente)
+    // Botão atualizar pagamento (se não pago)
     if(isPendente){
       var btnConf=document.createElement('button');
-      btnConf.className='btn btn-green btn-sm';
-      btnConf.textContent='💰 Confirmar';
-      btnConf.title='Confirmar pagamento e lançar no Financeiro';
-      (function(rRef,idx){
-        btnConf.onclick=function(){confirmarPagamentoRecibo(idx);};
-      })(r,i);
+      btnConf.className='btn btn-amber btn-sm';
+      btnConf.textContent='💰 Pgto';
+      btnConf.title='Atualizar status de pagamento';
+      (function(idx2){
+        btnConf.onclick=function(){abrirModalAtualizarPgto(idx2);};
+      })(i);
       acoesDiv.appendChild(btnConf);
     }
 
     var btnPDF=document.createElement('button');btnPDF.className='btn btn-ghost btn-sm';btnPDF.textContent='📄 PDF';
-    (function(idx){btnPDF.onclick=function(){gerarPDFRecibo(idx);};})(i);
+    (function(idx2){btnPDF.onclick=function(){gerarPDFReciboComStatus(idx2);};})(i);
 
     var btnEdit=document.createElement('button');btnEdit.className='btn btn-ghost btn-sm';btnEdit.textContent='✏️';
     btnEdit.title='Editar recibo';
@@ -4964,7 +5113,7 @@ function renderRecibosPage(){
     (function(rRef){btnWpp.onclick=function(){enviarWppRecibo(rRef);};})(r);
 
     var btnDel=document.createElement('button');btnDel.className='btn btn-red btn-sm';btnDel.textContent='🗑';
-    (function(idx){btnDel.onclick=function(){excluirRecibo(idx);};})(i);
+    (function(idx2){btnDel.onclick=function(){excluirRecibo(idx2);};})(i);
 
     acoesDiv.appendChild(btnPDF);
     acoesDiv.appendChild(btnEdit);
@@ -5157,61 +5306,434 @@ async function emitirDocAprovado(){
   if(!num||!tipo)return;
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
-  o.status='aprovado';
 
+  // Para recibo e NF: abre modal de informações de pagamento primeiro
+  if(tipo==='recibo'||tipo==='nf'){
+    fecharAprovacaoModal();
+    window._pgtoInfoTipo=tipo;
+    window._pgtoInfoOrcNum=num;
+    window._pgtoInfoValTotal=o.val;
+    // Pré-preenche campos
+    document.getElementById('pgto-info-cli').textContent=o.cli;
+    document.getElementById('pgto-info-val').textContent=fmtVal(o.val);
+    // Pré-seleciona forma de pagamento do orçamento
+    var formaEl=document.getElementById('pgto-info-forma');
+    for(var i=0;i<formaEl.options.length;i++){
+      if(formaEl.options[i].value===o.pgto){formaEl.selectedIndex=i;break;}
+    }
+    document.getElementById('pgto-info-status').value='pendente';
+    document.getElementById('pgto-info-valor-pago').value='';
+    document.getElementById('pgto-info-vencimento').value='';
+    document.getElementById('pgto-info-saldo-box').style.display='none';
+    atualizarBadgePgtoInfo();
+    togglePixInfoPgtoModal();
+    calcSaldoPgtoInfo();
+    document.getElementById('modal-pgto-info').classList.add('open');
+    return;
+  }
+
+  // Só financeiro: lança direto sem marcar como pago via pagamento
+  o.status='aprovado';
   var dataFormatada=o.data?o.data.includes('-')?fmtDateBr(o.data):o.data:fmtDateBr(new Date().toISOString().split('T')[0]);
   var lancFin={
     desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
     cli:o.cli, val:o.val, pgto:o.pgto,
     data:dataFormatada, dataRaw:o.data||'',
-    pecas:o.custoPecas||0, desloc:0, num:o.num
+    pecas:o.custoPecas||0, desloc:0, num:o.num,
+    statusFin:'pendente'
   };
+  financeiro.unshift(lancFin);
+  await sbSalvarFinanceiro(lancFin);
+  await sbSalvarOrcamento(o);
+  salvarLocal();
+  renderOrcTable();
+  atualizarContadores();
+  fecharAprovacaoModal();
+  alert('✅ Lançado no financeiro! Valor: '+fmtVal(o.val));
+}
+
+// ════════════ MODAL INFORMAÇÕES DE PAGAMENTO ════════════
+function _badgeFinHtml(statusFin){
+  var map={
+    pago:       {cls:'badge-fin-pago',    txt:'🟢 Pago'},
+    parcial:    {cls:'badge-fin-parcial', txt:'🟡 Pago Parcial'},
+    aguardando_pix:{cls:'badge-fin-pix', txt:'🔵 Aguardando Pix'},
+    pendente:   {cls:'badge-fin-pendente',txt:'⚪ Pendente'},
+    vencido:    {cls:'badge-fin-vencido', txt:'🔴 Vencido'}
+  };
+  var v=map[statusFin]||map['pendente'];
+  return '<span class="badge '+v.cls+'">'+v.txt+'</span>';
+}
+
+function atualizarBadgePgtoInfo(){
+  var s=document.getElementById('pgto-info-status').value;
+  var wrap=document.getElementById('pgto-info-badge-wrap');
+  if(wrap)wrap.innerHTML=_badgeFinHtml(s);
+}
+
+function atualizarBadgeAtPgto(){
+  var s=document.getElementById('atpgto-status').value;
+  var wrap=document.getElementById('atpgto-badge-wrap');
+  if(wrap)wrap.innerHTML=_badgeFinHtml(s);
+}
+
+function togglePixInfoPgtoModal(){
+  var sel=document.getElementById('pgto-info-forma');
+  var box=document.getElementById('pgto-info-pix-box');
+  var keyEl=document.getElementById('pgto-info-pix-key');
+  if(!sel||!box)return;
+  var v=sel.value;
+  var isPix=(v==='Pix'||v==='Parcelado'||v==='Sinal de 50% / Restante 50%'||v==='Transferência Bancária');
+  box.style.display=isPix?'block':'none';
+  if(keyEl&&isPix){
+    var chave=CFG.doc.pix||'(11) 96770-4116';
+    var resp=CFG.empresa.resp||'Ananias Antonio dos Santos';
+    keyEl.innerHTML='Chave: <strong>'+chave+'</strong> &nbsp;|&nbsp; Favorecido: <strong>'+resp+'</strong>';
+  }
+}
+
+function calcSaldoPgtoInfo(){
+  var total=window._pgtoInfoValTotal||0;
+  var pago=parseFloat(document.getElementById('pgto-info-valor-pago').value||0);
+  var saldoBox=document.getElementById('pgto-info-saldo-box');
+  if(pago>0&&total>0){
+    saldoBox.style.display='block';
+    document.getElementById('pgto-info-saldo-total').textContent=fmtVal(total);
+    document.getElementById('pgto-info-saldo-pago').textContent=fmtVal(pago);
+    document.getElementById('pgto-info-saldo-rest').textContent=fmtVal(Math.max(0,total-pago));
+  } else {
+    saldoBox.style.display='none';
+  }
+}
+
+function calcSaldoAtPgto(){
+  var total=window._atPgtoValTotal||0;
+  var pago=parseFloat(document.getElementById('atpgto-valor-pago').value||0);
+  var saldoBox=document.getElementById('atpgto-saldo-box');
+  if(pago>0&&total>0){
+    saldoBox.style.display='block';
+    document.getElementById('atpgto-saldo-total').textContent=fmtVal(total);
+    document.getElementById('atpgto-saldo-pago').textContent=fmtVal(pago);
+    document.getElementById('atpgto-saldo-rest').textContent=fmtVal(Math.max(0,total-pago));
+  } else {
+    saldoBox.style.display='none';
+  }
+}
+
+function fecharModalPgtoInfo(){
+  document.getElementById('modal-pgto-info').classList.remove('open');
+  window._pgtoInfoTipo=null;
+  window._pgtoInfoOrcNum=null;
+  window._pgtoInfoValTotal=null;
+}
+
+async function confirmarPgtoInfoEEmitir(){
+  var tipo=window._pgtoInfoTipo;
+  var num=window._pgtoInfoOrcNum;
+  if(!tipo||!num)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+
+  var formaPgto=document.getElementById('pgto-info-forma').value;
+  var statusPgto=document.getElementById('pgto-info-status').value;
+  var valorPago=parseFloat(document.getElementById('pgto-info-valor-pago').value||0)||null;
+  var vencimento=document.getElementById('pgto-info-vencimento').value||null;
+
+  o.status='aprovado';
+  o.statusFin=statusPgto;
+  o.formaPgto=formaPgto;
+  if(valorPago)o.valorPago=valorPago;
+  if(vencimento)o.vencimentoPgto=vencimento;
+
+  var dataFormatada=o.data?o.data.includes('-')?fmtDateBr(o.data):o.data:fmtDateBr(new Date().toISOString().split('T')[0]);
+  var isPago=(statusPgto==='pago');
+  var lancFin={
+    desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
+    cli:o.cli, val:o.val, pgto:formaPgto,
+    data:dataFormatada, dataRaw:o.data||'',
+    pecas:o.custoPecas||0, desloc:0, num:o.num,
+    statusFin:statusPgto,
+    valorPago:valorPago,
+    vencimentoPgto:vencimento,
+    tipo_lan:isPago?'recebido':'a_receber'
+  };
+
+  fecharModalPgtoInfo();
 
   if(tipo==='recibo'){
     var numR='#R'+String(recibos.length+1).padStart(3,'0');
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
-      serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:o.pgto,
-      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,finLancado:false};
+      serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:formaPgto,
+      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
+      statusFin:statusPgto,valorPago:valorPago,vencimentoPgto:vencimento,
+      finLancado:isPago};
     recibos.unshift(novoRec);
     await sbSalvarRecibo(novoRec);
-    if(o.pgto!=='Pendente'){
-      financeiro.unshift(lancFin);
-      await sbSalvarFinanceiro(lancFin);
-      novoRec.finLancado=true;
-    }
+    // Lança no financeiro como recebido se pago, ou a_receber se pendente
+    financeiro.unshift(lancFin);
+    await sbSalvarFinanceiro(lancFin);
     await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
+    renderRecibosPage();
     atualizarContadores();
-    fecharAprovacaoModal();
-    setTimeout(function(){gerarPDFRecibo(0);},200);
-    var aviso=o.pgto==='Pendente'?' ⚠️ Pagamento pendente — confirme depois na aba Recibos.':'';
-    alert('✅ Recibo emitido!'+aviso);
+    setTimeout(function(){gerarPDFReciboComStatus(0);},200);
+    var msg='✅ Recibo emitido!';
+    if(!isPago) msg+=' ⚠️ Status: '+_statusFinLabel(statusPgto)+' — atualize depois na aba Recibos.';
+    alert(msg);
   } else if(tipo==='nf'){
     var numNF='NFS-e #'+Math.floor(1000+Math.random()*9000);
     notasFiscais.unshift({num:numNF,cli:o.cli,serv:o.serv||'',
-      val:o.val,data:dataFormatada,dataRaw:o.data||'',status:'Aguardando prefeitura'});
+      val:o.val,data:dataFormatada,dataRaw:o.data||'',status:'Aguardando prefeitura',
+      statusFin:statusPgto,valorPago:valorPago,vencimentoPgto:vencimento,pgto:formaPgto});
     financeiro.unshift(lancFin);
     await sbSalvarFinanceiro(lancFin);
     await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
+    renderRecibosPage();
     atualizarContadores();
-    fecharAprovacaoModal();
-    alert('✅ Nota Fiscal registrada e lançada no financeiro!');
-  } else if(tipo==='financeiro'){
-    financeiro.unshift(lancFin);
-    await sbSalvarFinanceiro(lancFin);
-    await sbSalvarOrcamento(o);
-    salvarLocal();
-    renderOrcTable();
-    atualizarContadores();
-    fecharAprovacaoModal();
-    alert('✅ Lançado no financeiro! Valor: '+fmtVal(o.val));
+    var msg2='✅ Nota Fiscal registrada!';
+    if(!isPago) msg2+=' Status financeiro: '+_statusFinLabel(statusPgto)+'.';
+    alert(msg2);
+  } else if(tipo==='serr_recibo'){
+    // Delega para o finalizador da serralheria
+    await _serrEmitirReciboFinalizar(statusPgto, formaPgto, valorPago, vencimento);
   }
 }
 
-// ════════════ EDITAR ORÇAMENTO ════════════
+function _statusFinLabel(s){
+  var m={pago:'Pago',parcial:'Pago Parcial',aguardando_pix:'Aguardando Pix',pendente:'Pendente',vencido:'Vencido'};
+  return m[s]||s;
+}
+
+// ════════════ MODAL ATUALIZAR PAGAMENTO ════════════
+var _atPgtoRecIdx=null;
+
+function abrirModalAtualizarPgto(idx){
+  var r=recibos[idx];
+  if(!r)return;
+  _atPgtoRecIdx=idx;
+  window._atPgtoValTotal=r.val;
+  document.getElementById('atpgto-num').textContent=r.num;
+  document.getElementById('atpgto-cli').textContent=r.cli;
+  document.getElementById('atpgto-val').textContent=fmtVal(r.val);
+  // Pré-preenche com valores atuais
+  document.getElementById('atpgto-status').value=r.statusFin||'pendente';
+  var formaEl=document.getElementById('atpgto-forma');
+  for(var i=0;i<formaEl.options.length;i++){
+    if(formaEl.options[i].value===(r.pgto||'')){formaEl.selectedIndex=i;break;}
+  }
+  document.getElementById('atpgto-valor-pago').value=r.valorPago||'';
+  document.getElementById('atpgto-vencimento').value=r.vencimentoPgto||'';
+  document.getElementById('atpgto-saldo-box').style.display='none';
+  atualizarBadgeAtPgto();
+  calcSaldoAtPgto();
+  document.getElementById('modal-atualizar-pgto').classList.add('open');
+}
+
+function fecharModalAtualizarPgto(){
+  document.getElementById('modal-atualizar-pgto').classList.remove('open');
+  _atPgtoRecIdx=null;
+  window._atPgtoValTotal=null;
+}
+
+async function salvarAtualizacaoPgto(){
+  var idx=_atPgtoRecIdx;
+  if(idx===null||idx===undefined)return;
+  var r=recibos[idx];
+  if(!r)return;
+
+  var novoStatus=document.getElementById('atpgto-status').value;
+  var novaForma=document.getElementById('atpgto-forma').value;
+  var novoValorPago=parseFloat(document.getElementById('atpgto-valor-pago').value||0)||null;
+  var novoVencimento=document.getElementById('atpgto-vencimento').value||null;
+
+  r.statusFin=novoStatus;
+  r.pgto=novaForma;
+  if(novoValorPago)r.valorPago=novoValorPago;
+  if(novoVencimento)r.vencimentoPgto=novoVencimento;
+
+  var isPago=(novoStatus==='pago');
+  r.finLancado=isPago;
+
+  // Atualiza lançamento no financeiro se existir
+  var finIdx=financeiro.findIndex(function(f){return f.num===r.num;});
+  if(finIdx>=0){
+    financeiro[finIdx].pgto=novaForma;
+    financeiro[finIdx].statusFin=novoStatus;
+    financeiro[finIdx].tipo_lan=isPago?'recebido':'a_receber';
+    if(novoValorPago)financeiro[finIdx].valorPago=novoValorPago;
+    sbSalvarFinanceiro(financeiro[finIdx]);
+  }
+
+  salvarLocal();
+  if(SUPABASE_ATIVO)await sbSalvarRecibo(r);
+  fecharModalAtualizarPgto();
+  renderRecibosPage();
+  renderFinanceiroPage();
+  atualizarContadores();
+  _cfgToast('✅ Pagamento atualizado — '+_statusFinLabel(novoStatus));
+}
+
+// ════════════ PDF RECIBO COM STATUS DE PAGAMENTO ════════════
+function gerarPDFReciboComStatus(idx){
+  var r=recibos[idx];
+  if(!r){alert('Recibo não encontrado.');return;}
+  if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
+  var {jsPDF}=window.jspdf;
+  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
+
+  var statusFin=r.statusFin||'pendente';
+  var formaPgto=r.pgto||'—';
+  var valorTotal=r.val||0;
+  var valorPago=r.valorPago||0;
+  var saldoRest=Math.max(0,valorTotal-valorPago);
+
+  // Cores do banner de status
+  var statusColor={pago:[16,185,129],parcial:[245,158,11],aguardando_pix:[59,130,246],pendente:[120,120,140],vencido:[239,68,68]};
+  var cor=statusColor[statusFin]||statusColor['pendente'];
+
+  var blocos=getOrdemPDF('rec');
+  var y=MT;
+  var pixKeyR=CFG.doc.pix||'ads.pg@hotmail.com';
+  var bancoInfoR=CFG.doc.banco||'Banco Itau AG 0466 CC 60864-3';
+  var respNomeR=CFG.empresa.resp||'Ananias Antonio dos Santos';
+
+  // Desconto
+  var descTipoR=r.descTipo||'';
+  var descQtdR=r.descQtd||0;
+  var descValR=descTipoR==='valor'?descQtdR:(descTipoR==='perc'?valorTotal*(descQtdR/100):0);
+  var valorFinalR=Math.max(0,valorTotal-descValR);
+
+  // ── Cabeçalho empresa ──
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text(CFG.empresa.nome||'ADS Portões Automáticos',PW-MR,MT,{align:'right'});
+  doc.setFont('helvetica','normal');doc.setFontSize(8);
+  doc.text('CNPJ: '+(CFG.empresa.cnpj||'20.989.538/0001-88'),PW-MR,MT+4,{align:'right'});
+  if(CFG.doc.logoB64){doc.addImage(CFG.doc.logoB64,_getImgFmt(CFG.doc.logoB64),PW-MR-55,MT+8,55,55);}
+  else{doc.addImage(ADS_LOGO_B64,'PNG',PW-MR-55,MT+8,55,55);}
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(80,80,80);
+  doc.text('Recibo N\xba '+r.num,ML,MT);
+  doc.setTextColor(0,0,0);doc.setFontSize(9);
+  doc.text('São Paulo, '+fmtDateLong(r.dataRaw||r.data)+'.',ML,MT+7);
+  y=MT+24;
+
+  // ── Banner de status financeiro ──
+  doc.setFillColor(cor[0],cor[1],cor[2]);
+  doc.roundedRect(ML,y,CW,10,2,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);
+  var statusLabel={pago:'✓ PAGO',parcial:'⚡ PAGO PARCIAL',aguardando_pix:'⏳ AGUARDANDO PIX',pendente:'⏸ PAGAMENTO PENDENTE',vencido:'⚠ VENCIDO'};
+  doc.text((statusLabel[statusFin]||'PENDENTE')+'   |   '+formaPgto,ML+4,y+6.5);
+  doc.setTextColor(0,0,0);
+  y+=15;
+
+  // ── Blocos reordenáveis ──
+  blocos.forEach(function(b){
+    if(b.fixo)return;
+    if(!b.visivel)return;
+    if(b.id==='titulo'){
+      doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
+      doc.text('RECIBO',PW/2,y+14,{align:'center'});
+      doc.setTextColor(0,0,0);y+=22;
+
+    } else if(b.id==='cliente'){
+      doc.setFontSize(10);
+      if(r.cli){doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);doc.setFont('helvetica','normal');doc.text(r.cli,ML+18,y);y+=7;}
+      if(r.tel){doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);doc.setFont('helvetica','normal');doc.text(r.tel,ML+24,y);y+=7;}
+      if(r.end){doc.setFont('helvetica','bold');doc.text('Endereço:',ML,y);doc.setFont('helvetica','normal');var eL=doc.splitTextToSize(r.end,CW-30);doc.text(eL,ML+24,y);y+=eL.length*5;}
+      y+=5;
+
+    } else if(b.id==='servico'){
+      doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text('Referente a',ML+4,y);y+=7;
+      doc.setFont('helvetica','normal');
+      var items=(r.desc||r.serv||'').split('\n').filter(function(l){return l.trim();});
+      items.forEach(function(it){var lns=doc.splitTextToSize('- '+it.trim(),CW-12);doc.text(lns,ML+7,y);y+=lns.length*6;});
+      y+=2;
+
+    } else if(b.id==='valor'){
+      y+=2;doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
+      if(descValR>0){
+        doc.setFont('helvetica','normal');
+        doc.text('Valor base: R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+        doc.text('Desconto: R$ '+descValR.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+      }
+      var vFmt='R$ '+valorFinalR.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(valorFinalR)+').';
+      var vLines=doc.splitTextToSize(vFmt,CW-6);
+      doc.setFont('helvetica',descValR>0?'bold':'normal');doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
+
+      // Status financeiro detalhado no PDF
+      if(statusFin!=='pago'){
+        doc.setDrawColor(cor[0],cor[1],cor[2]);doc.setLineWidth(0.5);
+        doc.roundedRect(ML,y,CW,statusFin==='parcial'?20:12,1.5,1.5,'S');
+        doc.setFont('helvetica','bold');doc.setFontSize(9);
+        doc.setTextColor(cor[0],cor[1],cor[2]);
+        if(statusFin==='parcial'&&valorPago>0){
+          doc.text('Valor Pago: R$ '+valorPago.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y+5);
+          doc.text('Saldo Restante: R$ '+saldoRest.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y+11);
+          doc.setFont('helvetica','normal');doc.setFontSize(8);
+          doc.text('Pagamento parcial confirmado.',ML+4,y+17);
+        } else if(statusFin==='aguardando_pix'){
+          doc.text('Valor Pendente: R$ '+valorFinalR.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y+8);
+        } else {
+          doc.text('Valor Pendente: R$ '+valorFinalR.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y+8);
+        }
+        doc.setTextColor(0,0,0);
+        y+=(statusFin==='parcial'?20:12)+6;
+        // Mensagem de cobrança
+        doc.setFont('helvetica','italic');doc.setFontSize(8);doc.setTextColor(100,100,100);
+        doc.text('Documento emitido como cobrança/solicitação de pagamento.',ML,y);
+        doc.setFont('helvetica','normal');doc.setTextColor(0,0,0);
+        y+=8;
+      } else {
+        // Pago: confirmação
+        doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(16,185,129);
+        doc.text('Pagamento confirmado.',ML+4,y+6);
+        doc.setTextColor(0,0,0);y+=12;
+      }
+
+    } else if(b.id==='garantia'){
+      if(r.gtia&&r.gtia.trim()&&r.gtia.trim()!=='—'){
+        doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
+        doc.setFont('helvetica','bold');doc.text('Garantia',ML,y);
+        doc.setFont('helvetica','normal');doc.text(' de '+r.gtia+', Contra defeito de Fabricação.',ML+23,y);y+=10;
+      }
+
+    } else if(b.id==='pagamento'){
+      doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
+      doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
+      doc.setFont('helvetica','normal');
+      var pgR=formaPgto;
+      if(pgR==='Parcelado'||pgR==='Sinal de 50% / Restante 50%'){
+        doc.text('Sinal de 50% / Restante 50% na entrega do serviço.',ML+2,y);y+=6;
+        doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
+      } else if(pgR==='Pix'||pgR==='Transferência Bancária'){
+        doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
+        doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
+      } else {
+        doc.text('Pagamento via '+pgR+'.',ML+2,y);y+=6;
+      }
+      doc.text(respNomeR,ML+2,y);y+=6;
+    }
+  });
+
+  // ── Rodapé ──
+  y+=6;
+  if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
+  doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
+  var fyR=y-8;var sxR=PW-MR-70;
+  doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
+  doc.text('Qualquer dúvida estamos à disposição',sxR+35,fyR,{align:'center'});
+  doc.text('Atenciosamente',sxR+35,fyR+6,{align:'center'});
+  doc.addImage(CFG.doc.sigB64||SIG_B64,_getImgFmt(CFG.doc.sigB64||SIG_B64),sxR+20,fyR+6,30,12);
+  doc.setLineWidth(0.3);doc.line(sxR+4,fyR+22,sxR+66,fyR+22);
+  doc.text(CFG.empresa.resp||'Ananias Santos',sxR+35,fyR+26,{align:'center'});
+  doc.save('Recibo_ADS_'+r.num+'_'+r.cli.split(' ')[0]+'.pdf');
+}
+
+
 function abrirEditarOrc(num){
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
@@ -6290,8 +6812,11 @@ function renderOrcTable(){
     var tdVal=document.createElement('td');tdVal.innerHTML='<span style="color:var(--green2);font-weight:700">'+fmtVal(o.val)+'</span>';
     var tdPgto=document.createElement('td');tdPgto.textContent=o.pgto;
     var tdStatus=document.createElement('td');tdStatus.appendChild(sel);
+    var tdFinStat=document.createElement('td');
+    if(o.statusFin){tdFinStat.innerHTML=_badgeFinHtml(o.statusFin);}
+    else{tdFinStat.innerHTML='<span style="font-size:10px;color:var(--silver)">—</span>';}
     var tdAcoes=document.createElement('td');tdAcoes.appendChild(acoes);
-    [tdNum,tdCli,tdServ,tdVal,tdPgto,tdStatus,tdAcoes].forEach(function(td){tr.appendChild(td);});
+    [tdNum,tdCli,tdServ,tdVal,tdPgto,tdStatus,tdFinStat,tdAcoes].forEach(function(td){tr.appendChild(td);});
     tb.appendChild(tr);
 
     // ── MOBILE CARD ──
@@ -6335,7 +6860,7 @@ function renderOrcTable(){
     }
   });
   if(lista.length===0){
-    tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--silver)">Nenhum orçamento encontrado.</td></tr>';
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--silver)">Nenhum orçamento encontrado.</td></tr>';
     if(mobList)mobList.innerHTML='<div style="text-align:center;padding:24px;color:var(--silver);font-size:13px">Nenhum orçamento encontrado.</div>';
   }
   atualizarContadores();
@@ -6918,8 +7443,36 @@ async function serrEmitirRecibo(){
   var qtd=parseFloat(document.getElementById('so-desc-qtd').value||0);
   var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
   var valorFinal=Math.max(0,val-descVal);
-  var dataRaw=document.getElementById('so-data').value;
   var pgto=document.getElementById('so-pgto').value;
+
+  // Abre modal de informações de pagamento antes de emitir
+  window._pgtoInfoTipo='serr_recibo';
+  window._pgtoInfoValTotal=valorFinal;
+  document.getElementById('pgto-info-cli').textContent=cli;
+  document.getElementById('pgto-info-val').textContent=fmtVal(valorFinal);
+  var formaEl=document.getElementById('pgto-info-forma');
+  for(var i=0;i<formaEl.options.length;i++){
+    if(formaEl.options[i].value===pgto){formaEl.selectedIndex=i;break;}
+  }
+  document.getElementById('pgto-info-status').value='pendente';
+  document.getElementById('pgto-info-valor-pago').value='';
+  document.getElementById('pgto-info-vencimento').value='';
+  document.getElementById('pgto-info-saldo-box').style.display='none';
+  atualizarBadgePgtoInfo();
+  togglePixInfoPgtoModal();
+  calcSaldoPgtoInfo();
+  document.getElementById('modal-pgto-info').classList.add('open');
+}
+
+async function _serrEmitirReciboFinalizar(statusPgto, formaPgto, valorPago, vencimento){
+  var cli=document.getElementById('so-cli').value.trim();
+  var desc=document.getElementById('so-desc').value.trim();
+  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var tipo=document.getElementById('so-desc-tipo').value;
+  var qtd=parseFloat(document.getElementById('so-desc-qtd').value||0);
+  var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
+  var valorFinal=Math.max(0,val-descVal);
+  var dataRaw=document.getElementById('so-data').value;
   var desloc=parseFloat(document.getElementById('so-desloc').value||0);
   var matTotais=serrGetMatTotais();
   // Coleta lista de peças para persistência
@@ -6928,41 +7481,41 @@ async function serrEmitirRecibo(){
     var qtdEl=document.getElementById('serrqtd-'+rowId);
     if(!selEl||!qtdEl)return null;
     var matId=parseInt(selEl.value);
-    var qtd=parseFloat(qtdEl.value||1);
-    if(!matId||isNaN(matId)||isNaN(qtd)||qtd<1)return null;
+    var qtd2=parseFloat(qtdEl.value||1);
+    if(!matId||isNaN(matId)||isNaN(qtd2)||qtd2<1)return null;
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('serrcusto-'+rowId);
     var vendaOverEl=document.getElementById('serrvenda-'+rowId);
     var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
     var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
-    return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
+    return{matId:matId,qtd:qtd2,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva recibo
   var numR='#R'+String(recibos.length+1).padStart(3,'0');
+  var isPago=(statusPgto==='pago');
   var novoRec={num:numR,cli:cli,tel:(document.getElementById('so-tel').value||'').trim(),
     end:(document.getElementById('so-end').value||'').trim(),
-    serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
-    gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,finLancado:false,
-    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr};
+    serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:formaPgto,
+    gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,
+    statusFin:statusPgto,valorPago:valorPago||null,vencimentoPgto:vencimento||null,
+    finLancado:isPago,custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr};
   recibos.unshift(novoRec);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(novoRec);
-  // Só lança no financeiro se pagamento NÃO for Pendente
-  if(pgto!=='Pendente'){
-    var lancFin={
-      nome:cli,desc:'Serralheria — '+cli,cli:cli,val:valorFinal,pgto:pgto,
-      data:fmtDateBr(dataRaw),dataRaw:dataRaw,
-      pecas:matTotais.custo,desloc:desloc,num:'SERR'+Date.now()
-    };
-    financeiro.unshift(lancFin);
-    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
-    novoRec.finLancado=true;
-  }
+  var lancFin={
+    nome:cli,desc:'Serralheria — '+cli,cli:cli,val:valorFinal,pgto:formaPgto,
+    data:fmtDateBr(dataRaw),dataRaw:dataRaw,
+    pecas:matTotais.custo,desloc:desloc,num:'SERR'+Date.now(),
+    statusFin:statusPgto,tipo_lan:isPago?'recebido':'a_receber',
+    valorPago:valorPago||null
+  };
+  financeiro.unshift(lancFin);
+  if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
   salvarLocal();
   atualizarContadores();
   fecharSerrOrc();
-  // Gera PDF do recibo
-  setTimeout(function(){gerarPDFSerrRec_novo(novoRec,desloc,desc);},200);
-  var aviso=pgto==='Pendente'?' ⚠️ Pagamento pendente — confirme o pagamento na lista.':'';
+  // Gera PDF do recibo com status
+  setTimeout(function(){gerarPDFReciboComStatus(0);},200);
+  var aviso=!isPago?' ⚠️ Status: '+_statusFinLabel(statusPgto)+'.':'';
   alert('✅ Recibo de Serralheria emitido!'+aviso);
 }
 
