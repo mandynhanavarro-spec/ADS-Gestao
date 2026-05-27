@@ -356,13 +356,7 @@ td.bold{color:var(--white);font-weight:700}
     <div class="ni" onclick="goPage('relatorios')"><span class="ic">📊</span>Relatórios</div>
     <div class="ni" onclick="goPage('configuracoes')"><span class="ic">⚙️</span>Configurações</div>
   </div>
- <!-- No .sidebar-foot, após .user-row -->
-<button onclick="ADSSecurity.lock()"
-  style="background:none;border:none;color:var(--silver);cursor:pointer;
-         font-size:11px;margin-top:8px;width:100%;text-align:left;
-         padding:4px 0;display:flex;align-items:center;gap:5px">
-  🔒 <span>Bloquear app</span>
-</button>
+  <div class="sidebar-foot">
     <div class="user-row">
       <div class="uav" id="user-avatar">AN</div>
       <div><div class="uname" id="user-name">Ananias</div><div class="urole" id="user-role">Técnico</div></div>
@@ -2929,19 +2923,7 @@ function atualizarContadores(){
 }
 
 // ════════════ NAVIGATION ════════════
-function goPage(id) {
-  // ✅ PROTEÇÃO FINANCEIRO
-  var PAGINAS_SENSIVEIS = ['financeiro', 'relatorios'];
-  if (PAGINAS_SENSIVEIS.indexOf(id) >= 0) {
-    ADSSecurity.requireSensitive(id === 'financeiro' ? 'Financeiro' : 'Relatórios', function() {
-      _goPageInternal(id);  // só entra após autenticação
-    });
-    return;
-  }
-  _goPageInternal(id);
-}
-
-function _goPageInternal(id) {
+function goPage(id){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
@@ -2959,6 +2941,7 @@ function _goPageInternal(id) {
   if(id==='notafiscal')renderNFPage();
   if(id==='relatorios'){initRelatoriosFiltros();renderRelatorios();}
   if(id==='configuracoes')renderConfiguracoes();
+  // Ativa item do menu correspondente
   document.querySelectorAll('.ni').forEach(function(n){
     if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")>=0)n.classList.add('active');
   });
@@ -7045,58 +7028,31 @@ function aplicarUsuario(found){
 }
 
 function fazerLogin(){
-  var u = document.getElementById('login-user').value.trim().toLowerCase();
-  var p = document.getElementById('login-pass').value;
-  var lembrar = document.getElementById('lembrar-me').checked;
-  var err = document.getElementById('login-err');
-
-  var found = USUARIOS.find(function(x){ return x.user === u && x.pass === p; });
-
-  if (found) {
-    err.style.display = 'none';
-    if (lembrar) {
-      localStorage.setItem('ads_user', JSON.stringify({user: found.user, pass: found.pass}));
-    } else {
-      localStorage.removeItem('ads_user');
-    }
+  var u=document.getElementById('login-user').value.trim().toLowerCase();
+  var p=document.getElementById('login-pass').value;
+  var lembrar=document.getElementById('lembrar-me').checked;
+  var err=document.getElementById('login-err');
+  var found=USUARIOS.find(function(x){return x.user===u&&x.pass===p;});
+  if(found){
+    err.style.display='none';
+    if(lembrar){localStorage.setItem('ads_user',JSON.stringify({user:found.user,pass:found.pass}));}
+    else{localStorage.removeItem('ads_user');}
     aplicarUsuario(found);
-
-    // ✅ NOVO: registra biometria / configura PIN após login
-    ADSSecurity.onLoginSuccess(found);
-
   } else {
-    err.style.display = 'block';
-    document.getElementById('login-pass').value = '';
+    err.style.display='block';
+    document.getElementById('login-pass').value='';
   }
 }
 
 (function verificarSessao(){
-  // Inicializa módulo de segurança
-  ADSSecurity.init();
-
-  try {
-    var salvo = localStorage.getItem('ads_user');
-    if (salvo) {
-      var dados = JSON.parse(salvo);
-      var found = USUARIOS.find(function(x){
-        return x.user === dados.user && x.pass === dados.pass;
-      });
-      if (found) {
-        // Usuário lembrado → mostra tela de biometria/PIN (NÃO faz login direto)
-        document.getElementById('login-screen').classList.add('hide');
-        aplicarUsuario(found);
-        // Mostra bloqueio biométrico (não vai pro app direto)
-        ADSSecurity.onLoginSuccess(found);
-        // Bloqueia para pedir biometria na próxima visita
-        setTimeout(function() {
-          if (!ADSSecurity.isSessionActive()) {
-            // Primeira visita do dia — pede biometria
-            window._adsLockAfterApply = true;
-          }
-        }, 50);
-      }
+  try{
+    var salvo=localStorage.getItem('ads_user');
+    if(salvo){
+      var dados=JSON.parse(salvo);
+      var found=USUARIOS.find(function(x){return x.user===dados.user&&x.pass===dados.pass;});
+      if(found){document.getElementById('login-user').value=found.user;document.getElementById('lembrar-me').checked=true;aplicarUsuario(found);}
     }
-  } catch(e) {}
+  }catch(e){}
 })();
 
 // Data de hoje no topbar
@@ -8677,7 +8633,5 @@ function togglePixInfo(selectId, infoBoxId){
   },500);
 })();
 </script>
-  <!-- MÓDULO DE SEGURANÇA — carregar antes do </body> -->
-<script src="ads-security.js"></script>
 </body>
 </html>
