@@ -2941,12 +2941,7 @@ function goPage(id) {
   _goPageInternal(id);
 }
 
-// Renomeie o conteúdo atual de goPage para _goPageInternal:
 function _goPageInternal(id) {
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  document.getElementById('page-' + id).classList.add('active');
-  // ... resto do código original de goPage ...
-}
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
@@ -2964,7 +2959,6 @@ function _goPageInternal(id) {
   if(id==='notafiscal')renderNFPage();
   if(id==='relatorios'){initRelatoriosFiltros();renderRelatorios();}
   if(id==='configuracoes')renderConfiguracoes();
-  // Ativa item do menu correspondente
   document.querySelectorAll('.ni').forEach(function(n){
     if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")>=0)n.classList.add('active');
   });
@@ -7075,23 +7069,6 @@ function fazerLogin(){
     document.getElementById('login-pass').value = '';
   }
 }
-  var u=document.getElementById('login-user').value.trim().toLowerCase();
-  var p=document.getElementById('login-pass').value;
-  var lembrar=document.getElementById('lembrar-me').checked;
-  var err=document.getElementById('login-err');
-  var found=USUARIOS.find(function(x){return x.user===u&&x.pass===p;});
-  if(found){
-    err.style.display='none';
-    if(lembrar){localStorage.setItem('ads_user',JSON.stringify({user:found.user,pass:found.pass}));}
-    else{localStorage.removeItem('ads_user');}
-    aplicarUsuario(found);
-  } else {
-    err.style.display='block';
-    document.getElementById('login-pass').value='';
-  }
-}
-
-// Substitua o bloco (function verificarSessao(){...})(); por:
 
 (function verificarSessao(){
   // Inicializa módulo de segurança
@@ -7120,15 +7097,6 @@ function fazerLogin(){
       }
     }
   } catch(e) {}
-})();
-  try{
-    var salvo=localStorage.getItem('ads_user');
-    if(salvo){
-      var dados=JSON.parse(salvo);
-      var found=USUARIOS.find(function(x){return x.user===dados.user&&x.pass===dados.pass;});
-      if(found){document.getElementById('login-user').value=found.user;document.getElementById('lembrar-me').checked=true;aplicarUsuario(found);}
-    }
-  }catch(e){}
 })();
 
 // Data de hoje no topbar
