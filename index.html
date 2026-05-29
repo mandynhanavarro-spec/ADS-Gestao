@@ -386,7 +386,11 @@ td.bold{color:var(--white);font-weight:700}
   <div class="sidebar-foot">
     <div class="user-row">
       <div class="uav" id="user-avatar">AN</div>
-      <div><div class="uname" id="user-name">Ananias</div><div class="urole" id="user-role">Técnico</div></div>
+      <div style="flex:1;min-width:0">
+        <div class="uname" id="user-name">Ananias</div>
+        <div class="urole" id="user-role">Técnico</div>
+      </div>
+      <button onclick="fazerLogout()" title="Sair da conta" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:7px;color:var(--red);cursor:pointer;font-size:14px;padding:4px 7px;line-height:1;flex-shrink:0;transition:all .12s" onmouseover="this.style.background='rgba(239,68,68,.25)'" onmouseout="this.style.background='rgba(239,68,68,.12)'">⏻</button>
     </div>
   </div>
 </aside>
@@ -1338,7 +1342,6 @@ td.bold{color:var(--white);font-weight:700}
         </select>
       </div>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="limparFinanceiro()" style="color:var(--red);border-color:rgba(239,68,68,.3)">🗑 Limpar todos</button>
   </div>
   <div class="panel"><div class="panel-bd" style="padding:0 16px">
     <table>
@@ -2308,6 +2311,36 @@ td.bold{color:var(--white);font-weight:700}
             <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
             <option>Cartão Crédito</option><option>Cartão Débito</option>
           </select>
+        </div>
+      </div>
+      <!-- ══ INFORMAÇÕES DE PAGAMENTO ══ -->
+      <div style="background:rgba(37,99,235,.06);border:1px solid var(--border2);border-radius:8px;padding:11px 13px;margin-bottom:10px">
+        <div style="font-size:9px;color:var(--blue3);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:9px">💳 Informações de Pagamento</div>
+        <div class="fgrid fg2" style="margin-bottom:8px">
+          <div>
+            <div class="fl">Status do Pagamento</div>
+            <select class="fs" id="fin-status-pgto-edit" onchange="atualizarBadgeFinEdit()">
+              <option value="pendente">⚪ Pagamento Pendente</option>
+              <option value="aguardando_pix">🔵 Aguardando Pix</option>
+              <option value="parcial">🟡 Pago Parcial</option>
+              <option value="pago">🟢 Pago</option>
+              <option value="vencido">🔴 Vencido</option>
+            </select>
+          </div>
+          <div>
+            <div class="fl">Status atual</div>
+            <div id="fin-badge-edit" style="margin-top:4px"></div>
+          </div>
+        </div>
+        <div class="fgrid fg2">
+          <div>
+            <div class="fl">Valor Pago (R$) — opcional</div>
+            <input class="fi" type="number" id="fin-val-pago-edit" placeholder="0,00" step="0.01" value="" oninput="calcSaldoFinEdit()">
+          </div>
+          <div>
+            <div class="fl">Saldo Pendente</div>
+            <div id="fin-saldo-edit" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:7px;padding:7px 10px;font-size:12px;font-weight:700;color:var(--amber);margin-top:4px;display:none" id="fin-saldo-edit">—</div>
+          </div>
         </div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
@@ -6194,6 +6227,13 @@ function editarFinanceiro(i){
   for(var j=0;j<pgEl.options.length;j++){if(pgEl.options[j].text===(f.pgto||'')){pgEl.selectedIndex=j;break;}}
   document.getElementById('fin-pecas').value=f.pecas||0;
   document.getElementById('fin-desloc').value=f.desloc||0;
+  // status financeiro de pagamento
+  var stEl=document.getElementById('fin-status-pgto-edit');
+  var stAtual=f.finStatus||'pendente';
+  for(var k=0;k<stEl.options.length;k++){if(stEl.options[k].value===stAtual){stEl.selectedIndex=k;break;}}
+  document.getElementById('fin-val-pago-edit').value=f.finValorPago||'';
+  atualizarBadgeFinEdit();
+  calcSaldoFinEdit();
   // mostra valor total no resumo
   document.getElementById('fin-show-val').textContent=fmtVal(f.val);
   calcLiquidoFin();
@@ -6201,6 +6241,37 @@ function editarFinanceiro(i){
 }
 
 function fecharModalFin(){document.getElementById('modal-fin').classList.remove('open');}
+
+function atualizarBadgeFinEdit(){
+  var st=document.getElementById('fin-status-pgto-edit');
+  var badge=document.getElementById('fin-badge-edit');
+  if(!st||!badge)return;
+  var map={
+    pago:        {cls:'badge-fin-pago',txt:'🟢 Pago'},
+    parcial:     {cls:'badge-fin-parcial',txt:'🟡 Pago Parcial'},
+    aguardando_pix:{cls:'badge-fin-pix',txt:'🔵 Aguardando Pix'},
+    pendente:    {cls:'badge-fin-pendente',txt:'⚪ Pendente'},
+    vencido:     {cls:'badge',txt:'🔴 Vencido'},
+  };
+  var cfg=map[st.value]||map.pendente;
+  badge.innerHTML='<span class="badge '+cfg.cls+'" style="font-size:11px">'+cfg.txt+'</span>';
+  calcSaldoFinEdit();
+}
+
+function calcSaldoFinEdit(){
+  var i=STATE.editFinIdx;
+  var saldoEl=document.getElementById('fin-saldo-edit');
+  if(!saldoEl||i===null||i===undefined||!financeiro[i])return;
+  var valTotal=financeiro[i].val||0;
+  var valPago=parseFloat(document.getElementById('fin-val-pago-edit').value||0);
+  if(valPago>0){
+    var saldo=Math.max(0,valTotal-valPago);
+    saldoEl.textContent='Saldo: '+fmtVal(saldo);
+    saldoEl.style.display='block';
+  } else {
+    saldoEl.style.display='none';
+  }
+}
 
 function calcLiquidoFin(){
   var i=STATE.editFinIdx;
@@ -6228,6 +6299,12 @@ function salvarFinanceiro(){
   if(dataRaw){financeiro[i].dataRaw=dataRaw;financeiro[i].data=fmtDateBr(dataRaw);}
   financeiro[i].pecas=parseFloat(document.getElementById('fin-pecas').value||0);
   financeiro[i].desloc=parseFloat(document.getElementById('fin-desloc').value||0);
+  // Salva status de pagamento
+  var novoStatus=document.getElementById('fin-status-pgto-edit').value;
+  var valPago=parseFloat(document.getElementById('fin-val-pago-edit').value||0)||null;
+  financeiro[i].finStatus=novoStatus;
+  if(valPago)financeiro[i].finValorPago=valPago;
+  else delete financeiro[i].finValorPago;
   sbSalvarFinanceiro(financeiro[i]);
   fecharModalFin();
   salvarLocal();
@@ -6912,6 +6989,15 @@ function aplicarUsuario(found){
   document.getElementById('user-avatar').textContent=found.avatar;
   // Inicia sistema biométrico para mobile (sem interferir no desktop)
   BIO.init(found);
+}
+
+function fazerLogout(){
+  if(!confirm('Deseja sair da conta?'))return;
+  localStorage.removeItem('ads_user');
+  // Limpa biometria se existir
+  if(window.BIO&&BIO.clearBio)BIO.clearBio();
+  // Recarrega a página para voltar ao login
+  location.reload();
 }
 
 function fazerLogin(){
