@@ -2379,10 +2379,11 @@ td.bold{color:var(--white);font-weight:700}
     </div>
     <div class="modal-bd">
       <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Nome</div><input class="fi" id="fin-nome" placeholder="Ex: João Silva"></div>
-        <div><div class="fl">Descrição</div><input class="fi" id="fin-desc-edit" placeholder="Ex: Manutenção preventiva"></div>
+        <div><div class="fl">Nome / Cliente</div><input class="fi" id="fin-nome" placeholder="Ex: João Silva"></div>
+        <div><div class="fl">Descrição do Serviço</div><input class="fi" id="fin-desc-edit" placeholder="Ex: Manutenção preventiva"></div>
       </div>
-      <div class="fgrid fg2" style="margin-bottom:10px">
+      <div class="fgrid fg3" style="margin-bottom:10px">
+        <div><div class="fl">Valor do Serviço (R$)</div><input class="fi" type="number" id="fin-val-edit" placeholder="0,00" step="0.01" min="0" oninput="calcLiquidoFin()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="fin-data-edit"></div>
         <div><div class="fl">Pagamento</div>
           <select class="fs" id="fin-pgto-edit">
@@ -4252,15 +4253,30 @@ function gerarPDFRecibo(idx){
 
     if(b.id==='titulo'){
       var _fs=r.finStatus||'pendente';
-      var _tituloRec=_fs==='pago'?'RECIBO DE PAGAMENTO':
-        (_fs==='parcial'?'RECIBO — PAGAMENTO PARCIAL':
-        (_fs==='aguardando_pix'?'RECIBO — AGUARDANDO PAGAMENTO':
-        'RECIBO'));
-      var _fsTamanho=_tituloRec.length>16?16:20;
-      doc.setFont('helvetica','bold');doc.setFontSize(_fsTamanho);doc.setTextColor(0,51,153);
-      doc.text(_tituloRec,PW/2,y+12,{align:'center'});
+      // Título em 2 linhas para variantes longas, 1 linha para RECIBO simples
+      var _tituloLn1, _tituloLn2;
+      if(_fs==='pago'){
+        _tituloLn1='RECIBO DE'; _tituloLn2='PAGAMENTO';
+      } else if(_fs==='parcial'){
+        _tituloLn1='RECIBO'; _tituloLn2='PAGAMENTO PARCIAL';
+      } else if(_fs==='aguardando_pix'){
+        _tituloLn1='RECIBO'; _tituloLn2='AGUARDANDO PAGAMENTO';
+      } else {
+        _tituloLn1='RECIBO'; _tituloLn2=null;
+      }
+      // Área segura: lado esquerdo, sem invadir a logo (logo ocupa de PW-MR-55 até PW-MR)
+      var _safeW=PW-MR-55-ML-4; // largura disponível antes da logo
+      var _cx=ML+_safeW/2;      // centro da área segura
+      doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
+      doc.text(_tituloLn1,_cx,y+10,{align:'center'});
+      if(_tituloLn2){
+        doc.setFontSize(14);
+        doc.text(_tituloLn2,_cx,y+18,{align:'center'});
+        y+=26;
+      } else {
+        y+=18;
+      }
       doc.setTextColor(0,0,0);
-      y+=22;
 
     } else if(b.id==='cliente'){
       doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Recebi de:',ML,y);
@@ -6388,6 +6404,7 @@ function editarFinanceiro(i){
   var f=financeiro[i];
   document.getElementById('fin-nome').value=f.nome||f.cli||'';
   document.getElementById('fin-desc-edit').value=f.desc||'';
+  document.getElementById('fin-val-edit').value=f.val||0;
   // data para input date (converte dd/mm/aaaa → aaaa-mm-dd)
   var dataVal=f.dataRaw||'';
   if(!dataVal&&f.data&&f.data.includes('/')){var p=f.data.split('/');if(p.length===3)dataVal=p[2]+'-'+p[1]+'-'+p[0];}
@@ -6404,7 +6421,6 @@ function editarFinanceiro(i){
   document.getElementById('fin-val-pago-edit').value=f.finValorPago||'';
   atualizarBadgeFinEdit();
   calcSaldoFinEdit();
-  // mostra valor total no resumo
   document.getElementById('fin-show-val').textContent=fmtVal(f.val);
   calcLiquidoFin();
   document.getElementById('modal-fin').classList.add('open');
@@ -6444,9 +6460,11 @@ function calcSaldoFinEdit(){
 }
 
 function calcLiquidoFin(){
+  var valInput=document.getElementById('fin-val-edit');
   var i=STATE.editFinIdx;
-  if(i===null||i===undefined||!financeiro[i])return;
-  var val=financeiro[i].val||0;
+  var val=valInput&&parseFloat(valInput.value||0)>0
+    ? parseFloat(valInput.value)
+    : (i!==null&&i!==undefined&&financeiro[i]?financeiro[i].val||0:0);
   var pecas=parseFloat(document.getElementById('fin-pecas').value||0);
   var desloc=parseFloat(document.getElementById('fin-desloc').value||0);
   document.getElementById('fin-show-val').textContent=fmtVal(val);
@@ -6457,27 +6475,34 @@ function calcLiquidoFin(){
 
 function salvarFinanceiro(){
   var i=STATE.editFinIdx;
-  if(i===null||i===undefined)return;
+  if(i===null||i===undefined||!financeiro[i])return;
   var nome=(document.getElementById('fin-nome').value||'').trim();
   var desc=(document.getElementById('fin-desc-edit').value||'').trim();
   var dataRaw=document.getElementById('fin-data-edit').value;
   var pgto=document.getElementById('fin-pgto-edit').value;
-  if(nome) financeiro[i].nome=nome;
-  if(desc) financeiro[i].desc=desc;
-  if(nome) financeiro[i].cli=nome;
-  if(pgto) financeiro[i].pgto=pgto;
+  var novoVal=parseFloat(document.getElementById('fin-val-edit').value||0);
+
+  // Atualiza todos os campos — sem condicional para não perder limpeza intencional
+  financeiro[i].nome=nome||financeiro[i].nome||'';
+  financeiro[i].desc=desc||financeiro[i].desc||'';
+  financeiro[i].cli=nome||financeiro[i].cli||'';
+  financeiro[i].pgto=pgto;
   if(dataRaw){financeiro[i].dataRaw=dataRaw;financeiro[i].data=fmtDateBr(dataRaw);}
+  if(novoVal>0) financeiro[i].val=novoVal;
   financeiro[i].pecas=parseFloat(document.getElementById('fin-pecas').value||0);
   financeiro[i].desloc=parseFloat(document.getElementById('fin-desloc').value||0);
-  // Salva status de pagamento
+
+  // Status de pagamento + tipoLanc sincronizado
   var novoStatus=document.getElementById('fin-status-pgto-edit').value;
   var valPago=parseFloat(document.getElementById('fin-val-pago-edit').value||0)||null;
   financeiro[i].finStatus=novoStatus;
-  if(valPago)financeiro[i].finValorPago=valPago;
+  financeiro[i].tipoLanc=(novoStatus==='pago'||novoStatus==='parcial')?'recebido':'a_receber';
+  if(valPago) financeiro[i].finValorPago=valPago;
   else delete financeiro[i].finValorPago;
-  sbSalvarFinanceiro(financeiro[i]);
-  fecharModalFin();
+
   salvarLocal();
+  if(SUPABASE_ATIVO) sbSalvarFinanceiro(financeiro[i]);
+  fecharModalFin();
   renderFinanceiroPage();
 }
 
