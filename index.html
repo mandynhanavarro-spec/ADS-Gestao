@@ -4173,8 +4173,14 @@ function gerarPDFRecibo(idx){
     if(!b.visivel)return;
 
     if(b.id==='titulo'){
-      doc.setFont('helvetica','bold');doc.setFontSize(20);doc.setTextColor(0,51,153);
-      doc.text('RECIBO',PW/2,y+12,{align:'center'});
+      var _fs=r.finStatus||'pendente';
+      var _tituloRec=_fs==='pago'?'RECIBO DE PAGAMENTO':
+        (_fs==='parcial'?'RECIBO — PAGAMENTO PARCIAL':
+        (_fs==='aguardando_pix'?'RECIBO — AGUARDANDO PAGAMENTO':
+        'RECIBO'));
+      var _fsTamanho=_tituloRec.length>16?16:20;
+      doc.setFont('helvetica','bold');doc.setFontSize(_fsTamanho);doc.setTextColor(0,51,153);
+      doc.text(_tituloRec,PW/2,y+12,{align:'center'});
       doc.setTextColor(0,0,0);
       y+=22;
 
@@ -4231,28 +4237,7 @@ function gerarPDFRecibo(idx){
         y+=4;
       }
 
-      // Banner de status de pagamento — exibe apenas quando há informação relevante (pago, parcial, aguardando_pix)
-      if(isPago||isParcial||isAguardando){
-        var statusLabel=getFinStatusLabel(finStatus);
-        var bannerR, bannerG, bannerB;
-        if(isPago){bannerR=16;bannerG=185;bannerB=129;}
-        else if(isParcial){bannerR=245;bannerG=158;bannerB=11;}
-        else{bannerR=37;bannerG=99;bannerB=235;}
-
-        doc.setFillColor(bannerR,bannerG,bannerB);
-        doc.roundedRect(ML,y,CW,10,2,2,'F');
-        doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);
-        doc.text('Status: '+statusLabel,PW/2,y+6.5,{align:'center'});
-        doc.setTextColor(0,0,0);y+=14;
-
-        // Mensagem complementar para parcial e aguardando_pix
-        doc.setFont('helvetica','italic');doc.setFontSize(8);doc.setTextColor(100,100,100);
-        var msg=isParcial?'Documento emitido — pagamento parcial. Saldo em aberto conforme acima.':
-          'Documento emitido como cobrança/solicitação de pagamento via Pix.';
-        var mLines=doc.splitTextToSize(msg,CW);
-        doc.text(mLines,ML,y);y+=mLines.length*5+4;
-        doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');doc.setFontSize(10);
-      }
+      // Banner removido — status visível apenas internamente na ferramenta
 
     } else if(b.id==='garantia'){
       if(r.gtia&&r.gtia.trim()&&r.gtia.trim()!=='—'){
