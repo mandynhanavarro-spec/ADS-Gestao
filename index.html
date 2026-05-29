@@ -2713,23 +2713,15 @@ async function carregarTodosDados() {
   const {data:recs, error:eRec} = await sb.from('recibos').select('*').order('criado_em', {ascending:false});
   if (!eRec && recs && recs.length > 0) {
     recibos = recs.map(function(r) {
-      var matEdit = [];
-      if (r.mat_edit) {
-        try { matEdit = typeof r.mat_edit === 'string' ? JSON.parse(r.mat_edit) : (Array.isArray(r.mat_edit) ? r.mat_edit : []); } catch(e) { matEdit = []; }
-      }
       return {
         sbId: r.id, num: r.numero||'', cli: r.cliente_nome||'',
         tel: r.cliente_tel||'', end: r.cliente_end||'',
-        serv: (r.descricao||'').split('\n')[0]||'',  // sem coluna 'servico', extrai da descricao
-        desc: r.descricao||'',
+        serv: r.servico||'', desc: r.descricao||'',
         val: parseFloat(r.valor||0), pgto: r.pagamento||'',
         gtia: r.garantia||'', data: r.data_emissao||'',
         dataRaw: r.data_raw||'',
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
-        descTipo: r.desc_tipo||'', descQtd: parseFloat(r.desc_qtd||0),
-        custoPecas: parseFloat(r.custo_pecas||0),
-        desloc: parseFloat(r.desloc||0),
-        matEdit: matEdit,
+        // Campos de status de pagamento
         finStatus: r.fin_status||'pendente',
         finForma: r.fin_forma||r.pagamento||'',
         finValorPago: r.fin_valor_pago||null,
@@ -2930,7 +2922,7 @@ async function sbSalvarOrcamento(o) {
     numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
     cliente_end: o.end||'', descricao: o.desc, valor: o.val,
     garantia: o.gtia, pagamento: o.pgto, status: o.status,
-    data_emissao: o.data, observacoes: o.obs||'',
+    data_emissao: fmtDateSB(o.data, o.dataRaw), observacoes: o.obs||'',
     custo_pecas: parseFloat(o.custoPecas||0),
     mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null,
     // Campos de pagamento/financeiro
@@ -2986,27 +2978,17 @@ async function sbDeletarOrcamento(sbId) {
 // ── SALVAR RECIBO ────────────────────────────────────────────
 async function sbSalvarRecibo(r) {
   if (!SUPABASE_ATIVO) return;
-  // Colunas reais da tabela 'recibos' no Supabase (verificado via information_schema)
-  // NÃO existe coluna 'servico' — serviço vai dentro de 'descricao'
-  // coluna de deslocamento é 'desloc' (não 'deslocamento')
   const payload = {
-    numero: r.num,
-    cliente_nome: r.cli,
-    cliente_tel: r.tel||'',
-    cliente_end: r.end||'',
-    descricao: r.desc||r.serv||'',   // sem coluna 'servico' separada
-    valor: r.val,
-    pagamento: r.pgto,
-    garantia: r.gtia||'',
-    data_emissao: r.data,
+    numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
+    cliente_end: r.end||'', descricao: r.desc||r.serv||'',
+    valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
+    data_emissao: fmtDateSB(r.data, r.dataRaw),
     data_raw: r.dataRaw||'',
     custo_pecas: parseFloat(r.custoPecas||0),
-    desloc: parseFloat(r.desloc||0),               // coluna real: 'desloc'
+    desloc: parseFloat(r.desloc||0),
     mat_edit: r.matEdit&&r.matEdit.length>0 ? JSON.stringify(r.matEdit) : null,
-    desc_base: r.descBase||0,
-    desc_val: r.descV||0,
-    desc_tipo: r.descTipo||null,
-    desc_qtd: r.descQtd||0,
+    desc_base: r.descBase||0, desc_val: r.descV||0,
+    desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
     fin_status: r.finStatus||'pendente',
     fin_forma: r.finForma||r.pgto||null,
     fin_valor_pago: r.finValorPago||null,
@@ -3036,7 +3018,7 @@ async function sbSalvarFinanceiro(f) {
   const payload = {
     descricao: f.desc||'', cliente: f.cli||'', nome: f.nome||f.cli||'',
     valor: f.val, pagamento: f.pgto||'',
-    data: f.data||'', data_raw: f.dataRaw||'',
+    data: fmtDateSB(f.data, f.dataRaw), data_raw: f.dataRaw||'',
     custo_pecas: parseFloat(f.pecas||0),
     deslocamento: parseFloat(f.desloc||0),
     num_ref: f.num||'',
@@ -3150,6 +3132,28 @@ function setStep(n){
 
 // ════════════ HELPERS ════════════
 function fmtVal(v){return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});}
+
+// Converte data para formato ISO (aaaa-mm-dd) aceito pelo Supabase
+// Aceita: 'dd/mm/aaaa', 'aaaa-mm-dd', ou objeto Date
+function fmtDateSB(data, dataRaw){
+  // Prefere dataRaw pois já está em formato ISO (vem do input type=date)
+  if(dataRaw && dataRaw.match(/^\d{4}-\d{2}-\d{2}$/)) return dataRaw;
+  if(!data) return null;
+  // Já está em formato ISO
+  if(data.match && data.match(/^\d{4}-\d{2}-\d{2}$/)) return data;
+  // Converte dd/mm/aaaa → aaaa-mm-dd
+  if(data.match && data.match(/^\d{2}\/\d{2}\/\d{4}$/)){
+    var p=data.split('/');
+    return p[2]+'-'+p[1]+'-'+p[0];
+  }
+  return null;
+}
+
+// Gera número de recibo sem duplicata entre dispositivos (usa maior existente + 1)
+function proximoNumRecibo(){
+  var max=recibos.reduce(function(mx,r){return Math.max(mx,parseInt((r.num||'R0').replace(/\D/g,'')||0));},0);
+  return '#R'+String(max+1).padStart(3,'0');
+}
 
 function fmtDateBr(s){
   if(!s) return '11/05/2026';
@@ -3877,7 +3881,7 @@ async function emitirDoc(){
   }
 
   if(STATE.aprov==='recibo'){
-    var numR='#R'+String(recibos.length+1).padStart(3,'0');
+    var numR=proximoNumRecibo();
     var finStatusDoc=f.pagamento==='Dinheiro'||f.pagamento==='Cartão Crédito'||f.pagamento==='Cartão Débito'?'pago':(f.pagamento==='Pix'?'aguardando_pix':'pendente');
     var recibo={num:numR,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,
@@ -4819,7 +4823,7 @@ async function nrEmitirRecibo(){
   var valorFinal=Math.max(0,val-nrDesc);
   var manual=(document.getElementById('nr-serv-manual').value||'').trim();
   var serv=NR.tpl?NR.tpl.nm:manual;
-  var numR='#R'+String(recibos.length+1).padStart(3,'0');
+  var numR=proximoNumRecibo();
   var matTotais=getNrMatTotais();
   // Coleta lista de peças para persistência
   var matEditRec=nrMatLinhas.map(function(rowId){
@@ -5728,7 +5732,7 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
   var dataFormatada=o.data?o.data.includes('-')?fmtDateBr(o.data):o.data:fmtDateBr(new Date().toISOString().split('T')[0]);
 
   if(tipo==='recibo'){
-    var numR='#R'+String(recibos.length+1).padStart(3,'0');
+    var numR=proximoNumRecibo();
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:forma,
       gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
@@ -7724,7 +7728,7 @@ async function serrEmitirRecibo(){
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva recibo
-  var numR='#R'+String(recibos.length+1).padStart(3,'0');
+  var numR=proximoNumRecibo();
   var novoRec={num:numR,cli:cli,tel:(document.getElementById('so-tel').value||'').trim(),
     end:(document.getElementById('so-end').value||'').trim(),
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
