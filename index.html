@@ -1905,30 +1905,108 @@ td.bold{color:var(--white);font-weight:700}
 
 <!-- ══ MODAL: APROVAÇÃO DO ORÇAMENTO ══ -->
 <div class="modal-bg" id="modal-aprovacao">
-  <div class="modal" style="width:480px;max-width:98vw">
+  <div class="modal" style="width:520px;max-width:98vw">
     <div class="modal-hd">
       <span class="modal-title">✅ Aprovar Orçamento</span>
       <button class="modal-x" onclick="fecharAprovacaoModal()">✕</button>
     </div>
     <div class="modal-bd">
+      <!-- Info do orçamento -->
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-bottom:16px">
         <div style="font-size:11px;color:var(--silver2);margin-bottom:2px">Orçamento</div>
         <div style="font-weight:800;color:var(--white)" id="aprov-modal-num"></div>
         <div style="font-size:13px;color:var(--green2);font-weight:700;margin-top:4px" id="aprov-modal-val"></div>
       </div>
-      <div style="font-size:12px;color:var(--silver2);margin-bottom:10px;font-weight:600">Qual documento o cliente deseja?</div>
+      <!-- Forma + Status -->
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Forma de Pagamento</div>
+          <select class="fs" id="aprov-forma">
+            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
+            <option>Sinal de 50% / Restante 50%</option><option>Cartão Crédito</option>
+            <option>Cartão Débito</option><option>Transferência Bancária</option>
+          </select>
+        </div>
+        <div>
+          <div class="fl">Status do Pagamento</div>
+          <select class="fs" id="aprov-status" onchange="atualizarBadgeAprov()">
+            <option value="pendente">⚪ Pagamento Pendente</option>
+            <option value="aguardando_pix">🔵 Aguardando Pix</option>
+            <option value="parcial">🟡 Pago Parcial</option>
+            <option value="pago">🟢 Pago</option>
+          </select>
+        </div>
+      </div>
+      <!-- Badge preview -->
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--silver);text-transform:uppercase;letter-spacing:1px">Status:</span>
+        <span id="aprov-badge-preview" class="badge badge-fin-pendente" style="font-size:11px">⚪ Pendente</span>
+      </div>
+      <!-- Valor pago + vencimento -->
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Valor Pago (R$) — opcional</div>
+          <input class="fi" type="number" id="aprov-valor-pago" placeholder="0,00" step="0.01" value="" oninput="calcSaldoAprov()">
+        </div>
+        <div>
+          <div class="fl">Data de Vencimento — opcional</div>
+          <input class="fi" type="date" id="aprov-vencimento">
+        </div>
+      </div>
+      <!-- Saldo parcial -->
+      <div id="aprov-saldo-box" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--silver2)">Valor total:</span>
+          <span style="color:var(--green2);font-weight:700" id="aprov-total-show">R$ 0,00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--silver2)">Valor pago:</span>
+          <span style="color:var(--blue3);font-weight:700" id="aprov-pago-show">R$ 0,00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:4px">
+          <span style="color:var(--white);font-weight:700">Saldo pendente:</span>
+          <span style="color:var(--amber);font-weight:900;font-size:14px" id="aprov-saldo-show">R$ 0,00</span>
+        </div>
+      </div>
+      <!-- Obs: serviço agendado -->
+      <div style="background:rgba(37,99,235,.07);border:1px solid var(--border);border-radius:8px;padding:9px 13px;font-size:11px;color:var(--silver2)">
+        💡 <strong style="color:var(--blue3)">Serviço agendado?</strong> Use <em>"Apenas Aprovar"</em> — o documento pode ser emitido depois pelo botão <em>"📄 Emitir Documento"</em>.
+      </div>
+    </div>
+    <div class="modal-ft" style="gap:8px">
+      <button class="btn btn-ghost" onclick="fecharAprovacaoModal()">Cancelar</button>
+      <button class="btn btn-amber" onclick="apenasAprovarOrc()" style="color:#fff">📌 Apenas Aprovar</button>
+      <button class="btn btn-green" onclick="aprovarEAbrirDocumento()">📄 Aprovar e Emitir Documento →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL 2: QUAL DOCUMENTO ══ -->
+<div class="modal-bg" id="modal-qual-documento">
+  <div class="modal" style="width:480px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">📄 Qual documento emitir?</span>
+      <button class="modal-x" onclick="fecharModalQualDocumento()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;margin-bottom:16px">
+        <div style="font-size:11px;color:var(--silver2);margin-bottom:2px">Orçamento aprovado</div>
+        <div style="font-weight:800;color:var(--white)" id="qdoc-modal-num"></div>
+        <div style="font-size:13px;color:var(--green2);font-weight:700;margin-top:3px" id="qdoc-modal-val"></div>
+      </div>
+      <div style="font-size:12px;color:var(--silver2);margin-bottom:12px;font-weight:600">Qual documento o cliente deseja?</div>
       <div class="aprov-opts" style="grid-template-columns:repeat(3,1fr)">
-        <div class="aprov-opt aprov-modal-opt" onclick="pickAprovModal(this,'recibo')">
+        <div class="aprov-opt qdoc-opt" onclick="pickQdoc(this,'recibo')">
           <div class="ao-ic">🧾</div>
           <div class="ao-lb">Recibo</div>
-          <div class="ao-sb">Pagamento confirmado</div>
+          <div class="ao-sb">Emitir PDF do recibo</div>
         </div>
-        <div class="aprov-opt aprov-modal-opt" onclick="pickAprovModal(this,'nf')">
+        <div class="aprov-opt qdoc-opt" onclick="pickQdoc(this,'nf')">
           <div class="ao-ic">📑</div>
           <div class="ao-lb">Nota Fiscal</div>
           <div class="ao-sb">NFS-e MEI</div>
         </div>
-        <div class="aprov-opt aprov-modal-opt" onclick="pickAprovModal(this,'financeiro')">
+        <div class="aprov-opt qdoc-opt" onclick="pickQdoc(this,'financeiro')">
           <div class="ao-ic">💰</div>
           <div class="ao-lb">Só financeiro</div>
           <div class="ao-sb">Lançar no caixa</div>
@@ -1936,8 +2014,8 @@ td.bold{color:var(--white);font-weight:700}
       </div>
     </div>
     <div class="modal-ft">
-      <button class="btn btn-ghost" onclick="fecharAprovacaoModal()">Cancelar</button>
-      <button class="btn btn-green" id="aprov-modal-btn" style="display:none" onclick="emitirDocAprovado()">✅ Confirmar e Emitir →</button>
+      <button class="btn btn-ghost" onclick="fecharModalQualDocumento()">Cancelar</button>
+      <button class="btn btn-green" id="qdoc-btn-confirmar" style="display:none" onclick="confirmarQdoc()">✅ Confirmar e Emitir →</button>
     </div>
   </div>
 </div>
@@ -5293,23 +5371,148 @@ function abrirAprovacaoOrc(num){
   window._aprovOrcNum=num;
   document.getElementById('aprov-modal-num').textContent='#'+num+' — '+o.cli;
   document.getElementById('aprov-modal-val').textContent=fmtVal(o.val);
-  document.querySelectorAll('.aprov-modal-opt').forEach(function(x){x.classList.remove('pick');});
-  document.getElementById('aprov-modal-btn').style.display='none';
-  window._aprovTipo=null;
+  // Pré-preenche forma de pagamento do orçamento
+  var formaEl=document.getElementById('aprov-forma');
+  for(var i=0;i<formaEl.options.length;i++){
+    if(formaEl.options[i].text===(o.pgto||'Pix')){formaEl.selectedIndex=i;break;}
+  }
+  document.getElementById('aprov-status').value='pendente';
+  document.getElementById('aprov-valor-pago').value='';
+  document.getElementById('aprov-vencimento').value='';
+  document.getElementById('aprov-saldo-box').style.display='none';
+  atualizarBadgeAprov();
   document.getElementById('modal-aprovacao').classList.add('open');
 }
 
 function fecharAprovacaoModal(){
   document.getElementById('modal-aprovacao').classList.remove('open');
   window._aprovOrcNum=null;
-  window._aprovTipo=null;
 }
 
-function pickAprovModal(el,tipo){
-  document.querySelectorAll('.aprov-modal-opt').forEach(function(x){x.classList.remove('pick');});
+// Badge preview no modal de aprovação
+function atualizarBadgeAprov(){
+  var status=document.getElementById('aprov-status').value;
+  var badge=document.getElementById('aprov-badge-preview');
+  if(!badge)return;
+  var map={
+    pago:        {cls:'badge-fin-pago',txt:'🟢 Pago'},
+    parcial:     {cls:'badge-fin-parcial',txt:'🟡 Pago Parcial'},
+    aguardando_pix:{cls:'badge-fin-pix',txt:'🔵 Aguardando Pix'},
+    pendente:    {cls:'badge-fin-pendente',txt:'⚪ Pendente'},
+  };
+  var cfg=map[status]||map.pendente;
+  badge.className='badge '+cfg.cls;
+  badge.textContent=cfg.txt;
+  calcSaldoAprov();
+}
+
+function calcSaldoAprov(){
+  var num=window._aprovOrcNum;
+  if(!num)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+  var valorPago=parseFloat(document.getElementById('aprov-valor-pago').value||0);
+  var saldoBox=document.getElementById('aprov-saldo-box');
+  if(valorPago>0){
+    var saldo=Math.max(0,o.val-valorPago);
+    document.getElementById('aprov-total-show').textContent=fmtVal(o.val);
+    document.getElementById('aprov-pago-show').textContent=fmtVal(valorPago);
+    document.getElementById('aprov-saldo-show').textContent=fmtVal(saldo);
+    if(saldoBox)saldoBox.style.display='block';
+  } else {
+    if(saldoBox)saldoBox.style.display='none';
+  }
+}
+
+// Botão "Apenas Aprovar" — salva pagamento e aprova sem emitir documento
+function apenasAprovarOrc(){
+  var num=window._aprovOrcNum;
+  if(!num)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+  var forma=document.getElementById('aprov-forma').value;
+  var statusFin=document.getElementById('aprov-status').value;
+  var valorPago=parseFloat(document.getElementById('aprov-valor-pago').value||0)||null;
+  var vencimento=document.getElementById('aprov-vencimento').value;
+  o.status='aprovado';
+  o.finStatus=statusFin;
+  o.finForma=forma;
+  o.finValorPago=valorPago;
+  o.finVencimento=vencimento;
+  o.docEmitido=false; // sinaliza que ainda não emitiu documento
+  salvarLocal();
+  if(SUPABASE_ATIVO)sbSalvarOrcamento(o);
+  fecharAprovacaoModal();
+  renderOrcTable();
+  atualizarContadores();
+}
+
+// Botão "Aprovar e Emitir Documento →" — salva pagamento e abre Modal 2
+function aprovarEAbrirDocumento(){
+  var num=window._aprovOrcNum;
+  if(!num)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+  // Persiste infos de pagamento no orçamento temporariamente (antes de emitir)
+  window._aprovForma=document.getElementById('aprov-forma').value;
+  window._aprovStatusFin=document.getElementById('aprov-status').value;
+  window._aprovValorPago=parseFloat(document.getElementById('aprov-valor-pago').value||0)||null;
+  window._aprovVencimento=document.getElementById('aprov-vencimento').value;
+  fecharAprovacaoModal();
+  setTimeout(function(){ abrirModalQualDocumento(num); }, 150);
+}
+
+// ════════════ MODAL 2: QUAL DOCUMENTO ════════════
+function abrirModalQualDocumento(num){
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+  window._qdocOrcNum=num;
+  window._qdocTipo=null;
+  document.getElementById('qdoc-modal-num').textContent='#'+num+' — '+o.cli;
+  document.getElementById('qdoc-modal-val').textContent=fmtVal(o.val);
+  document.querySelectorAll('.qdoc-opt').forEach(function(x){x.classList.remove('pick');});
+  document.getElementById('qdoc-btn-confirmar').style.display='none';
+  document.getElementById('modal-qual-documento').classList.add('open');
+}
+
+function fecharModalQualDocumento(){
+  document.getElementById('modal-qual-documento').classList.remove('open');
+  window._qdocOrcNum=null;
+  window._qdocTipo=null;
+}
+
+function pickQdoc(el, tipo){
+  document.querySelectorAll('.qdoc-opt').forEach(function(x){x.classList.remove('pick');});
   el.classList.add('pick');
-  window._aprovTipo=tipo;
-  document.getElementById('aprov-modal-btn').style.display='flex';
+  window._qdocTipo=tipo;
+  document.getElementById('qdoc-btn-confirmar').style.display='flex';
+}
+
+async function confirmarQdoc(){
+  var num=window._qdocOrcNum;
+  var tipo=window._qdocTipo;
+  if(!num||!tipo)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+  // Usa dados de pagamento vindos do Modal 1 (ou já salvos se veio do botão "Emitir Documento")
+  var forma=window._aprovForma||o.finForma||o.pgto||'Pix';
+  var statusFin=window._aprovStatusFin||o.finStatus||'pendente';
+  var valorPago=window._aprovValorPago!=null?window._aprovValorPago:(o.finValorPago||null);
+  var vencimento=window._aprovVencimento||o.finVencimento||'';
+  fecharModalQualDocumento();
+  await _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencimento);
+  // Limpa temporários
+  window._aprovForma=null;window._aprovStatusFin=null;window._aprovValorPago=null;window._aprovVencimento=null;
+}
+
+// Botão "📄 Emitir Documento" para orçamentos já aprovados sem documento
+function emitirDocumentoAprovado(num){
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+  // Se já tem infos de pagamento salvas, vai direto pro Modal 2
+  // Limpa temporários para usar os já salvos no orçamento
+  window._aprovForma=null;window._aprovStatusFin=null;window._aprovValorPago=null;window._aprovVencimento=null;
+  abrirModalQualDocumento(num);
 }
 
 // ════════════ MODAL INFORMAÇÕES DE PAGAMENTO ════════════
@@ -5409,6 +5612,7 @@ async function confirmarPgtoInfo(){
 
 async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencimento){
   o.status='aprovado';
+  o.docEmitido=true; // documento emitido — esconde botão "Emitir Documento"
   // Salva status financeiro no orçamento
   o.finStatus=statusFin;
   o.finForma=forma;
@@ -5499,31 +5703,14 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
   }
 }
 
+// emitirDocAprovado mantido como alias para compatibilidade (não é mais chamado pelo novo fluxo)
 async function emitirDocAprovado(){
-  var num=window._aprovOrcNum;
-  var tipo=window._aprovTipo;
+  var num=window._aprovOrcNum||window._qdocOrcNum;
+  var tipo=window._aprovTipo||window._qdocTipo;
   if(!num||!tipo)return;
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
-
-  // Para recibo e NF: abre modal de informações de pagamento ANTES de emitir
-  if(tipo==='recibo'||tipo==='nf'){
-    fecharAprovacaoModal();
-    // Pequeno delay para fechar o modal de aprovação antes de abrir o de pagamento
-    setTimeout(function(){
-      abrirModalPgtoInfo(num, tipo);
-    }, 150);
-    return;
-  }
-
-  // Para lançamento direto no financeiro: abre também o modal de pgto
-  if(tipo==='financeiro'){
-    fecharAprovacaoModal();
-    setTimeout(function(){
-      abrirModalPgtoInfo(num, tipo);
-    }, 150);
-    return;
-  }
+  await _processarEmissaoDoc(o,tipo,window._aprovForma||o.finForma||o.pgto,window._aprovStatusFin||o.finStatus||'pendente',window._aprovValorPago||o.finValorPago||null,window._aprovVencimento||o.finVencimento||'');
 }
 
 // ════════════ MODAL ATUALIZAR PAGAMENTO ════════════
@@ -6739,6 +6926,7 @@ function renderOrcTable(){
     (function(oRef,oIdx){
       var btnEdit=document.createElement('button');btnEdit.className='btn btn-ghost btn-sm';btnEdit.textContent='✏️ Editar';btnEdit.onclick=function(){abrirEditarOrc(oRef.num);};
       var btnAprov=document.createElement('button');btnAprov.className='btn btn-green btn-sm';btnAprov.textContent='✅ Aprovar';btnAprov.style.display=(oRef.status==='pendente'||oRef.status==='negociacao')?'inline-flex':'none';btnAprov.onclick=function(){abrirAprovacaoOrc(oRef.num);};
+      var btnEmitir=document.createElement('button');btnEmitir.className='btn btn-sm';btnEmitir.style.cssText='background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fbbf24';btnEmitir.textContent='📄 Emitir Documento';btnEmitir.style.display=(oRef.status==='aprovado'&&!oRef.docEmitido)?'inline-flex':'none';btnEmitir.onclick=function(){emitirDocumentoAprovado(oRef.num);};
       var btnPgto=document.createElement('button');btnPgto.className='btn btn-sm';
       btnPgto.style.cssText='background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:var(--blue3)';
       btnPgto.textContent='💳 Pgto';
@@ -6746,7 +6934,7 @@ function renderOrcTable(){
       btnPgto.onclick=function(){abrirAtualizarPgto('orc',oIdx);};
       var btnPDF=document.createElement('button');btnPDF.className='btn btn-ghost btn-sm';btnPDF.textContent='📄 PDF';btnPDF.onclick=function(){gerarPDF(oRef.num);};
       var btnDel=document.createElement('button');btnDel.className='btn btn-red btn-sm';btnDel.textContent='🗑';btnDel.onclick=function(){excluirOrc(oRef.num);};
-      acoes.appendChild(btnEdit);acoes.appendChild(btnAprov);acoes.appendChild(btnPgto);acoes.appendChild(btnPDF);acoes.appendChild(btnDel);
+      acoes.appendChild(btnEdit);acoes.appendChild(btnAprov);acoes.appendChild(btnEmitir);acoes.appendChild(btnPgto);acoes.appendChild(btnPDF);acoes.appendChild(btnDel);
     })(o, orcamentos.indexOf(o));
     var tdNum=document.createElement('td');tdNum.innerHTML='<span style="font-weight:800;color:var(--blue3)">#'+o.num+'</span>';
     var tdCli=document.createElement('td');tdCli.innerHTML='<span style="font-weight:700">'+o.cli+'</span>';
@@ -6791,12 +6979,13 @@ function renderOrcTable(){
         var mb1=document.createElement('button');mb1.className='btn btn-ghost btn-sm';mb1.textContent='✏️ Editar';mb1.onclick=function(){abrirEditarOrc(oRef.num);};
         var mb2=document.createElement('button');mb2.className='btn btn-ghost btn-sm';mb2.textContent='📄 PDF';mb2.onclick=function(){gerarPDF(oRef.num);};
         var mb3=document.createElement('button');mb3.className='btn btn-green btn-sm';mb3.textContent='✅ Aprovar';mb3.style.display=(oRef.status==='pendente'||oRef.status==='negociacao')?'inline-flex':'none';mb3.onclick=function(){abrirAprovacaoOrc(oRef.num);};
+        var mbEmitir=document.createElement('button');mbEmitir.className='btn btn-sm';mbEmitir.style.cssText='background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fbbf24';mbEmitir.textContent='📄 Emitir Documento';mbEmitir.style.display=(oRef.status==='aprovado'&&!oRef.docEmitido)?'inline-flex':'none';mbEmitir.onclick=function(){emitirDocumentoAprovado(oRef.num);};
         var mbPgto=document.createElement('button');mbPgto.className='btn btn-sm';
         mbPgto.style.cssText='background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:var(--blue3)';
         mbPgto.textContent='💳 Pgto';mbPgto.style.display=oRef.finStatus?'inline-flex':'none';
         mbPgto.onclick=function(){abrirAtualizarPgto('orc',oIdx);};
         var mb4=document.createElement('button');mb4.className='btn btn-red btn-sm';mb4.style.flex='0 0 auto';mb4.textContent='🗑';mb4.onclick=function(){excluirOrc(oRef.num);};
-        mActions.appendChild(mb1);mActions.appendChild(mb2);mActions.appendChild(mb3);mActions.appendChild(mbPgto);mActions.appendChild(mb4);
+        mActions.appendChild(mb1);mActions.appendChild(mb2);mActions.appendChild(mb3);mActions.appendChild(mbEmitir);mActions.appendChild(mbPgto);mActions.appendChild(mb4);
       })(o, orcamentos.indexOf(o));
       card.appendChild(mSel);
       card.appendChild(cardInner);
@@ -7027,6 +7216,7 @@ document.getElementById('modal-lancamento').addEventListener('click',function(e)
 document.getElementById('modal-edit-orc').addEventListener('click',function(e){if(e.target===this)fecharEditarOrc();});
 document.getElementById('modal-edit-rec').addEventListener('click',function(e){if(e.target===this)fecharEditarRec();});
 document.getElementById('modal-aprovacao').addEventListener('click',function(e){if(e.target===this)fecharAprovacaoModal();});
+document.getElementById('modal-qual-documento').addEventListener('click',function(e){if(e.target===this)fecharModalQualDocumento();});
 document.getElementById('modal-serr-orc').addEventListener('click',function(e){if(e.target===this)fecharSerrOrc();});
 // modal-serr-rec é stub de compatibilidade — sem listener adicional
 document.getElementById('modal-cli-opcoes').addEventListener('click',function(e){if(e.target===this)fecharCliOpcoes();});
