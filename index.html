@@ -2692,7 +2692,19 @@ async function carregarTodosDados() {
         pgto: o.pagamento||'Pix', status: o.status||'pendente',
         data: o.data_emissao||'', obs: o.observacoes||'',
         custoPecas: parseFloat(o.custo_pecas||0),
-        matEdit: matEdit
+        matEdit: matEdit,
+        // Campos de pagamento/financeiro
+        finStatus: o.fin_status||null,
+        finForma: o.fin_forma||null,
+        finValorPago: o.fin_valor_pago||null,
+        finVencimento: o.fin_vencimento||null,
+        docEmitido: o.doc_emitido||false,
+        // Campos de desconto e validade
+        validade: o.validade||null,
+        descTipo: o.desc_tipo||'',
+        descQtd: parseFloat(o.desc_qtd||0),
+        descBase: parseFloat(o.desc_base||0),
+        descV: parseFloat(o.desc_val||0)
       };
     });
   }
@@ -2708,7 +2720,13 @@ async function carregarTodosDados() {
         val: parseFloat(r.valor||0), pgto: r.pagamento||'',
         gtia: r.garantia||'', data: r.data_emissao||'',
         dataRaw: r.data_raw||'',
-        descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0)
+        descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
+        // Campos de status de pagamento
+        finStatus: r.fin_status||'pendente',
+        finForma: r.fin_forma||r.pagamento||'',
+        finValorPago: r.fin_valor_pago||null,
+        finVencimento: r.fin_vencimento||null,
+        finLancado: r.fin_lancado||false
       };
     });
   }
@@ -2718,11 +2736,20 @@ async function carregarTodosDados() {
   if (!eFin && fins && fins.length > 0) {
     financeiro = fins.map(function(f) {
       return {
-        sbId: f.id, desc: f.descricao||'', cli: f.cliente||'',
-        val: parseFloat(f.valor||0), pgto: f.pagamento||'',
-        data: f.data||'', dataRaw: f.data_raw||'',
+        sbId: f.id, desc: f.descricao||'',
+        nome: f.nome||f.cliente||'',
+        cli: f.cliente||'', val: parseFloat(f.valor||0),
+        pgto: f.pagamento||'', data: f.data||'',
+        dataRaw: f.data_raw||'',
         pecas: parseFloat(f.custo_pecas||0),
-        desloc: parseFloat(f.deslocamento||0), num: f.num_ref||''
+        desloc: parseFloat(f.deslocamento||0),
+        num: f.num_ref||'',
+        // Campos de status de pagamento
+        finStatus: f.fin_status||'pendente',
+        tipoLanc: f.tipo_lanc||'a_receber',
+        finValorPago: f.fin_valor_pago||null,
+        finVencimento: f.fin_vencimento||null,
+        saldoPendente: parseFloat(f.saldo_pendente||0)
       };
     });
   }
@@ -2897,39 +2924,47 @@ async function sbSalvarOrcamento(o) {
     garantia: o.gtia, pagamento: o.pgto, status: o.status,
     data_emissao: o.data, observacoes: o.obs||'',
     custo_pecas: parseFloat(o.custoPecas||0),
-    mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null
+    mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null,
+    // Campos de pagamento/financeiro
+    fin_status: o.finStatus||null,
+    fin_forma: o.finForma||null,
+    fin_valor_pago: o.finValorPago||null,
+    fin_vencimento: o.finVencimento||null,
+    doc_emitido: o.docEmitido||false,
+    // Campos de desconto e validade
+    validade: o.validade||null,
+    desc_tipo: o.descTipo||null,
+    desc_qtd: o.descQtd||0,
+    desc_base: o.descBase||0,
+    desc_val: o.descV||0
   };
   try {
     if (o.sbId) {
       const {error} = await sb.from('orcamentos').update(payload).eq('id', o.sbId);
       if (error) {
-        // Se a coluna mat_edit não existir ainda no banco, tenta sem ela
-        if (error.message && error.message.includes('mat_edit')) {
-          const {custo_pecas, ...payloadSemMat} = payload;
-          const payloadFallback = {...payloadSemMat, custo_pecas};
-          await sb.from('orcamentos').update(payloadFallback).eq('id', o.sbId);
-        } else {
-          console.warn('Erro ao atualizar orçamento:', error);
-        }
+        // Fallback progressivo: remove campos que possam não existir no banco ainda
+        const payloadBase = {
+          numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
+          cliente_end: o.end||'', descricao: o.desc, valor: o.val,
+          garantia: o.gtia, pagamento: o.pgto, status: o.status,
+          data_emissao: o.data, observacoes: o.obs||'',
+          custo_pecas: parseFloat(o.custoPecas||0)
+        };
+        await sb.from('orcamentos').update(payloadBase).eq('id', o.sbId);
       }
     } else {
       const {data, error} = await sb.from('orcamentos').insert(payload).select('id').single();
       if (error) {
-        // Fallback sem mat_edit se coluna não existir
-        if (error.message && error.message.includes('mat_edit')) {
-          const payloadFallback = {
-            numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
-            cliente_end: o.end||'', descricao: o.desc, valor: o.val,
-            garantia: o.gtia, pagamento: o.pgto, status: o.status,
-            data_emissao: o.data, observacoes: o.obs||'',
-            custo_pecas: parseFloat(o.custoPecas||0)
-          };
-          const {data:d2, error:e2} = await sb.from('orcamentos').insert(payloadFallback).select('id').single();
-          if (e2) console.warn('Erro ao inserir orçamento (fallback):', e2);
-          else if (d2) o.sbId = d2.id;
-        } else {
-          console.warn('Erro ao inserir orçamento:', error);
-        }
+        const payloadBase = {
+          numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
+          cliente_end: o.end||'', descricao: o.desc, valor: o.val,
+          garantia: o.gtia, pagamento: o.pgto, status: o.status,
+          data_emissao: o.data, observacoes: o.obs||'',
+          custo_pecas: parseFloat(o.custoPecas||0)
+        };
+        const {data:d2, error:e2} = await sb.from('orcamentos').insert(payloadBase).select('id').single();
+        if (e2) console.warn('Erro ao inserir orçamento:', e2);
+        else if (d2) o.sbId = d2.id;
       } else if (data) o.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar orçamento:', e); }
@@ -2948,16 +2983,43 @@ async function sbSalvarRecibo(r) {
     cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
     valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
     data_emissao: r.data, data_raw: r.dataRaw||'',
-    desc_base: r.descBase||0, desc_val: r.descV||0
+    desc_base: r.descBase||0, desc_val: r.descV||0,
+    // Campos de status de pagamento — essenciais para sincronização
+    fin_status: r.finStatus||'pendente',
+    fin_forma: r.finForma||r.pgto||null,
+    fin_valor_pago: r.finValorPago||null,
+    fin_vencimento: r.finVencimento||null,
+    fin_lancado: r.finLancado||false
   };
   try {
     if (r.sbId) {
       const {error} = await sb.from('recibos').update(payload).eq('id', r.sbId);
-      if (error) console.warn('Erro ao atualizar recibo:', error);
+      if (error) {
+        // Fallback sem campos novos se coluna ainda não existir no banco
+        const payloadBase = {
+          numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
+          cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
+          valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
+          data_emissao: r.data, data_raw: r.dataRaw||'',
+          desc_base: r.descBase||0, desc_val: r.descV||0
+        };
+        const {error:e2} = await sb.from('recibos').update(payloadBase).eq('id', r.sbId);
+        if (e2) console.warn('Erro ao atualizar recibo:', e2);
+      }
     } else {
       const {data, error} = await sb.from('recibos').insert(payload).select('id').single();
-      if (error) console.warn('Erro ao inserir recibo:', error);
-      else if (data) r.sbId = data.id;
+      if (error) {
+        const payloadBase = {
+          numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
+          cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
+          valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
+          data_emissao: r.data, data_raw: r.dataRaw||'',
+          desc_base: r.descBase||0, desc_val: r.descV||0
+        };
+        const {data:d2, error:e2} = await sb.from('recibos').insert(payloadBase).select('id').single();
+        if (e2) console.warn('Erro ao inserir recibo:', e2);
+        else if (d2) r.sbId = d2.id;
+      } else if (data) r.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar recibo:', e); }
 }
@@ -2971,19 +3033,46 @@ async function sbDeletarRecibo(sbId) {
 async function sbSalvarFinanceiro(f) {
   if (!SUPABASE_ATIVO) return;
   const payload = {
-    descricao: f.desc, cliente: f.cli||'', valor: f.val,
-    pagamento: f.pgto, data: f.data,
+    descricao: f.desc||'', cliente: f.cli||'', nome: f.nome||f.cli||'',
+    valor: f.val, pagamento: f.pgto||'',
+    data: f.data||'', data_raw: f.dataRaw||'',
     custo_pecas: parseFloat(f.pecas||0),
-    deslocamento: parseFloat(f.desloc||0)
+    deslocamento: parseFloat(f.desloc||0),
+    num_ref: f.num||'',
+    // Campos de status de pagamento — essenciais para sincronização
+    fin_status: f.finStatus||'pendente',
+    tipo_lanc: f.tipoLanc||'a_receber',
+    fin_valor_pago: f.finValorPago||null,
+    fin_vencimento: f.finVencimento||null,
+    saldo_pendente: f.saldoPendente||0
   };
   try {
     if (f.sbId) {
       const {error} = await sb.from('financeiro').update(payload).eq('id', f.sbId);
-      if (error) console.warn('Erro ao atualizar financeiro:', error);
+      if (error) {
+        // Fallback sem campos novos
+        const payloadBase = {
+          descricao: f.desc||'', cliente: f.cli||'', valor: f.val,
+          pagamento: f.pgto||'', data: f.data||'',
+          custo_pecas: parseFloat(f.pecas||0),
+          deslocamento: parseFloat(f.desloc||0), num_ref: f.num||''
+        };
+        const {error:e2} = await sb.from('financeiro').update(payloadBase).eq('id', f.sbId);
+        if (e2) console.warn('Erro ao atualizar financeiro:', e2);
+      }
     } else {
       const {data, error} = await sb.from('financeiro').insert(payload).select('id').single();
-      if (error) console.warn('Erro ao inserir financeiro:', error);
-      else if (data) f.sbId = data.id;
+      if (error) {
+        const payloadBase = {
+          descricao: f.desc||'', cliente: f.cli||'', valor: f.val,
+          pagamento: f.pgto||'', data: f.data||'',
+          custo_pecas: parseFloat(f.pecas||0),
+          deslocamento: parseFloat(f.desloc||0), num_ref: f.num||''
+        };
+        const {data:d2, error:e2} = await sb.from('financeiro').insert(payloadBase).select('id').single();
+        if (e2) console.warn('Erro ao inserir financeiro:', e2);
+        else if (d2) f.sbId = d2.id;
+      } else if (data) f.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar financeiro:', e); }
 }
