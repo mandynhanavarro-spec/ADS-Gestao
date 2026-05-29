@@ -200,6 +200,13 @@ td.bold{color:var(--white);font-weight:700}
 .badge-exec{background:rgba(6,182,212,.18);color:#67e8f9}
 .badge-final{background:rgba(16,185,129,.25);color:#6ee7b7}
 
+/* BADGES STATUS FINANCEIRO */
+.badge-fin-pago{background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.35)}
+.badge-fin-parcial{background:rgba(245,158,11,.18);color:#f59e0b;border:1px solid rgba(245,158,11,.35)}
+.badge-fin-pix{background:rgba(59,130,246,.18);color:#60a5fa;border:1px solid rgba(59,130,246,.35)}
+.badge-fin-pendente{background:rgba(120,120,140,.18);color:#a8bacf;border:1px solid rgba(120,120,140,.3)}
+.badge-fin-vencido{background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.35)}
+
 /* EDIT BANNER */
 .edit-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:7px;padding:8px 13px;display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--amber)}
 
@@ -560,7 +567,7 @@ td.bold{color:var(--white);font-weight:700}
   <div class="panel desktop-table">
     <div class="panel-bd" style="padding:0 16px">
       <table>
-        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status</th><th width="160">Ações</th></tr></thead>
+        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status Serviço</th><th>Status Financeiro</th><th width="200">Ações</th></tr></thead>
         <tbody id="orc-table-body"></tbody>
       </table>
     </div>
@@ -706,7 +713,7 @@ td.bold{color:var(--white);font-weight:700}
   <!-- Desktop table -->
   <div class="panel desktop-table"><div class="panel-bd" style="padding:0 16px">
     <table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Referente a</th><th>Valor</th><th>Pgto</th><th>Data</th><th>Ações</th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Referente a</th><th>Valor</th><th>Status Financeiro</th><th>Valor Pago</th><th>Data</th><th>Ações</th></tr></thead>
       <tbody id="rec-table-body"></tbody>
     </table>
     <div id="rec-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum recibo emitido ainda.</div>
@@ -1335,7 +1342,7 @@ td.bold{color:var(--white);font-weight:700}
   </div>
   <div class="panel"><div class="panel-bd" style="padding:0 16px">
     <table>
-      <thead><tr><th>Nome</th><th>Descrição</th><th>Data</th><th>Pgto</th><th>Serviço R$</th><th>Peças R$</th><th>Desl. R$</th><th>Líquido</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Nome</th><th>Descrição</th><th>Data</th><th>Pgto</th><th>Status</th><th>Serviço R$</th><th>Peças R$</th><th>Desl. R$</th><th>Líquido</th><th>Ações</th></tr></thead>
       <tbody id="fin-table-body"></tbody>
     </table>
     <div id="fin-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum lançamento. Conclua um orçamento para lançar aqui.</div>
@@ -1928,6 +1935,124 @@ td.bold{color:var(--white);font-weight:700}
     <div class="modal-ft">
       <button class="btn btn-ghost" onclick="fecharAprovacaoModal()">Cancelar</button>
       <button class="btn btn-green" id="aprov-modal-btn" style="display:none" onclick="emitirDocAprovado()">✅ Confirmar e Emitir →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: INFORMAÇÕES DE PAGAMENTO ══ -->
+<div class="modal-bg" id="modal-pgto-info">
+  <div class="modal" style="width:520px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">💳 Informações de Pagamento</span>
+      <button class="modal-x" onclick="fecharModalPgtoInfo()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div style="background:rgba(37,99,235,.08);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px">
+        <span style="color:var(--blue3);font-weight:700">ℹ️ Preencha antes de gerar o PDF.</span>
+        <span style="color:var(--silver2)"> O status de pagamento será exibido no recibo e lançado no financeiro corretamente.</span>
+      </div>
+      <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--silver2);margin-bottom:2px">Orçamento / Serviço</div>
+        <div style="font-weight:800;color:var(--white)" id="pi-orc-info"></div>
+        <div style="font-size:14px;color:var(--green2);font-weight:800;margin-top:3px" id="pi-orc-val"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Forma de Pagamento</div>
+          <select class="fs" id="pi-forma">
+            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
+            <option>Sinal de 50% / Restante 50%</option><option>Cartão Crédito</option>
+            <option>Cartão Débito</option><option>Transferência Bancária</option>
+          </select>
+        </div>
+        <div>
+          <div class="fl">Status do Pagamento</div>
+          <select class="fs" id="pi-status" onchange="atualizarBadgePgto()">
+            <option value="pendente">⚪ Pagamento Pendente</option>
+            <option value="aguardando_pix">🔵 Aguardando Pix</option>
+            <option value="parcial">🟡 Pago Parcial</option>
+            <option value="pago">🟢 Pago</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--silver);text-transform:uppercase;letter-spacing:1px">Status atual:</span>
+        <span id="pi-badge-preview" class="badge badge-fin-pendente" style="font-size:11px">⚪ Pendente</span>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Valor Pago (R$) — opcional</div>
+          <input class="fi" type="number" id="pi-valor-pago" placeholder="0,00" step="0.01" value="" oninput="calcSaldoPendente()">
+        </div>
+        <div>
+          <div class="fl">Data de Vencimento — opcional</div>
+          <input class="fi" type="date" id="pi-vencimento">
+        </div>
+      </div>
+      <div id="pi-saldo-box" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--silver2)">Valor total:</span>
+          <span style="color:var(--green2);font-weight:700" id="pi-total-show">R$ 0,00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:var(--silver2)">Valor pago:</span>
+          <span style="color:var(--blue3);font-weight:700" id="pi-pago-show">R$ 0,00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;margin-top:4px">
+          <span style="color:var(--white);font-weight:700">Saldo pendente:</span>
+          <span style="color:var(--amber);font-weight:900;font-size:14px" id="pi-saldo-show">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharModalPgtoInfo()">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmarPgtoInfo()">✅ Confirmar e Gerar PDF →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ATUALIZAR PAGAMENTO ══ -->
+<div class="modal-bg" id="modal-atualizar-pgto">
+  <div class="modal" style="width:480px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">🔄 Atualizar Status de Pagamento</span>
+      <button class="modal-x" onclick="fecharAtualizarPgto()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div style="background:rgba(37,99,235,.08);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--silver2)" id="ap-info-box"></div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Forma de Pagamento</div>
+          <select class="fs" id="ap-forma">
+            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
+            <option>Sinal de 50% / Restante 50%</option><option>Cartão Crédito</option>
+            <option>Cartão Débito</option><option>Transferência Bancária</option>
+          </select>
+        </div>
+        <div>
+          <div class="fl">Novo Status</div>
+          <select class="fs" id="ap-status">
+            <option value="pendente">⚪ Pendente</option>
+            <option value="aguardando_pix">🔵 Aguardando Pix</option>
+            <option value="parcial">🟡 Pago Parcial</option>
+            <option value="pago">🟢 Pago</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div>
+          <div class="fl">Valor Pago (R$) — opcional</div>
+          <input class="fi" type="number" id="ap-valor-pago" placeholder="0,00" step="0.01" value="">
+        </div>
+        <div>
+          <div class="fl">Data do Pagamento</div>
+          <input class="fi" type="date" id="ap-data-pgto">
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharAtualizarPgto()">Cancelar</button>
+      <button class="btn btn-green" onclick="salvarAtualizacaoPgto()">💾 Atualizar Pagamento</button>
     </div>
   </div>
 </div>
@@ -3551,17 +3676,19 @@ async function emitirDoc(){
 
   if(STATE.aprov==='recibo'){
     var numR='#R'+String(recibos.length+1).padStart(3,'0');
+    var finStatusDoc=f.pagamento==='Dinheiro'||f.pagamento==='Cartão Crédito'||f.pagamento==='Cartão Débito'?'pago':(f.pagamento==='Pix'?'aguardando_pix':'pendente');
     var recibo={num:numR,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,
-      val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0};
+      val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0,
+      finStatus:finStatusDoc,finForma:f.pagamento,finLancado:true};
     recibos.unshift(recibo);
     if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
+    lancFin.finStatus=finStatusDoc;lancFin.tipoLanc=finStatusDoc==='pago'?'recebido':'a_receber';
     financeiro.unshift(lancFin);
     if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
     salvarLocal();
     atualizarContadores();
     var corBadge='background:rgba(59,130,246,.15);color:var(--blue3)';
-    var items=f.descricao.split('\n').filter(function(l){return l.trim();}).map(function(l){return '<li>'+l.trim()+'</li>';}).join('');
     document.getElementById('doc-render').innerHTML=
       '<div class="doc-preview">'+
       '<div class="doc-hd"><div><div class="doc-co">ADS Portões Automáticos</div><div class="doc-co-sub">CNPJ 20.989.538/0001-88 · (11) 96770-4116</div></div>'+
@@ -3573,21 +3700,15 @@ async function emitirDoc(){
       '<div class="doc-row"><span class="doc-dl">Endereço</span><span class="doc-dv">'+f.endereco+'</span></div>'+
       '<div class="doc-row"><span class="doc-dl">Referente a</span><span class="doc-dv">'+f.descricao.split('\n')[0]+'</span></div>'+
       '<div class="doc-row"><span class="doc-dl">Pagamento</span><span class="doc-dv">'+f.pagamento+'</span></div>'+
-      '<div class="doc-total"><span style="font-size:12px;color:var(--silver2);font-weight:700">VALOR RECEBIDO</span>'+
+      '<div class="doc-row"><span class="doc-dl">Status</span><span class="doc-dv">'+getFinStatusLabel(finStatusDoc)+'</span></div>'+
+      '<div class="doc-total"><span style="font-size:12px;color:var(--silver2);font-weight:700">VALOR</span>'+
       '<span style="font-size:20px;font-weight:900;color:var(--green2)">'+fmtVal(f.valor)+'</span></div></div>'+
       '<div class="doc-ft" style="flex-direction:column;gap:8px">'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
-      '<button class="btn btn-primary" onclick="gerarPDFRecibo(0);document.getElementById(\'pgto-box-rec\').style.display=\'block\'">📄 Baixar PDF Recibo</button>'+
+      '<button class="btn btn-primary" onclick="gerarPDFRecibo(0)">📄 Baixar PDF Recibo</button>'+
       '<button class="btn btn-green" onclick="enviarWpp()">📲 WhatsApp</button>'+
       '<button class="btn btn-ghost" style="margin-left:auto" onclick="resetFlow()">⚡ Novo orçamento</button>'+
-      '</div>'+
-      '<div id="pgto-box-rec" style="display:none;width:100%;background:rgba(37,99,235,.08);border:1px solid var(--border2);border-radius:8px;padding:10px 14px">'+
-      '<div style="font-size:10px;color:var(--blue3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">💳 Forma de Pagamento</div>'+
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-      '<select class="fs" id="pgto-rec-sel" style="flex:1;min-width:160px">'+_pgtoOpts(f.pagamento)+'</select>'+
-      '<button class="btn btn-primary btn-sm" onclick="atualizarPgtoRecibo()">🔄 Atualizar e gerar PDF</button>'+
-      '</div></div>'+
-      '</div></div>';
+      '</div></div></div>';
     showBlock('doc');setStep(5);
     document.getElementById('blk-doc').scrollIntoView({behavior:'smooth',block:'nearest'});
     return;
@@ -4046,7 +4167,13 @@ function gerarPDFRecibo(idx){
       y+=2;
 
     } else if(b.id==='valor'){
+      var finStatus=r.finStatus||'pendente';
+      var isPago=finStatus==='pago';
+      var isParcial=finStatus==='parcial';
+      var isAguardando=finStatus==='aguardando_pix';
+
       var valorFmt='R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(r.val)+').';
+
       if(r.descV&&r.descV>0&&r.descBase&&r.descBase>0){
         doc.setFont('helvetica','bold');doc.text('Valor:',ML,y);y+=6;
         doc.setFont('helvetica','normal');
@@ -4055,9 +4182,45 @@ function gerarPDFRecibo(idx){
         var totalFmt='Total: R$ '+r.val.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(r.val)+').';
         doc.setFont('helvetica','bold');var vLines=doc.splitTextToSize(totalFmt,CW-6);doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
       } else {
-        doc.setFont('helvetica','bold');doc.text('Valor recebido:',ML,y);y+=6;
+        var labelValor=isPago?'Valor recebido:':(isParcial?'Valor total:':'Valor pendente:');
+        doc.setFont('helvetica','bold');doc.text(labelValor,ML,y);y+=6;
         var vLines=doc.splitTextToSize(valorFmt,CW-6);
-        doc.setFont('helvetica','normal');doc.text(vLines,ML+4,y);y+=vLines.length*6+4;
+        doc.setFont('helvetica','normal');doc.text(vLines,ML+4,y);y+=vLines.length*6;
+
+        // Pago parcial: exibe valor pago e saldo
+        if(isParcial&&r.finValorPago){
+          var saldoR=Math.max(0,r.val-r.finValorPago);
+          doc.text('Valor pago: R$ '+r.finValorPago.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+          doc.setFont('helvetica','bold');
+          doc.text('Saldo pendente: R$ '+saldoR.toLocaleString('pt-BR',{minimumFractionDigits:2}),ML+4,y);y+=6;
+          doc.setFont('helvetica','normal');
+        }
+        y+=4;
+      }
+
+      // Banner de status de pagamento
+      var statusLabel=getFinStatusLabel(finStatus);
+      var bannerR, bannerG, bannerB;
+      if(isPago){bannerR=16;bannerG=185;bannerB=129;}
+      else if(isParcial){bannerR=245;bannerG=158;bannerB=11;}
+      else if(isAguardando){bannerR=37;bannerG=99;bannerB=235;}
+      else{bannerR=120;bannerG=120;bannerB=140;}
+
+      doc.setFillColor(bannerR,bannerG,bannerB);
+      doc.roundedRect(ML,y,CW,10,2,2,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(255,255,255);
+      doc.text('Status: '+statusLabel,PW/2,y+6.5,{align:'center'});
+      doc.setTextColor(0,0,0);y+=14;
+
+      // Mensagem de cobrança se pendente
+      if(!isPago){
+        doc.setFont('helvetica','italic');doc.setFontSize(8);doc.setTextColor(100,100,100);
+        var msg=isParcial?'Documento emitido — pagamento parcial. Saldo em aberto conforme acima.':
+          (isAguardando?'Documento emitido como cobrança/solicitação de pagamento via Pix.':
+          'Documento emitido como cobrança/solicitação de pagamento.');
+        var mLines=doc.splitTextToSize(msg,CW);
+        doc.text(mLines,ML,y);y+=mLines.length*5+4;
+        doc.setTextColor(0,0,0);doc.setFont('helvetica','normal');doc.setFontSize(10);
       }
 
     } else if(b.id==='garantia'){
@@ -4071,20 +4234,17 @@ function gerarPDFRecibo(idx){
       doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
       doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
       doc.setFont('helvetica','normal');
-      if(r.pgto==='Pix'){
+      var pgtoLabel=r.finForma||r.pgto;
+      if(pgtoLabel==='Pix'||pgtoLabel==='Aguardando Pix'){
         doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
         doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
         doc.text(respNomeR,ML+2,y);y+=6;
-      } else if(r.pgto==='Pendente'){
-        doc.text('Pagamento Pendente — via Pix: '+pixKeyR,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
-        doc.text(respNomeR,ML+2,y);y+=6;
-      } else if(r.pgto==='Parcelado'||r.pgto==='Sinal de 50% / Restante 50%'){
+      } else if(pgtoLabel==='Parcelado'||pgtoLabel==='Sinal de 50% / Restante 50%'){
         doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
         doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
         doc.text(respNomeR,ML+2,y);y+=6;
       } else {
-        doc.text(r.pgto,ML+2,y);y+=6;
+        doc.text(pgtoLabel,ML+2,y);y+=6;
       }
       doc.line(ML,y-2,PW-MR,y-2);y+=4;
     }
@@ -4477,15 +4637,23 @@ async function nrEmitirRecibo(){
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec};
+
+  // Determina status financeiro baseado na forma de pagamento selecionada
+  var finStatusAuto='pendente';
+  if(pgto==='Pix')finStatusAuto='aguardando_pix';
+  else if(pgto==='Dinheiro'||pgto==='Cartão Crédito'||pgto==='Cartão Débito')finStatusAuto='pago';
+  else if(pgto==='Pendente')finStatusAuto='pendente';
+  else finStatusAuto='pendente';
+  recibo.finStatus=finStatusAuto;
+  recibo.finForma=pgto;
+
   recibos.unshift(recibo);
-  // BUG FIX: aguardar ambas as operações assíncronas do Supabase antes de
-  // chamar salvarLocal(), garantindo que os sbId retornados sejam gravados
-  // nos objetos em memória — evita race condition que fazia recibos sumirem
   if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
   var deslocR=parseFloat((document.getElementById('nr-desloc')||{}).value||0);
-  // Só lança no financeiro se pagamento NÃO for Pendente
-  if(pgto!=='Pendente'){
-    var lancFin={nome:nome,desc:serv+' — '+nome,cli:nome,val:valorFinal,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:matTotais.custo,desloc:deslocR,num:numR};
+  // Lança no financeiro baseado no status
+  var ehPago=(finStatusAuto==='pago');
+  if(finStatusAuto!=='pendente'){
+    var lancFin={nome:nome,desc:serv+' — '+nome,cli:nome,val:valorFinal,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:matTotais.custo,desloc:deslocR,num:numR,finStatus:finStatusAuto,tipoLanc:ehPago?'recebido':'a_receber'};
     financeiro.unshift(lancFin);
     if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
     recibo.finLancado=true;
@@ -4496,7 +4664,8 @@ async function nrEmitirRecibo(){
   renderRecibosPage();
   // Gera PDF automaticamente
   setTimeout(function(){gerarPDFRecibo(0);},200);
-  var aviso=pgto==='Pendente'?' ⚠️ Pagamento pendente — confirme o pagamento na lista para lançar no financeiro.':'';
+  var aviso=finStatusAuto==='aguardando_pix'?' ⚠️ Aguardando Pix — lembre de confirmar o pagamento na aba Recibos.':
+    (finStatusAuto==='pendente'?' ⚠️ Pagamento pendente — confirme na aba Recibos quando receber.':'');
   alert('✅ Recibo '+numR+' emitido! O PDF será gerado agora.'+aviso);
 }
 
@@ -4919,17 +5088,16 @@ function renderRecibosPage(){
   tb.innerHTML='';
   if(mobList)mobList.innerHTML='';
 
-  var PGTOS=['Pix','Dinheiro','Parcelado','Sinal de 50% / Restante 50%','Cartão Crédito','Cartão Débito','Pendente'];
-
   recibos.forEach(function(r,i){
-    var isPendente=(r.pgto==='Pendente'||r.finLancado===false);
-    var pgtoOpts=PGTOS.map(function(p){
-      return '<option value="'+p+'"'+(r.pgto===p?' selected':'')+'>'+p+'</option>';
-    }).join('');
+    var finStatus=r.finStatus||'pendente';
+    var isPago=finStatus==='pago';
+    var borderColor=isPago?'rgba(16,185,129,.4)':(finStatus==='parcial'?'rgba(245,158,11,.4)':(finStatus==='aguardando_pix'?'rgba(59,130,246,.4)':'rgba(120,120,140,.3)'));
+    var rowBg=isPago?'rgba(16,185,129,.04)':(finStatus==='parcial'?'rgba(245,158,11,.04)':(finStatus==='aguardando_pix'?'rgba(59,130,246,.04)':''));
 
     // ── Desktop row ──
     var tr=document.createElement('tr');
-    if(isPendente) tr.style.background='rgba(245,158,11,.06)';
+    tr.style.borderLeft='3px solid '+borderColor;
+    if(rowBg)tr.style.background=rowBg;
 
     var tdNum=document.createElement('td');
     tdNum.innerHTML='<span style="font-weight:800;color:var(--blue3)">'+r.num+'</span>';
@@ -4944,21 +5112,19 @@ function renderRecibosPage(){
     var tdVal=document.createElement('td');
     tdVal.innerHTML='<span style="color:var(--green2);font-weight:700">'+fmtVal(r.val)+'</span>';
 
-    // Pagamento: select sempre editável
-    var tdPgto=document.createElement('td');
-    var pgSel=document.createElement('select');
-    pgSel.className='fs';
-    pgSel.style.cssText='font-size:10px;padding:3px 5px;min-width:110px;background:'+(isPendente?'rgba(245,158,11,.15)':'var(--bg3)')+';border-color:'+(isPendente?'rgba(245,158,11,.5)':'var(--border2)');
-    pgSel.innerHTML=pgtoOpts;
-    (function(rRef,selEl){
-      selEl.onchange=function(){
-        rRef.pgto=selEl.value;
-        salvarLocal();
-        if(SUPABASE_ATIVO)sbSalvarRecibo(rRef);
-        renderRecibosPage();
-      };
-    })(r,pgSel);
-    tdPgto.appendChild(pgSel);
+    // Status Financeiro — badge colorido
+    var tdFinStatus=document.createElement('td');
+    tdFinStatus.innerHTML=getFinStatusBadge(finStatus);
+
+    // Valor Pago
+    var tdValPago=document.createElement('td');
+    if(r.finValorPago){
+      var saldo=Math.max(0,r.val-r.finValorPago);
+      tdValPago.innerHTML='<span style="color:var(--blue3);font-size:11px">'+fmtVal(r.finValorPago)+'</span>'+
+        (saldo>0?'<br><span style="color:var(--amber);font-size:10px">Saldo: '+fmtVal(saldo)+'</span>':'');
+    } else {
+      tdValPago.innerHTML='<span style="color:var(--silver);font-size:10px">—</span>';
+    }
 
     var tdData=document.createElement('td');
     tdData.textContent=r.data;
@@ -4967,17 +5133,14 @@ function renderRecibosPage(){
     var acoesDiv=document.createElement('div');
     acoesDiv.style.cssText='display:flex;gap:4px;flex-wrap:wrap';
 
-    // Botão confirmar pagamento (só aparece se ainda não lançado ou pendente)
-    if(isPendente){
-      var btnConf=document.createElement('button');
-      btnConf.className='btn btn-green btn-sm';
-      btnConf.textContent='💰 Confirmar';
-      btnConf.title='Confirmar pagamento e lançar no Financeiro';
-      (function(rRef,idx){
-        btnConf.onclick=function(){confirmarPagamentoRecibo(idx);};
-      })(r,i);
-      acoesDiv.appendChild(btnConf);
-    }
+    // Botão Atualizar Pagamento
+    var btnPgto=document.createElement('button');
+    btnPgto.className='btn btn-sm';
+    btnPgto.style.cssText='background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:var(--blue3)';
+    btnPgto.textContent='💳 Pgto';
+    btnPgto.title='Atualizar status de pagamento';
+    (function(idx){btnPgto.onclick=function(){abrirAtualizarPgto('recibo',idx);};})(i);
+    acoesDiv.appendChild(btnPgto);
 
     var btnPDF=document.createElement('button');btnPDF.className='btn btn-ghost btn-sm';btnPDF.textContent='📄 PDF';
     (function(idx){btnPDF.onclick=function(){gerarPDFRecibo(idx);};})(i);
@@ -4998,28 +5161,14 @@ function renderRecibosPage(){
     acoesDiv.appendChild(btnDel);
     tdAcoes.appendChild(acoesDiv);
 
-    [tdNum,tdCli,tdServ,tdVal,tdPgto,tdData,tdAcoes].forEach(function(td){tr.appendChild(td);});
+    [tdNum,tdCli,tdServ,tdVal,tdFinStatus,tdValPago,tdData,tdAcoes].forEach(function(td){tr.appendChild(td);});
     tb.appendChild(tr);
 
     // ── Mobile card ──
     if(mobList){
       var card=document.createElement('div');
       card.className='mob-card';
-      card.style.borderLeft='3px solid '+(isPendente?'var(--amber)':'var(--blue3)');
-
-      var mobSel=document.createElement('select');
-      mobSel.className='mob-card-status-sel';
-      mobSel.style.background=isPendente?'rgba(245,158,11,.15)':'var(--bg3)';
-      mobSel.style.borderColor=isPendente?'rgba(245,158,11,.5)':'var(--border2)';
-      mobSel.innerHTML=pgtoOpts;
-      (function(rRef){
-        mobSel.onchange=function(){
-          rRef.pgto=mobSel.value;
-          salvarLocal();
-          if(SUPABASE_ATIVO)sbSalvarRecibo(rRef);
-          renderRecibosPage();
-        };
-      })(r);
+      card.style.borderLeft='3px solid '+borderColor;
 
       var cardInner=document.createElement('div');
       cardInner.innerHTML=
@@ -5029,18 +5178,17 @@ function renderRecibosPage(){
         '</div>'+
         '<div class="mob-card-cli">'+r.cli+'</div>'+
         '<div class="mob-card-serv">'+r.serv+'</div>'+
-        '<div style="font-size:10px;color:'+(isPendente?'var(--amber)':'var(--silver2)')+';margin-bottom:6px;font-weight:'+(isPendente?'700':'400')+'">'+
-          (isPendente?'⚠️ Pagamento Pendente':'')+'&nbsp;· '+r.data+
-        '</div>';
+        '<div style="margin-bottom:6px">'+getFinStatusBadge(finStatus)+'</div>'+
+        (r.finValorPago?'<div style="font-size:10px;color:var(--silver2);margin-bottom:4px">Pago: '+fmtVal(r.finValorPago)+' · Saldo: '+fmtVal(Math.max(0,r.val-r.finValorPago))+'</div>':'')+
+        '<div style="font-size:10px;color:var(--silver2);margin-bottom:6px">'+(r.finForma||r.pgto)+' · '+r.data+'</div>';
 
       var mActions=document.createElement('div');
       mActions.className='mob-card-actions';
 
-      if(isPendente){
-        var mb0=document.createElement('button');mb0.className='btn btn-green btn-sm';mb0.textContent='💰 Confirmar Pagamento';
-        (function(idx){mb0.onclick=function(){confirmarPagamentoRecibo(idx);};})(i);
-        mActions.appendChild(mb0);
-      }
+      var mbPgto=document.createElement('button');mbPgto.className='btn btn-sm';
+      mbPgto.style.cssText='background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:var(--blue3)';
+      mbPgto.textContent='💳 Pgto';
+      (function(idx){mbPgto.onclick=function(){abrirAtualizarPgto('recibo',idx);};})(i);
 
       var mb1=document.createElement('button');mb1.className='btn btn-ghost btn-sm';mb1.textContent='📄 PDF';
       (function(idx){mb1.onclick=function(){gerarPDFRecibo(idx);};})(i);
@@ -5051,42 +5199,13 @@ function renderRecibosPage(){
       var mb3=document.createElement('button');mb3.className='btn btn-red btn-sm';mb3.textContent='🗑';
       (function(idx){mb3.onclick=function(){excluirRecibo(idx);};})(i);
 
-      mActions.appendChild(mb1);mActions.appendChild(mbEdit);mActions.appendChild(mb2);mActions.appendChild(mb3);
-      card.appendChild(mobSel);
+      mActions.appendChild(mbPgto);mActions.appendChild(mb1);mActions.appendChild(mbEdit);mActions.appendChild(mb2);mActions.appendChild(mb3);
       card.appendChild(cardInner);
       card.appendChild(mActions);
       mobList.appendChild(card);
     }
   });
   atualizarContadores();
-}
-
-// Confirma pagamento de recibo pendente e lança no financeiro
-async function confirmarPagamentoRecibo(i){
-  var r=recibos[i];
-  if(!r)return;
-  if(r.pgto==='Pendente'){
-    alert('Selecione uma forma de pagamento antes de confirmar.');return;
-  }
-  if(r.finLancado===true){
-    if(!confirm('Este recibo já foi lançado no financeiro. Deseja lançar novamente?'))return;
-  }
-  var dataRaw=r.dataRaw||new Date().toISOString().split('T')[0];
-  var lancFin={
-    nome:r.cli,
-    desc:(r.serv||r.desc||'Serviço')+' — '+r.cli,
-    cli:r.cli, val:r.val, pgto:r.pgto,
-    data:r.data, dataRaw:dataRaw,
-    pecas:r.custoPecas||0, desloc:r.desloc||0, num:r.num
-  };
-  financeiro.unshift(lancFin);
-  if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
-  r.finLancado=true;
-  if(SUPABASE_ATIVO)sbSalvarRecibo(r);
-  salvarLocal();
-  renderRecibosPage();
-  renderFinanceiroPage&&renderFinanceiroPage();
-  alert('✅ Recibo '+r.num+' lançado no financeiro! Forma de pagamento: '+r.pgto);
 }
 
 function excluirRecibo(i){
@@ -5177,64 +5296,318 @@ function pickAprovModal(el,tipo){
   document.getElementById('aprov-modal-btn').style.display='flex';
 }
 
-async function emitirDocAprovado(){
-  var num=window._aprovOrcNum;
-  var tipo=window._aprovTipo;
-  if(!num||!tipo)return;
+// ════════════ MODAL INFORMAÇÕES DE PAGAMENTO ════════════
+
+// Helpers de status financeiro
+function getFinStatusBadge(statusFin){
+  var map={
+    pago:       '<span class="badge badge-fin-pago">🟢 Pago</span>',
+    parcial:    '<span class="badge badge-fin-parcial">🟡 Pago Parcial</span>',
+    aguardando_pix: '<span class="badge badge-fin-pix">🔵 Aguardando Pix</span>',
+    pendente:   '<span class="badge badge-fin-pendente">⚪ Pendente</span>',
+    vencido:    '<span class="badge" style="background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.35)">🔴 Vencido</span>',
+  };
+  return map[statusFin]||map.pendente;
+}
+
+function getFinStatusLabel(statusFin){
+  var map={pago:'PAGO',parcial:'PAGO PARCIAL',aguardando_pix:'AGUARDANDO PIX',pendente:'PAGAMENTO PENDENTE',vencido:'VENCIDO'};
+  return map[statusFin]||'PENDENTE';
+}
+
+function abrirModalPgtoInfo(orcNum, tipoDoc){
+  var o=orcamentos.find(function(x){return x.num===orcNum;});
+  if(!o)return;
+  window._piOrcNum=orcNum;
+  window._piTipoDoc=tipoDoc;
+  document.getElementById('pi-orc-info').textContent=o.cli+' — '+(o.serv||'');
+  document.getElementById('pi-orc-val').textContent=fmtVal(o.val);
+  // Pre-fill forma de pagamento do orçamento
+  var formaEl=document.getElementById('pi-forma');
+  for(var i=0;i<formaEl.options.length;i++){
+    if(formaEl.options[i].text===(o.pgto||'Pix')){formaEl.selectedIndex=i;break;}
+  }
+  document.getElementById('pi-status').value='pendente';
+  document.getElementById('pi-valor-pago').value='';
+  document.getElementById('pi-vencimento').value='';
+  document.getElementById('pi-saldo-box').style.display='none';
+  atualizarBadgePgto();
+  document.getElementById('modal-pgto-info').classList.add('open');
+}
+
+function fecharModalPgtoInfo(){
+  document.getElementById('modal-pgto-info').classList.remove('open');
+  window._piOrcNum=null;
+  window._piTipoDoc=null;
+}
+
+function atualizarBadgePgto(){
+  var status=document.getElementById('pi-status').value;
+  var badge=document.getElementById('pi-badge-preview');
+  if(!badge)return;
+  var map={
+    pago:        {cls:'badge-fin-pago',txt:'🟢 Pago'},
+    parcial:     {cls:'badge-fin-parcial',txt:'🟡 Pago Parcial'},
+    aguardando_pix:{cls:'badge-fin-pix',txt:'🔵 Aguardando Pix'},
+    pendente:    {cls:'badge-fin-pendente',txt:'⚪ Pendente'},
+  };
+  var cfg=map[status]||map.pendente;
+  badge.className='badge '+cfg.cls;
+  badge.textContent=cfg.txt;
+  calcSaldoPendente();
+}
+
+function calcSaldoPendente(){
+  var num=window._piOrcNum;
+  if(!num)return;
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
+  var valorPago=parseFloat(document.getElementById('pi-valor-pago').value||0);
+  var saldoBox=document.getElementById('pi-saldo-box');
+  if(valorPago>0){
+    var saldo=Math.max(0,o.val-valorPago);
+    document.getElementById('pi-total-show').textContent=fmtVal(o.val);
+    document.getElementById('pi-pago-show').textContent=fmtVal(valorPago);
+    document.getElementById('pi-saldo-show').textContent=fmtVal(saldo);
+    if(saldoBox)saldoBox.style.display='block';
+  } else {
+    if(saldoBox)saldoBox.style.display='none';
+  }
+}
+
+async function confirmarPgtoInfo(){
+  var num=window._piOrcNum;
+  var tipoDoc=window._piTipoDoc;
+  if(!num||!tipoDoc)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+
+  var forma=document.getElementById('pi-forma').value;
+  var statusFin=document.getElementById('pi-status').value;
+  var valorPago=parseFloat(document.getElementById('pi-valor-pago').value||0)||null;
+  var vencimento=document.getElementById('pi-vencimento').value;
+
+  fecharModalPgtoInfo();
+  await _processarEmissaoDoc(o, tipoDoc, forma, statusFin, valorPago, vencimento);
+}
+
+async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencimento){
   o.status='aprovado';
+  // Salva status financeiro no orçamento
+  o.finStatus=statusFin;
+  o.finForma=forma;
+  o.finValorPago=valorPago;
+  o.finVencimento=vencimento;
 
   var dataFormatada=o.data?o.data.includes('-')?fmtDateBr(o.data):o.data:fmtDateBr(new Date().toISOString().split('T')[0]);
-  var lancFin={
-    desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
-    cli:o.cli, val:o.val, pgto:o.pgto,
-    data:dataFormatada, dataRaw:o.data||'',
-    pecas:o.custoPecas||0, desloc:0, num:o.num
-  };
 
   if(tipo==='recibo'){
     var numR='#R'+String(recibos.length+1).padStart(3,'0');
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
-      serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:o.pgto,
-      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,finLancado:false};
+      serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:forma,
+      gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
+      finStatus:statusFin,finValorPago:valorPago,finVencimento:vencimento,finLancado:false};
+
     recibos.unshift(novoRec);
-    await sbSalvarRecibo(novoRec);
-    if(o.pgto!=='Pendente'){
+    if(SUPABASE_ATIVO)await sbSalvarRecibo(novoRec);
+
+    // Lançamento financeiro inteligente
+    var ehPago=(statusFin==='pago');
+    var ehParcial=(statusFin==='parcial');
+    var valLancar=ehParcial&&valorPago?valorPago:o.val;
+    var tipoLanc=ehPago||ehParcial?'recebido':'a_receber';
+    var lancFin={
+      desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
+      cli:o.cli, val:valLancar, pgto:forma,
+      data:dataFormatada, dataRaw:o.data||'',
+      pecas:o.custoPecas||0, desloc:0, num:o.num,
+      finStatus:statusFin, tipoLanc:tipoLanc,
+      saldoPendente:ehParcial?Math.max(0,o.val-(valorPago||0)):0
+    };
+    if(ehPago||ehParcial){
       financeiro.unshift(lancFin);
-      await sbSalvarFinanceiro(lancFin);
+      if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
+      novoRec.finLancado=true;
+    } else {
+      // Pendente/Aguardando: lança como a_receber
+      lancFin.val=o.val;
+      financeiro.unshift(lancFin);
+      if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
       novoRec.finLancado=true;
     }
-    await sbSalvarOrcamento(o);
+
+    if(SUPABASE_ATIVO)await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
+    renderRecibosPage&&renderRecibosPage();
     atualizarContadores();
+    setTimeout(function(){gerarPDFReciboComStatus(0);},200);
     fecharAprovacaoModal();
-    setTimeout(function(){gerarPDFRecibo(0);},200);
-    var aviso=o.pgto==='Pendente'?' ⚠️ Pagamento pendente — confirme depois na aba Recibos.':'';
-    alert('✅ Recibo emitido!'+aviso);
+
   } else if(tipo==='nf'){
     var numNF='NFS-e #'+Math.floor(1000+Math.random()*9000);
     notasFiscais.unshift({num:numNF,cli:o.cli,serv:o.serv||'',
       val:o.val,data:dataFormatada,dataRaw:o.data||'',status:'Aguardando prefeitura'});
-    financeiro.unshift(lancFin);
-    await sbSalvarFinanceiro(lancFin);
-    await sbSalvarOrcamento(o);
+    var lancFinNF={
+      desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
+      cli:o.cli,val:o.val,pgto:forma,
+      data:dataFormatada,dataRaw:o.data||'',
+      pecas:o.custoPecas||0,desloc:0,num:o.num,
+      finStatus:statusFin,tipoLanc:statusFin==='pago'?'recebido':'a_receber'
+    };
+    financeiro.unshift(lancFinNF);
+    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFinNF);
+    if(SUPABASE_ATIVO)await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
     fecharAprovacaoModal();
-    alert('✅ Nota Fiscal registrada e lançada no financeiro!');
+    alert('✅ Nota Fiscal registrada!');
+
   } else if(tipo==='financeiro'){
-    financeiro.unshift(lancFin);
-    await sbSalvarFinanceiro(lancFin);
-    await sbSalvarOrcamento(o);
+    var lancFinDireto={
+      desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
+      cli:o.cli,val:o.val,pgto:forma,
+      data:dataFormatada,dataRaw:o.data||'',
+      pecas:o.custoPecas||0,desloc:0,num:o.num,
+      finStatus:statusFin,tipoLanc:statusFin==='pago'?'recebido':'a_receber'
+    };
+    financeiro.unshift(lancFinDireto);
+    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFinDireto);
+    if(SUPABASE_ATIVO)await sbSalvarOrcamento(o);
     salvarLocal();
     renderOrcTable();
     atualizarContadores();
     fecharAprovacaoModal();
     alert('✅ Lançado no financeiro! Valor: '+fmtVal(o.val));
   }
+}
+
+async function emitirDocAprovado(){
+  var num=window._aprovOrcNum;
+  var tipo=window._aprovTipo;
+  if(!num||!tipo)return;
+  var o=orcamentos.find(function(x){return x.num===num;});
+  if(!o)return;
+
+  // Para recibo e NF: abre modal de informações de pagamento ANTES de emitir
+  if(tipo==='recibo'||tipo==='nf'){
+    fecharAprovacaoModal();
+    // Pequeno delay para fechar o modal de aprovação antes de abrir o de pagamento
+    setTimeout(function(){
+      abrirModalPgtoInfo(num, tipo);
+    }, 150);
+    return;
+  }
+
+  // Para lançamento direto no financeiro: abre também o modal de pgto
+  if(tipo==='financeiro'){
+    fecharAprovacaoModal();
+    setTimeout(function(){
+      abrirModalPgtoInfo(num, tipo);
+    }, 150);
+    return;
+  }
+}
+
+// ════════════ MODAL ATUALIZAR PAGAMENTO ════════════
+function abrirAtualizarPgto(tipo, idx){
+  // tipo = 'recibo' | 'orc'
+  window._apTipo=tipo;
+  window._apIdx=idx;
+  var obj=tipo==='recibo'?recibos[idx]:orcamentos[idx];
+  if(!obj)return;
+  var nome=obj.cli||'';
+  var serv=obj.serv||obj.desc||'';
+  var val=obj.val||0;
+  var statusAtual=obj.finStatus||'pendente';
+  var infoEl=document.getElementById('ap-info-box');
+  if(infoEl){
+    infoEl.innerHTML=
+      '<strong style="color:var(--blue3)">'+nome+'</strong> — '+serv+'<br>'+
+      'Valor total: <strong style="color:var(--green2)">'+fmtVal(val)+'</strong> &nbsp;|&nbsp; '+
+      'Status atual: '+getFinStatusBadge(statusAtual);
+  }
+  // Pre-fill
+  var formaEl=document.getElementById('ap-forma');
+  var formaAtual=obj.finForma||obj.pgto||'Pix';
+  for(var i=0;i<formaEl.options.length;i++){
+    if(formaEl.options[i].text===formaAtual){formaEl.selectedIndex=i;break;}
+  }
+  document.getElementById('ap-status').value=statusAtual;
+  document.getElementById('ap-valor-pago').value=obj.finValorPago||'';
+  var hoje=new Date().toISOString().split('T')[0];
+  document.getElementById('ap-data-pgto').value=hoje;
+  document.getElementById('modal-atualizar-pgto').classList.add('open');
+}
+
+function fecharAtualizarPgto(){
+  document.getElementById('modal-atualizar-pgto').classList.remove('open');
+  window._apTipo=null;
+  window._apIdx=null;
+}
+
+async function salvarAtualizacaoPgto(){
+  var tipo=window._apTipo;
+  var idx=window._apIdx;
+  if(tipo===null||idx===null)return;
+  var obj=tipo==='recibo'?recibos[idx]:orcamentos[idx];
+  if(!obj)return;
+
+  var novoStatus=document.getElementById('ap-status').value;
+  var novaForma=document.getElementById('ap-forma').value;
+  var valorPago=parseFloat(document.getElementById('ap-valor-pago').value||0)||null;
+  var dataPgto=document.getElementById('ap-data-pgto').value;
+
+  // Atualiza o objeto
+  obj.finStatus=novoStatus;
+  obj.finForma=novaForma;
+  obj.finValorPago=valorPago;
+  obj.pgto=novaForma;
+
+  // Atualiza lançamento financeiro existente ou cria novo
+  var lancExist=financeiro.find(function(f){return f.num===obj.num;});
+  if(lancExist){
+    lancExist.pgto=novaForma;
+    lancExist.finStatus=novoStatus;
+    lancExist.tipoLanc=novoStatus==='pago'?'recebido':'a_receber';
+    if(valorPago)lancExist.val=valorPago;
+    if(dataPgto){lancExist.dataRaw=dataPgto;lancExist.data=fmtDateBr(dataPgto);}
+    if(SUPABASE_ATIVO)sbSalvarFinanceiro(lancExist);
+  }
+
+  // Se for pago e ainda não tinha lançamento
+  if((novoStatus==='pago'||novoStatus==='parcial')&&!lancExist){
+    var dataFormatada=dataPgto?fmtDateBr(dataPgto):obj.data||fmtDateBr(new Date().toISOString().split('T')[0]);
+    var novoLanc={
+      desc:(obj.serv||obj.desc||'Serviço')+' — '+obj.cli,
+      cli:obj.cli,val:novoStatus==='parcial'&&valorPago?valorPago:obj.val,pgto:novaForma,
+      data:dataFormatada,dataRaw:dataPgto||'',
+      pecas:obj.custoPecas||0,desloc:obj.desloc||0,num:obj.num,
+      finStatus:novoStatus,tipoLanc:novoStatus==='pago'?'recebido':'a_receber'
+    };
+    financeiro.unshift(novoLanc);
+    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(novoLanc);
+    obj.finLancado=true;
+  }
+
+  if(tipo==='recibo'&&SUPABASE_ATIVO)sbSalvarRecibo(obj);
+  if(tipo==='orc'&&SUPABASE_ATIVO)sbSalvarOrcamento(obj);
+  salvarLocal();
+  renderOrcTable();
+  renderRecibosPage&&renderRecibosPage();
+  renderFinanceiroPage&&renderFinanceiroPage();
+  fecharAtualizarPgto();
+  alert('✅ Status atualizado para: '+getFinStatusLabel(novoStatus));
+}
+
+// ════════════ PDF RECIBO COM STATUS ════════════
+function gerarPDFReciboComStatus(idx){
+  var r=recibos[idx];
+  if(!r){gerarPDFRecibo(idx);return;}
+  // Se não tem status financeiro ainda, usa gerarPDFRecibo padrão
+  if(!r.finStatus){gerarPDFRecibo(idx);return;}
+  gerarPDFRecibo(idx);
 }
 
 // ════════════ EDITAR ORÇAMENTO ════════════
@@ -5769,11 +6142,13 @@ function renderFinanceiroPage(){
   lista.forEach(function(f,i){
     var realIdx=financeiro.indexOf(f);
     var liq=(f.val||0)-(f.pecas||0)-(f.desloc||0);
+    var finStatusBadge=f.finStatus?getFinStatusBadge(f.finStatus):'<span class="badge badge-fin-pendente" style="font-size:9px">⚪ A Receber</span>';
     var tr=document.createElement('tr');
     tr.innerHTML='<td class="bold">'+(f.nome||f.cli||'—')+'</td>'+
       '<td style="color:var(--silver2);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.desc+'</td>'+
       '<td>'+f.data+'</td>'+
       '<td>'+f.pgto+'</td>'+
+      '<td>'+finStatusBadge+'</td>'+
       '<td style="color:var(--green2);font-weight:700">'+fmtVal(f.val)+'</td>'+
       '<td style="color:var(--red)">'+fmtVal(f.pecas||0)+'</td>'+
       '<td style="color:var(--red)">'+fmtVal(f.desloc||0)+'</td>'+
@@ -6263,10 +6638,8 @@ function alterarStatusOrc(num, novoStatus, oRef){
   var o=oRef||orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
   o.status=novoStatus;
-  // Lança automaticamente no financeiro se for status aprovado/finalizado
-  if(STATUS_LANCA_FINANCEIRO.indexOf(novoStatus)>=0){
-    lancarNoFinanceiroSeNecessario(o);
-  }
+  // NÃO lança automaticamente no financeiro ao alterar status — isso só ocorre
+  // através do fluxo de aprovação com informações de pagamento
   salvarLocal();
   if(SUPABASE_ATIVO) sbSalvarOrcamento(o);
   renderOrcTable();
@@ -6302,22 +6675,28 @@ function renderOrcTable(){
     });
     (function(oRef){sel.onchange=function(){alterarStatusOrc(oRef.num,sel.value,oRef);};})(o);
     var acoes=document.createElement('div');
-    acoes.style.cssText='display:flex;gap:4px';
-    (function(oRef){
+    acoes.style.cssText='display:flex;gap:4px;flex-wrap:wrap';
+    (function(oRef,oIdx){
       var btnEdit=document.createElement('button');btnEdit.className='btn btn-ghost btn-sm';btnEdit.textContent='✏️ Editar';btnEdit.onclick=function(){abrirEditarOrc(oRef.num);};
       var btnAprov=document.createElement('button');btnAprov.className='btn btn-green btn-sm';btnAprov.textContent='✅ Aprovar';btnAprov.style.display=(oRef.status==='pendente'||oRef.status==='negociacao')?'inline-flex':'none';btnAprov.onclick=function(){abrirAprovacaoOrc(oRef.num);};
+      var btnPgto=document.createElement('button');btnPgto.className='btn btn-sm';
+      btnPgto.style.cssText='background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:var(--blue3)';
+      btnPgto.textContent='💳 Pgto';
+      btnPgto.style.display=oRef.finStatus?'inline-flex':'none';
+      btnPgto.onclick=function(){abrirAtualizarPgto('orc',oIdx);};
       var btnPDF=document.createElement('button');btnPDF.className='btn btn-ghost btn-sm';btnPDF.textContent='📄 PDF';btnPDF.onclick=function(){gerarPDF(oRef.num);};
       var btnDel=document.createElement('button');btnDel.className='btn btn-red btn-sm';btnDel.textContent='🗑';btnDel.onclick=function(){excluirOrc(oRef.num);};
-      acoes.appendChild(btnEdit);acoes.appendChild(btnAprov);acoes.appendChild(btnPDF);acoes.appendChild(btnDel);
-    })(o);
+      acoes.appendChild(btnEdit);acoes.appendChild(btnAprov);acoes.appendChild(btnPgto);acoes.appendChild(btnPDF);acoes.appendChild(btnDel);
+    })(o, orcamentos.indexOf(o));
     var tdNum=document.createElement('td');tdNum.innerHTML='<span style="font-weight:800;color:var(--blue3)">#'+o.num+'</span>';
     var tdCli=document.createElement('td');tdCli.innerHTML='<span style="font-weight:700">'+o.cli+'</span>';
     var tdServ=document.createElement('td');tdServ.style.color='var(--silver2)';tdServ.textContent=o.serv;
     var tdVal=document.createElement('td');tdVal.innerHTML='<span style="color:var(--green2);font-weight:700">'+fmtVal(o.val)+'</span>';
-    var tdPgto=document.createElement('td');tdPgto.textContent=o.pgto;
+    var tdPgto=document.createElement('td');tdPgto.textContent=o.finForma||o.pgto;
     var tdStatus=document.createElement('td');tdStatus.appendChild(sel);
+    var tdFinStatus=document.createElement('td');tdFinStatus.innerHTML=o.finStatus?getFinStatusBadge(o.finStatus):'<span style="color:var(--silver);font-size:10px">—</span>';
     var tdAcoes=document.createElement('td');tdAcoes.appendChild(acoes);
-    [tdNum,tdCli,tdServ,tdVal,tdPgto,tdStatus,tdAcoes].forEach(function(td){tr.appendChild(td);});
+    [tdNum,tdCli,tdServ,tdVal,tdPgto,tdStatus,tdFinStatus,tdAcoes].forEach(function(td){tr.appendChild(td);});
     tb.appendChild(tr);
 
     // ── MOBILE CARD ──
@@ -6344,16 +6723,21 @@ function renderOrcTable(){
         '</div>'+
         '<div class="mob-card-cli">'+o.cli+'</div>'+
         '<div class="mob-card-serv">'+o.serv+'</div>'+
-        '<div style="font-size:10px;color:var(--silver2);margin-bottom:6px">'+o.pgto+' · '+(o.data?fmtDateBr(o.data.includes('-')?o.data:o.data):'')+'</div>';
+        (o.finStatus?'<div style="margin-bottom:6px">'+getFinStatusBadge(o.finStatus)+'</div>':'')+
+        '<div style="font-size:10px;color:var(--silver2);margin-bottom:6px">'+(o.finForma||o.pgto)+' · '+(o.data?fmtDateBr(o.data.includes('-')?o.data:o.data):'')+'</div>';
       var mActions=document.createElement('div');
       mActions.className='mob-card-actions';
-      (function(oRef){
+      (function(oRef,oIdx){
         var mb1=document.createElement('button');mb1.className='btn btn-ghost btn-sm';mb1.textContent='✏️ Editar';mb1.onclick=function(){abrirEditarOrc(oRef.num);};
         var mb2=document.createElement('button');mb2.className='btn btn-ghost btn-sm';mb2.textContent='📄 PDF';mb2.onclick=function(){gerarPDF(oRef.num);};
         var mb3=document.createElement('button');mb3.className='btn btn-green btn-sm';mb3.textContent='✅ Aprovar';mb3.style.display=(oRef.status==='pendente'||oRef.status==='negociacao')?'inline-flex':'none';mb3.onclick=function(){abrirAprovacaoOrc(oRef.num);};
+        var mbPgto=document.createElement('button');mbPgto.className='btn btn-sm';
+        mbPgto.style.cssText='background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:var(--blue3)';
+        mbPgto.textContent='💳 Pgto';mbPgto.style.display=oRef.finStatus?'inline-flex':'none';
+        mbPgto.onclick=function(){abrirAtualizarPgto('orc',oIdx);};
         var mb4=document.createElement('button');mb4.className='btn btn-red btn-sm';mb4.style.flex='0 0 auto';mb4.textContent='🗑';mb4.onclick=function(){excluirOrc(oRef.num);};
-        mActions.appendChild(mb1);mActions.appendChild(mb2);mActions.appendChild(mb3);mActions.appendChild(mb4);
-      })(o);
+        mActions.appendChild(mb1);mActions.appendChild(mb2);mActions.appendChild(mb3);mActions.appendChild(mbPgto);mActions.appendChild(mb4);
+      })(o, orcamentos.indexOf(o));
       card.appendChild(mSel);
       card.appendChild(cardInner);
       card.appendChild(mActions);
@@ -6361,7 +6745,7 @@ function renderOrcTable(){
     }
   });
   if(lista.length===0){
-    tb.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--silver)">Nenhum orçamento encontrado.</td></tr>';
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--silver)">Nenhum orçamento encontrado.</td></tr>';
     if(mobList)mobList.innerHTML='<div style="text-align:center;padding:24px;color:var(--silver);font-size:13px">Nenhum orçamento encontrado.</div>';
   }
   atualizarContadores();
