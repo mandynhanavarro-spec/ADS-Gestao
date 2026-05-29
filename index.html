@@ -2712,41 +2712,24 @@ async function carregarTodosDados() {
   // Recibos
   const {data:recs, error:eRec} = await sb.from('recibos').select('*').order('criado_em', {ascending:false});
   if (!eRec && recs && recs.length > 0) {
-    // Preserva matEdit do localStorage caso coluna ainda não exista no banco
-    var _recMem = {};
-    recibos.forEach(function(r){ if(r.num) _recMem[String(r.num)] = r; });
-    try {
-      var _recLS = JSON.parse(localStorage.getItem('ads_recibos')||'[]');
-      _recLS.forEach(function(r){
-        if(r.num && r.matEdit && r.matEdit.length){
-          if(!_recMem[String(r.num)]) _recMem[String(r.num)] = r;
-          else if(!_recMem[String(r.num)].matEdit || !_recMem[String(r.num)].matEdit.length)
-            _recMem[String(r.num)].matEdit = r.matEdit;
-        }
-      });
-    } catch(e) {}
     recibos = recs.map(function(r) {
-      // matEdit: prefere coluna do banco, fallback para memória/localStorage
       var matEdit = [];
       if (r.mat_edit) {
         try { matEdit = typeof r.mat_edit === 'string' ? JSON.parse(r.mat_edit) : (Array.isArray(r.mat_edit) ? r.mat_edit : []); } catch(e) { matEdit = []; }
       }
-      if (!matEdit.length && _recMem[String(r.numero)] && _recMem[String(r.numero)].matEdit && _recMem[String(r.numero)].matEdit.length) {
-        matEdit = _recMem[String(r.numero)].matEdit;
-      }
       return {
         sbId: r.id, num: r.numero||'', cli: r.cliente_nome||'',
         tel: r.cliente_tel||'', end: r.cliente_end||'',
-        serv: r.servico||'', desc: r.descricao||'',
+        serv: (r.descricao||'').split('\n')[0]||'',  // sem coluna 'servico', extrai da descricao
+        desc: r.descricao||'',
         val: parseFloat(r.valor||0), pgto: r.pagamento||'',
         gtia: r.garantia||'', data: r.data_emissao||'',
         dataRaw: r.data_raw||'',
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
         descTipo: r.desc_tipo||'', descQtd: parseFloat(r.desc_qtd||0),
         custoPecas: parseFloat(r.custo_pecas||0),
-        desloc: parseFloat(r.deslocamento||0),
+        desloc: parseFloat(r.desloc||0),
         matEdit: matEdit,
-        // Campos de status de pagamento
         finStatus: r.fin_status||'pendente',
         finForma: r.fin_forma||r.pagamento||'',
         finValorPago: r.fin_valor_pago||null,
@@ -3003,17 +2986,27 @@ async function sbDeletarOrcamento(sbId) {
 // ── SALVAR RECIBO ────────────────────────────────────────────
 async function sbSalvarRecibo(r) {
   if (!SUPABASE_ATIVO) return;
+  // Colunas reais da tabela 'recibos' no Supabase (verificado via information_schema)
+  // NÃO existe coluna 'servico' — serviço vai dentro de 'descricao'
+  // coluna de deslocamento é 'desloc' (não 'deslocamento')
   const payload = {
-    numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
-    cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
-    valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
-    data_emissao: r.data, data_raw: r.dataRaw||'',
-    desc_base: r.descBase||0, desc_val: r.descV||0,
-    desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
+    numero: r.num,
+    cliente_nome: r.cli,
+    cliente_tel: r.tel||'',
+    cliente_end: r.end||'',
+    descricao: r.desc||r.serv||'',   // sem coluna 'servico' separada
+    valor: r.val,
+    pagamento: r.pgto,
+    garantia: r.gtia||'',
+    data_emissao: r.data,
+    data_raw: r.dataRaw||'',
     custo_pecas: parseFloat(r.custoPecas||0),
-    deslocamento: parseFloat(r.desloc||0),
+    desloc: parseFloat(r.desloc||0),               // coluna real: 'desloc'
     mat_edit: r.matEdit&&r.matEdit.length>0 ? JSON.stringify(r.matEdit) : null,
-    // Campos de status de pagamento
+    desc_base: r.descBase||0,
+    desc_val: r.descV||0,
+    desc_tipo: r.descTipo||null,
+    desc_qtd: r.descQtd||0,
     fin_status: r.finStatus||'pendente',
     fin_forma: r.finForma||r.pgto||null,
     fin_valor_pago: r.finValorPago||null,
@@ -3023,32 +3016,11 @@ async function sbSalvarRecibo(r) {
   try {
     if (r.sbId) {
       const {error} = await sb.from('recibos').update(payload).eq('id', r.sbId);
-      if (error) {
-        // Fallback sem campos novos se coluna ainda não existir no banco
-        const payloadBase = {
-          numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
-          cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
-          valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
-          data_emissao: r.data, data_raw: r.dataRaw||'',
-          desc_base: r.descBase||0, desc_val: r.descV||0
-        };
-        const {error:e2} = await sb.from('recibos').update(payloadBase).eq('id', r.sbId);
-        if (e2) console.warn('Erro ao atualizar recibo (fallback):', e2);
-      }
+      if (error) console.warn('Erro ao atualizar recibo:', error);
     } else {
       const {data, error} = await sb.from('recibos').insert(payload).select('id').single();
-      if (error) {
-        const payloadBase = {
-          numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
-          cliente_end: r.end||'', servico: r.serv, descricao: r.desc||'',
-          valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
-          data_emissao: r.data, data_raw: r.dataRaw||'',
-          desc_base: r.descBase||0, desc_val: r.descV||0
-        };
-        const {data:d2, error:e2} = await sb.from('recibos').insert(payloadBase).select('id').single();
-        if (e2) console.warn('Erro ao inserir recibo (fallback):', e2);
-        else if (d2) r.sbId = d2.id;
-      } else if (data) r.sbId = data.id;
+      if (error) console.warn('Erro ao inserir recibo:', error);
+      else if (data) r.sbId = data.id;
     }
   } catch(e) { console.warn('Erro ao salvar recibo:', e); }
 }
@@ -3178,15 +3150,6 @@ function setStep(n){
 
 // ════════════ HELPERS ════════════
 function fmtVal(v){return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});}
-
-// Gera número sequencial de recibo sem risco de duplicata entre web e mobile
-// Usa o maior número existente no array (já sincronizado do Supabase) + 1
-function proximoNumRecibo(){
-  var max=recibos.reduce(function(mx,r){
-    return Math.max(mx,parseInt((r.num||'R0').replace(/\D/g,'')||0));
-  },0);
-  return '#R'+String(max+1).padStart(3,'0');
-}
 
 function fmtDateBr(s){
   if(!s) return '11/05/2026';
@@ -3914,7 +3877,7 @@ async function emitirDoc(){
   }
 
   if(STATE.aprov==='recibo'){
-    var numR=proximoNumRecibo();
+    var numR='#R'+String(recibos.length+1).padStart(3,'0');
     var finStatusDoc=f.pagamento==='Dinheiro'||f.pagamento==='Cartão Crédito'||f.pagamento==='Cartão Débito'?'pago':(f.pagamento==='Pix'?'aguardando_pix':'pendente');
     var recibo={num:numR,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,
@@ -4012,8 +3975,8 @@ function atualizarPgtoRecibo(){
   var novoPgto=sel.value;
   if(recibos.length>0){
     recibos[0].pgto=novoPgto;
-    if(SUPABASE_ATIVO)sbSalvarRecibo(recibos[0]);
     salvarLocal();
+    if(SUPABASE_ATIVO)sbSalvarRecibo(recibos[0]);
   }
   gerarPDFRecibo(0);
 }
@@ -4856,7 +4819,7 @@ async function nrEmitirRecibo(){
   var valorFinal=Math.max(0,val-nrDesc);
   var manual=(document.getElementById('nr-serv-manual').value||'').trim();
   var serv=NR.tpl?NR.tpl.nm:manual;
-  var numR=proximoNumRecibo();
+  var numR='#R'+String(recibos.length+1).padStart(3,'0');
   var matTotais=getNrMatTotais();
   // Coleta lista de peças para persistência
   var matEditRec=nrMatLinhas.map(function(rowId){
@@ -5765,7 +5728,7 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
   var dataFormatada=o.data?o.data.includes('-')?fmtDateBr(o.data):o.data:fmtDateBr(new Date().toISOString().split('T')[0]);
 
   if(tipo==='recibo'){
-    var numR=proximoNumRecibo();
+    var numR='#R'+String(recibos.length+1).padStart(3,'0');
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:forma,
       gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
@@ -7761,7 +7724,7 @@ async function serrEmitirRecibo(){
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva recibo
-  var numR=proximoNumRecibo();
+  var numR='#R'+String(recibos.length+1).padStart(3,'0');
   var novoRec={num:numR,cli:cli,tel:(document.getElementById('so-tel').value||'').trim(),
     end:(document.getElementById('so-end').value||'').trim(),
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
