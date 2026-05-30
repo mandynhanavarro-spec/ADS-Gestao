@@ -2526,20 +2526,9 @@ td.bold{color:var(--white);font-weight:700}
       <button class="modal-x" onclick="fecharModalFin()">✕</button>
     </div>
     <div class="modal-bd">
-      <!-- Seletor de cliente cadastrado -->
-      <div style="margin-bottom:10px">
-        <div class="fl" style="margin-bottom:4px">Nome / Cliente</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select class="fs" id="fin-cli-sel" style="flex:1;min-width:0" onchange="finEditOnSelectCliente()">
-            <option value="">— Selecione um cliente cadastrado —</option>
-          </select>
-          <span style="font-size:10px;color:var(--silver);flex-shrink:0">ou</span>
-          <input class="fi" id="fin-nome" placeholder="Nome avulso (sem cadastro)" style="flex:1;min-width:120px" oninput="finEditOnNomeAvulso()">
-        </div>
-        <input type="hidden" id="fin-cli-id">
-        <div id="fin-cli-badge" style="display:none;margin-top:6px;background:rgba(37,99,235,.1);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:11px;color:var(--blue3)"></div>
-      </div>
-      <div class="fgrid" style="margin-bottom:10px">
+      <input type="hidden" id="fin-cli-id">
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Nome / Cliente</div><input class="fi" id="fin-nome" placeholder="Ex: João Silva"></div>
         <div><div class="fl">Descrição do Serviço</div><input class="fi" id="fin-desc-edit" placeholder="Ex: Manutenção preventiva"></div>
       </div>
       <div class="fgrid fg3" style="margin-bottom:10px">
@@ -6807,7 +6796,7 @@ function renderFinanceiroPage(){
   if(emp)emp.style.display='none';
   tb.innerHTML='';
   lista.forEach(function(f,i){
-    var realIdx=financeiro.findIndex(function(x){return x===f||(f.sbId&&x.sbId===f.sbId)||(f.num&&x.num===f.num);});
+    var realIdx=financeiro.indexOf(f);
     var liq=(f.val||0)-(f.pecas||0)-(f.desloc||0);
     var finStatusBadge=f.finStatus?getFinStatusBadge(f.finStatus):'<span class="badge badge-fin-pendente" style="font-size:9px">⚪ A Receber</span>';
     var tr=document.createElement('tr');
@@ -6882,31 +6871,10 @@ function finEditOnNomeAvulso(){
 function editarFinanceiro(i){
   STATE.editFinIdx=i;
   var f=financeiro[i];
-  // Popula select de clientes
-  lancPopularSelectClientes('fin-cli-sel');
+  if(!f)return;
   var idEl=document.getElementById('fin-cli-id');
-  var nomeEl=document.getElementById('fin-nome');
-  var badge=document.getElementById('fin-cli-badge');
-  var sel=document.getElementById('fin-cli-sel');
-  nomeEl.disabled=false;
-  badge.style.display='none';
-  idEl.value='';
-  sel.value='';
-  if(f.cliId){
-    var c=clientes.find(function(x){return String(x.id)===String(f.cliId);});
-    if(c){
-      sel.value=c.id;
-      idEl.value=c.id;
-      nomeEl.value='';
-      nomeEl.disabled=true;
-      badge.style.display='block';
-      badge.innerHTML='✅ Vinculado: <strong>'+c.nm+'</strong>'+(c.tel?' · '+c.tel:'')+(c.end?' · '+c.end:'');
-    } else {
-      nomeEl.value=f.nome||f.cli||'';
-    }
-  } else {
-    nomeEl.value=f.nome||f.cli||'';
-  }
+  if(idEl)idEl.value=f.cliId||'';
+  document.getElementById('fin-nome').value=f.nome||f.cli||'';
   document.getElementById('fin-desc-edit').value=f.desc||'';
   document.getElementById('fin-val-edit').value=f.val||0;
   // data para input date (converte dd/mm/aaaa → aaaa-mm-dd)
