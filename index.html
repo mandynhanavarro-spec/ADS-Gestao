@@ -6806,8 +6806,8 @@ function renderFinanceiroPage(){
   }
   if(emp)emp.style.display='none';
   tb.innerHTML='';
-  lista.forEach(function(f){
-    var realIdx=financeiro.findIndex(function(x){return x===f||(x.num&&x.num===f.num)||(x.sbId&&x.sbId===f.sbId);});
+  lista.forEach(function(f,i){
+    var realIdx=financeiro.findIndex(function(x){return x===f||(f.sbId&&x.sbId===f.sbId)||(f.num&&x.num===f.num);});
     var liq=(f.val||0)-(f.pecas||0)-(f.desloc||0);
     var finStatusBadge=f.finStatus?getFinStatusBadge(f.finStatus):'<span class="badge badge-fin-pendente" style="font-size:9px">⚪ A Receber</span>';
     var tr=document.createElement('tr');
@@ -6880,10 +6880,6 @@ function finEditOnNomeAvulso(){
   }
 }
 function editarFinanceiro(i){
-  // Garante que o índice é válido — pode ter mudado após sync com Supabase
-  if(i<0||i===null||i===undefined||!financeiro[i]){
-    console.warn('editarFinanceiro: índice inválido',i);return;
-  }
   STATE.editFinIdx=i;
   var f=financeiro[i];
   // Popula select de clientes
