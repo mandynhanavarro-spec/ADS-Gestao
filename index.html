@@ -887,6 +887,54 @@ td.bold{color:var(--white);font-weight:700}
             <textarea class="ft" id="nr-desc" rows="3" placeholder="Descreva os serviços realizados..."></textarea>
           </div>
         </div>
+        <!-- ══ INFORMAÇÕES DE PAGAMENTO ══ -->
+        <div style="background:rgba(37,99,235,.07);border:1.5px solid rgba(59,130,246,.3);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
+            <span style="font-size:15px">💳</span>
+            <span style="font-size:11px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:1px">Informações de Pagamento</span>
+            <span id="nr-fin-badge" style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(120,120,140,.18);color:#a8bacf;border:1px solid rgba(120,120,140,.3)">⚪ Pendente</span>
+          </div>
+          <div class="fgrid fg2" style="margin-bottom:10px">
+            <div>
+              <div class="fl">Status do Pagamento</div>
+              <select class="fs" id="nr-fin-status" onchange="nrAtualizarFinBadge()">
+                <option value="pago">✅ Pago — lançar no financeiro</option>
+                <option value="parcial">🟡 Pago Parcial — aguardando saldo</option>
+                <option value="aguardando_pix">🔵 Aguardando Pix</option>
+                <option value="pendente" selected>⚪ Pendente — não lançar ainda</option>
+              </select>
+            </div>
+            <div>
+              <div class="fl">Forma de Recebimento</div>
+              <select class="fs" id="nr-fin-forma">
+                <option>Pix</option><option>Dinheiro</option><option>Cartão Crédito</option>
+                <option>Cartão Débito</option><option>Parcelado</option>
+                <option>Sinal de 50% / Restante 50%</option><option>Pendente</option>
+              </select>
+            </div>
+          </div>
+          <!-- Valor recebido (visível só para pago/parcial) -->
+          <div id="nr-fin-valorpago-wrap" style="display:none;margin-bottom:10px">
+            <div class="fgrid fg2">
+              <div>
+                <div class="fl">Valor Recebido (R$)</div>
+                <input class="fi" type="number" id="nr-fin-valorpago" placeholder="0,00" step="0.01" oninput="nrCalcSaldoFin()">
+              </div>
+              <div id="nr-fin-saldo-wrap" style="display:none">
+                <div class="fl">Saldo Restante</div>
+                <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:7px;padding:8px 12px;font-size:13px;font-weight:800;color:var(--amber)" id="nr-fin-saldo-val">R$ 0,00</div>
+              </div>
+            </div>
+          </div>
+          <!-- Data do pagamento -->
+          <div id="nr-fin-data-wrap" style="display:none;margin-bottom:10px">
+            <div><div class="fl">Data do Pagamento</div><input class="fi" type="date" id="nr-fin-datapgto"></div>
+          </div>
+          <!-- Aviso informativo -->
+          <div id="nr-fin-aviso" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--amber)">
+            ⚠️ Status <strong>Pendente</strong> — o recibo será salvo mas <strong>não será contabilizado</strong> no financeiro até confirmar o recebimento.
+          </div>
+        </div>
         <!-- ══ DESCONTO RECIBO ══ -->
         <div style="background:var(--bg3);border:1px solid rgba(234,179,8,.35);border-radius:8px;padding:12px;margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;color:#ca8a04;letter-spacing:.8px;margin-bottom:8px">🏷️ Desconto (opcional)</div>
@@ -5008,6 +5056,7 @@ function nrProxRecibo(){
   document.getElementById('nr-blk-rec').style.display='block';
   nrSetStep(4);
   calcTotalRecibo();
+  nrAtualizarFinBadge();
 }
 
 // Step 4 → back to 3
@@ -5125,6 +5174,76 @@ function calcTotalRecibo(){
   var tBox=document.getElementById('nr-total-box');var tVal=document.getElementById('nr-total-val');
   if(tBox)tBox.style.display=(val>0)?'block':'none';
   if(tVal)tVal.textContent=fmtVal(total);
+  // Sincroniza forma de pagamento com o bloco de informações de pagamento
+  nrSincFormaFin();
+}
+
+// ════ INFORMAÇÕES DE PAGAMENTO — auxiliares ════
+function nrSincFormaFin(){
+  var pgtoEl=document.getElementById('nr-pgto');
+  var finFormaEl=document.getElementById('nr-fin-forma');
+  if(!pgtoEl||!finFormaEl)return;
+  var pgto=pgtoEl.value;
+  // Pré-seleciona a forma de recebimento igual ao pagamento escolhido
+  for(var i=0;i<finFormaEl.options.length;i++){
+    if(finFormaEl.options[i].text===pgto){finFormaEl.selectedIndex=i;break;}
+  }
+  // Pré-sugere status baseado na forma de pagamento
+  var statusEl=document.getElementById('nr-fin-status');
+  if(!statusEl)return;
+  var sugestao='pendente';
+  if(pgto==='Dinheiro')sugestao='pago';
+  else if(pgto==='Pix')sugestao='aguardando_pix';
+  else if(pgto==='Cartão Crédito'||pgto==='Cartão Débito')sugestao='pago';
+  else if(pgto==='Sinal de 50% / Restante 50%')sugestao='parcial';
+  else if(pgto==='Parcelado')sugestao='parcial';
+  statusEl.value=sugestao;
+  nrAtualizarFinBadge();
+}
+
+function nrAtualizarFinBadge(){
+  var status=(document.getElementById('nr-fin-status')||{}).value||'pendente';
+  var badge=document.getElementById('nr-fin-badge');
+  var avisoEl=document.getElementById('nr-fin-aviso');
+  var valorWrap=document.getElementById('nr-fin-valorpago-wrap');
+  var dataWrap=document.getElementById('nr-fin-data-wrap');
+  var map={
+    pago:       {cls:'background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.4)',txt:'✅ Pago',aviso:'✅ Status <strong>Pago</strong> — será lançado no financeiro como <strong>recebido</strong>.',avisoStyle:'background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);color:var(--green2)'},
+    parcial:    {cls:'background:rgba(245,158,11,.2);color:#f59e0b;border:1px solid rgba(245,158,11,.4)',txt:'🟡 Pago Parcial',aviso:'🟡 Status <strong>Pago Parcial</strong> — o valor recebido entra no financeiro como <strong>a receber</strong>. O saldo fica pendente.',avisoStyle:'background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);color:var(--amber)'},
+    aguardando_pix:{cls:'background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.4)',txt:'🔵 Aguardando Pix',aviso:'🔵 Status <strong>Aguardando Pix</strong> — ficará pendente no financeiro até confirmar o recebimento.',avisoStyle:'background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);color:var(--blue3)'},
+    pendente:   {cls:'background:rgba(120,120,140,.18);color:#a8bacf;border:1px solid rgba(120,120,140,.3)',txt:'⚪ Pendente',aviso:'⚠️ Status <strong>Pendente</strong> — o recibo será salvo mas <strong>não será contabilizado</strong> no financeiro até confirmar o recebimento.',avisoStyle:'background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:var(--amber)'}
+  };
+  var cfg=map[status]||map.pendente;
+  if(badge){badge.style.cssText='margin-left:auto;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;'+cfg.cls;badge.textContent=cfg.txt;}
+  if(avisoEl){avisoEl.style.cssText=cfg.avisoStyle+';border-radius:7px;padding:8px 12px;font-size:11px;';avisoEl.innerHTML=cfg.aviso;}
+  // Mostra/oculta campo de valor pago e data
+  var showVal=(status==='pago'||status==='parcial');
+  if(valorWrap)valorWrap.style.display=showVal?'block':'none';
+  if(dataWrap)dataWrap.style.display=showVal?'block':'none';
+  // Preenche data com hoje se vazia
+  if(showVal){
+    var dpEl=document.getElementById('nr-fin-datapgto');
+    if(dpEl&&!dpEl.value){var h=new Date();dpEl.value=h.getFullYear()+'-'+(h.getMonth()+1<10?'0':'')+(h.getMonth()+1)+'-'+(h.getDate()<10?'0':'')+h.getDate();}
+  }
+  nrCalcSaldoFin();
+}
+
+function nrCalcSaldoFin(){
+  var val=parseFloat(document.getElementById('nr-valor').value||0);
+  var descTipo=(document.getElementById('nr-desc-tipo')||{}).value||'';
+  var descQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
+  var descV=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
+  var totalRecibo=Math.max(0,val-descV);
+  var valorPago=parseFloat((document.getElementById('nr-fin-valorpago')||{}).value||0);
+  var saldoWrap=document.getElementById('nr-fin-saldo-wrap');
+  var saldoVal=document.getElementById('nr-fin-saldo-val');
+  if(valorPago>0&&totalRecibo>0){
+    var saldo=Math.max(0,totalRecibo-valorPago);
+    if(saldoWrap)saldoWrap.style.display='block';
+    if(saldoVal)saldoVal.textContent=fmtVal(saldo);
+  } else {
+    if(saldoWrap)saldoWrap.style.display='none';
+  }
 }
 
 async function nrEmitirRecibo(){
@@ -5145,6 +5264,13 @@ async function nrEmitirRecibo(){
   var serv=NR.tpl?NR.tpl.nm:manual;
   var numR=proximoNumRecibo();
   var matTotais=getNrMatTotais();
+
+  // ── Lê status do bloco "Informações de Pagamento" ──
+  var finStatus=(document.getElementById('nr-fin-status')||{}).value||'pendente';
+  var finForma=(document.getElementById('nr-fin-forma')||{}).value||pgto;
+  var finValorPago=parseFloat((document.getElementById('nr-fin-valorpago')||{}).value||0)||null;
+  var finDataPgto=(document.getElementById('nr-fin-datapgto')||{}).value||dataRaw;
+
   // Coleta lista de peças para persistência
   var matEditRec=nrMatLinhas.map(function(rowId){
     var selEl=document.getElementById('nrsel-'+rowId);
@@ -5160,37 +5286,54 @@ async function nrEmitirRecibo(){
     var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
-  var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec};
 
-  // Determina status financeiro baseado na forma de pagamento selecionada
-  var finStatusAuto='pendente';
-  if(pgto==='Pix')finStatusAuto='aguardando_pix';
-  else if(pgto==='Dinheiro'||pgto==='Cartão Crédito'||pgto==='Cartão Débito')finStatusAuto='pago';
-  else if(pgto==='Pendente')finStatusAuto='pendente';
-  else finStatusAuto='pendente';
-  recibo.finStatus=finStatusAuto;
-  recibo.finForma=pgto;
+  var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,
+    data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,
+    finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec,
+    finStatus:finStatus,finForma:finForma,finValorPago:finValorPago||undefined};
 
   recibos.unshift(recibo);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
+
   var deslocR=parseFloat((document.getElementById('nr-desloc')||{}).value||0);
-  // Lança no financeiro baseado no status
-  var ehPago=(finStatusAuto==='pago');
-  if(finStatusAuto!=='pendente'){
-    var lancFin={nome:nome,desc:serv+' — '+nome,cli:nome,val:valorFinal,pgto:pgto,data:fmtDateBr(dataRaw),dataRaw:dataRaw,pecas:matTotais.custo,desloc:deslocR,num:numR,finStatus:finStatusAuto,tipoLanc:ehPago?'recebido':'a_receber'};
+
+  // ── Lança no financeiro SOMENTE se pago ou parcial ──
+  // Pendente e aguardando_pix ficam como a_receber (pendente = não lança, aguardando = não lança)
+  if(finStatus==='pago'){
+    // Pago total — lança como recebido com valor final
+    var valLanc=finValorPago&&finValorPago>0?finValorPago:valorFinal;
+    var lancFin={nome:nome,desc:serv+' — '+nome,cli:nome,val:valLanc,pgto:finForma,
+      data:fmtDateBr(finDataPgto),dataRaw:finDataPgto,pecas:matTotais.custo,desloc:deslocR,
+      num:numR,finStatus:'pago',tipoLanc:'recebido'};
+    financeiro.unshift(lancFin);
+    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
+    recibo.finLancado=true;
+  } else if(finStatus==='parcial'){
+    // Pago parcial — lança apenas o valor recebido como a_receber
+    var valParcial=finValorPago&&finValorPago>0?finValorPago:valorFinal;
+    var lancFin={nome:nome,desc:serv+' — '+nome+' (Parcial)',cli:nome,val:valParcial,pgto:finForma,
+      data:fmtDateBr(finDataPgto),dataRaw:finDataPgto,pecas:matTotais.custo,desloc:deslocR,
+      num:numR,finStatus:'parcial',tipoLanc:'a_receber'};
     financeiro.unshift(lancFin);
     if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
     recibo.finLancado=true;
   }
+  // aguardando_pix e pendente: NÃO lançam no financeiro agora — ficam pendentes no recibo
+
   salvarLocal();
   atualizarContadores();
   fecharNovoRecibo();
   renderRecibosPage();
+  renderFinanceiroPage&&renderFinanceiroPage();
   // Gera PDF automaticamente
   setTimeout(function(){gerarPDFRecibo(0);},200);
-  var aviso=finStatusAuto==='aguardando_pix'?' ⚠️ Aguardando Pix — lembre de confirmar o pagamento na aba Recibos.':
-    (finStatusAuto==='pendente'?' ⚠️ Pagamento pendente — confirme na aba Recibos quando receber.':'');
-  alert('✅ Recibo '+numR+' emitido! O PDF será gerado agora.'+aviso);
+  var avisoMap={
+    pago:'',
+    parcial:' 🟡 Pagamento parcial registrado — confirme o saldo na aba Recibos quando receber o restante.',
+    aguardando_pix:' 🔵 Aguardando confirmação do Pix — confirme na aba Recibos.',
+    pendente:' ⚪ Pagamento pendente — confirme na aba Recibos quando receber.'
+  };
+  alert('✅ Recibo '+numR+' emitido! O PDF será gerado agora.'+(avisoMap[finStatus]||''));
 }
 
 // ════════════ NOVO ORÇAMENTO — FLUXO: CLIENTE→SERVIÇO→MATERIAL→ORÇAMENTO→PDF ════════════
