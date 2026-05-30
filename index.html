@@ -2478,21 +2478,10 @@ td.bold{color:var(--white);font-weight:700}
       <button class="modal-x" onclick="fecharLancamentoManual()">✕</button>
     </div>
     <div class="modal-bd">
-      <!-- Seletor de cliente cadastrado -->
-      <div style="margin-bottom:10px">
-        <div class="fl" style="margin-bottom:4px">Cliente</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select class="fs" id="lanc-cli-sel" style="flex:1;min-width:0" onchange="lancOnSelectCliente()">
-            <option value="">— Selecione um cliente cadastrado —</option>
-          </select>
-          <span style="font-size:10px;color:var(--silver);flex-shrink:0">ou</span>
-          <input class="fi" id="lanc-nome" placeholder="Nome avulso (sem cadastro)" style="flex:1;min-width:120px" oninput="lancOnNomeAvulso()">
-        </div>
-        <input type="hidden" id="lanc-cli-id">
-        <div id="lanc-cli-badge" style="display:none;margin-top:6px;background:rgba(37,99,235,.1);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:11px;color:var(--blue3)"></div>
-      </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Nome</div><input class="fi" id="lanc-nome" placeholder="Ex: João Silva"></div>
         <div><div class="fl">Descrição</div><input class="fi" id="lanc-desc" placeholder="Ex: Manutenção preventiva"></div>
+      </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Data</div><input class="fi" type="date" id="lanc-data"></div>
         <div><div class="fl">Pagamento</div>
@@ -2526,7 +2515,6 @@ td.bold{color:var(--white);font-weight:700}
       <button class="modal-x" onclick="fecharModalFin()">✕</button>
     </div>
     <div class="modal-bd">
-      <input type="hidden" id="fin-cli-id">
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Nome / Cliente</div><input class="fi" id="fin-nome" placeholder="Ex: João Silva"></div>
         <div><div class="fl">Descrição do Serviço</div><input class="fi" id="fin-desc-edit" placeholder="Ex: Manutenção preventiva"></div>
@@ -2567,7 +2555,7 @@ td.bold{color:var(--white);font-weight:700}
           </div>
           <div>
             <div class="fl">Saldo Pendente</div>
-            <div id="fin-saldo-edit" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:7px;padding:7px 10px;font-size:12px;font-weight:700;color:var(--amber);margin-top:4px;display:none">—</div>
+            <div id="fin-saldo-edit" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:7px;padding:7px 10px;font-size:12px;font-weight:700;color:var(--amber);margin-top:4px;display:none" id="fin-saldo-edit">—</div>
           </div>
         </div>
       </div>
@@ -3679,7 +3667,7 @@ function abrirCliOpcoes(id){
   if(c.cidade)subInfo+=' · '+c.cidade;
   subInfo+=' · '+c.end;
   document.getElementById('cliop-tel').textContent=subInfo;
-  // Monta histórico: orçamentos + recibos + lançamentos manuais deste cliente
+  // Monta histórico: orçamentos + recibos deste cliente
   var hist=[];
   orcamentos.forEach(function(o){
     if((o.cli||'').toLowerCase()===c.nm.toLowerCase()){
@@ -3691,24 +3679,17 @@ function abrirCliOpcoes(id){
       hist.push({tipo:'rec',data:r.data,dataRaw:r.dataRaw||r.data,desc:r.serv,val:r.val,status:'recibo',num:r.num,pgto:r.pgto});
     }
   });
-  financeiro.forEach(function(f){
-    var byId=f.cliId&&String(f.cliId)===String(c.id);
-    var byNome=!f.cliId&&(f.cli||f.nome||'').toLowerCase()===c.nm.toLowerCase();
-    if(byId||byNome){
-      hist.push({tipo:'fin',data:f.data,dataRaw:f.dataRaw||f.data,desc:f.desc||f.nome||'Lançamento manual',val:f.val,status:'manual',num:f.num,pgto:f.pgto});
-    }
-  });
   // Ordena por data desc
   hist.sort(function(a,b){return (b.dataRaw||b.data)>(a.dataRaw||a.data)?1:-1;});
   var hEl=document.getElementById('cliop-historico');
   if(hist.length===0){
     hEl.innerHTML='<div style="text-align:center;padding:18px;color:var(--silver);font-size:12px">Nenhum histórico encontrado para este cliente.</div>';
   } else {
-    var STATUS_LABEL={negociacao:'Em Negociação',pendente:'Pendente',aprovado:'Aprovado',execucao:'Em Execução',cancelado:'Cancelado',finalizado:'Finalizado',recibo:'Recibo',manual:'Lançamento Manual'};
-    var STATUS_COLOR={negociacao:'var(--purple)',pendente:'var(--amber)',aprovado:'var(--green2)',execucao:'#67e8f9',cancelado:'var(--red)',finalizado:'var(--green2)',recibo:'var(--blue3)',manual:'var(--silver2)'};
+    var STATUS_LABEL={negociacao:'Em Negociação',pendente:'Pendente',aprovado:'Aprovado',execucao:'Em Execução',cancelado:'Cancelado',finalizado:'Finalizado',recibo:'Recibo'};
+    var STATUS_COLOR={negociacao:'var(--purple)',pendente:'var(--amber)',aprovado:'var(--green2)',execucao:'#67e8f9',cancelado:'var(--red)',finalizado:'var(--green2)',recibo:'var(--blue3)'};
     hEl.innerHTML='';
     hist.forEach(function(h){
-      var ic=h.tipo==='orc'?'📋':h.tipo==='fin'?'💰':'🧾';
+      var ic=h.tipo==='orc'?'📋':'🧾';
       var lbl=STATUS_LABEL[h.status]||h.status;
       var clr=STATUS_COLOR[h.status]||'var(--silver2)';
       var row=document.createElement('div');
@@ -3751,7 +3732,7 @@ function abrirHistoricoCliente(id){
   document.getElementById('clihist-nome').textContent='📂 '+c.nm;
   document.getElementById('clihist-sub').textContent=(c.tel||'')+(c.cidade?' — '+c.cidade:'');
 
-  // Coleta orçamentos e recibos e lançamentos manuais deste cliente
+  // Coleta orçamentos e recibos deste cliente
   var hist=[];
   orcamentos.forEach(function(o){
     if((o.cli||'').toLowerCase()===c.nm.toLowerCase()){
@@ -3763,18 +3744,11 @@ function abrirHistoricoCliente(id){
       hist.push({tipo:'rec',data:r.data,dataRaw:r.dataRaw||r.data,desc:r.serv||r.desc||'—',val:r.val,status:'recibo',num:r.num});
     }
   });
-  financeiro.forEach(function(f){
-    var byId=f.cliId&&String(f.cliId)===String(c.id);
-    var byNome=!f.cliId&&(f.cli||f.nome||'').toLowerCase()===c.nm.toLowerCase();
-    if(byId||byNome){
-      hist.push({tipo:'fin',data:f.data,dataRaw:f.dataRaw||f.data,desc:f.desc||f.nome||'Lançamento manual',val:f.val,status:'manual',num:f.num});
-    }
-  });
   // Ordena por data desc
   hist.sort(function(a,b){return (b.dataRaw||b.data)>(a.dataRaw||a.data)?1:-1;});
 
-  var STATUS_LABEL={negociacao:'Em Negociação',pendente:'Pendente',aprovado:'Aprovado',execucao:'Em Execução',cancelado:'Cancelado',finalizado:'Finalizado',recibo:'Recibo',manual:'Lançamento Manual'};
-  var STATUS_COLOR={negociacao:'var(--purple)',pendente:'var(--amber)',aprovado:'var(--green2)',execucao:'#67e8f9',cancelado:'var(--red)',finalizado:'var(--green2)',recibo:'var(--blue3)',manual:'var(--silver2)'};
+  var STATUS_LABEL={negociacao:'Em Negociação',pendente:'Pendente',aprovado:'Aprovado',execucao:'Em Execução',cancelado:'Cancelado',finalizado:'Finalizado',recibo:'Recibo'};
+  var STATUS_COLOR={negociacao:'var(--purple)',pendente:'var(--amber)',aprovado:'var(--green2)',execucao:'#67e8f9',cancelado:'var(--red)',finalizado:'var(--green2)',recibo:'var(--blue3)'};
 
   var tbl=document.getElementById('clihist-tabela');
   if(hist.length===0){
@@ -3783,7 +3757,7 @@ function abrirHistoricoCliente(id){
     if(totEl)totEl.style.display='none';
   } else {
     var rows=hist.map(function(h){
-      var ic=h.tipo==='orc'?'📋':h.tipo==='fin'?'💰':'🧾';
+      var ic=h.tipo==='orc'?'📋':'🧾';
       var lbl=STATUS_LABEL[h.status]||h.status||'—';
       var clr=STATUS_COLOR[h.status]||'var(--silver2)';
       var descShort=(h.desc||'').split('\n')[0];
@@ -6628,60 +6602,10 @@ async function salvarEdicaoRec(){
 }
 
 
-function lancPopularSelectClientes(selId){
-  var sel=document.getElementById(selId);
-  if(!sel)return;
-  var cur=sel.value;
-  sel.innerHTML='<option value="">— Selecione um cliente cadastrado —</option>';
-  clientes.forEach(function(c){
-    var opt=document.createElement('option');
-    opt.value=c.id;
-    opt.textContent=c.nm+(c.tel?' — '+c.tel:'');
-    if(String(c.id)===String(cur))opt.selected=true;
-    sel.appendChild(opt);
-  });
-}
-function lancOnSelectCliente(){
-  var sel=document.getElementById('lanc-cli-sel');
-  var badge=document.getElementById('lanc-cli-badge');
-  var nomeEl=document.getElementById('lanc-nome');
-  var idEl=document.getElementById('lanc-cli-id');
-  var cliId=sel.value;
-  if(cliId){
-    var c=clientes.find(function(x){return String(x.id)===String(cliId);});
-    if(c){
-      idEl.value=c.id;
-      nomeEl.value='';
-      nomeEl.disabled=true;
-      badge.style.display='block';
-      badge.innerHTML='✅ Vinculado: <strong>'+c.nm+'</strong>'+(c.tel?' · '+c.tel:'')+(c.end?' · '+c.end:'');
-    }
-  } else {
-    idEl.value='';
-    nomeEl.disabled=false;
-    badge.style.display='none';
-  }
-}
-function lancOnNomeAvulso(){
-  var nomeEl=document.getElementById('lanc-nome');
-  var sel=document.getElementById('lanc-cli-sel');
-  var idEl=document.getElementById('lanc-cli-id');
-  var badge=document.getElementById('lanc-cli-badge');
-  if(nomeEl.value.trim()){
-    sel.value='';
-    idEl.value='';
-    badge.style.display='none';
-  }
-}
 function abrirLancamentoManual(){
   var today=new Date();
   var fmtD=function(x){return x.getFullYear()+'-'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'-'+(x.getDate()<10?'0':'')+x.getDate();};
-  lancPopularSelectClientes('lanc-cli-sel');
-  document.getElementById('lanc-cli-sel').value='';
-  document.getElementById('lanc-cli-id').value='';
-  document.getElementById('lanc-cli-badge').style.display='none';
   document.getElementById('lanc-nome').value='';
-  document.getElementById('lanc-nome').disabled=false;
   document.getElementById('lanc-desc').value='';
   document.getElementById('lanc-val').value='';
   document.getElementById('lanc-data').value=fmtD(today);
@@ -6692,13 +6616,7 @@ function abrirLancamentoManual(){
 }
 function fecharLancamentoManual(){document.getElementById('modal-lancamento').classList.remove('open');}
 function salvarLancamentoManual(){
-  var cliId=document.getElementById('lanc-cli-id').value;
-  var nomeAvulso=(document.getElementById('lanc-nome').value||'').trim();
-  var nome=nomeAvulso;
-  if(cliId){
-    var c=clientes.find(function(x){return String(x.id)===String(cliId);});
-    if(c)nome=c.nm;
-  }
+  var nome=(document.getElementById('lanc-nome').value||'').trim();
   var desc=(document.getElementById('lanc-desc').value||'').trim();
   if(!nome&&!desc){alert('Informe o nome ou a descrição.');return;}
   var val=parseFloat(document.getElementById('lanc-val').value||0);
@@ -6716,7 +6634,6 @@ function salvarLancamentoManual(){
     obs:obs,
     num:'MAN'+Date.now()
   };
-  if(cliId)lancFin.cliId=parseInt(cliId);
   financeiro.unshift(lancFin);
   sbSalvarFinanceiro(lancFin);
   salvarLocal();
@@ -6836,44 +6753,9 @@ function limparFinanceiro(){
   renderFinanceiroPage();
 }
 
-function finEditOnSelectCliente(){
-  var sel=document.getElementById('fin-cli-sel');
-  var badge=document.getElementById('fin-cli-badge');
-  var nomeEl=document.getElementById('fin-nome');
-  var idEl=document.getElementById('fin-cli-id');
-  var cliId=sel.value;
-  if(cliId){
-    var c=clientes.find(function(x){return String(x.id)===String(cliId);});
-    if(c){
-      idEl.value=c.id;
-      nomeEl.value='';
-      nomeEl.disabled=true;
-      badge.style.display='block';
-      badge.innerHTML='✅ Vinculado: <strong>'+c.nm+'</strong>'+(c.tel?' · '+c.tel:'')+(c.end?' · '+c.end:'');
-    }
-  } else {
-    idEl.value='';
-    nomeEl.disabled=false;
-    badge.style.display='none';
-  }
-}
-function finEditOnNomeAvulso(){
-  var nomeEl=document.getElementById('fin-nome');
-  var sel=document.getElementById('fin-cli-sel');
-  var idEl=document.getElementById('fin-cli-id');
-  var badge=document.getElementById('fin-cli-badge');
-  if(nomeEl.value.trim()){
-    sel.value='';
-    idEl.value='';
-    badge.style.display='none';
-  }
-}
 function editarFinanceiro(i){
   STATE.editFinIdx=i;
   var f=financeiro[i];
-  if(!f)return;
-  var idEl=document.getElementById('fin-cli-id');
-  if(idEl)idEl.value=f.cliId||'';
   document.getElementById('fin-nome').value=f.nome||f.cli||'';
   document.getElementById('fin-desc-edit').value=f.desc||'';
   document.getElementById('fin-val-edit').value=f.val||0;
@@ -6948,13 +6830,7 @@ function calcLiquidoFin(){
 function salvarFinanceiro(){
   var i=STATE.editFinIdx;
   if(i===null||i===undefined||!financeiro[i])return;
-  var cliId=document.getElementById('fin-cli-id').value;
-  var nomeAvulso=(document.getElementById('fin-nome').value||'').trim();
-  var nome=nomeAvulso;
-  if(cliId){
-    var c=clientes.find(function(x){return String(x.id)===String(cliId);});
-    if(c)nome=c.nm;
-  }
+  var nome=(document.getElementById('fin-nome').value||'').trim();
   var desc=(document.getElementById('fin-desc-edit').value||'').trim();
   var dataRaw=document.getElementById('fin-data-edit').value;
   var pgto=document.getElementById('fin-pgto-edit').value;
@@ -6964,8 +6840,6 @@ function salvarFinanceiro(){
   financeiro[i].nome=nome||financeiro[i].nome||'';
   financeiro[i].desc=desc||financeiro[i].desc||'';
   financeiro[i].cli=nome||financeiro[i].cli||'';
-  if(cliId)financeiro[i].cliId=parseInt(cliId);
-  else delete financeiro[i].cliId;
   financeiro[i].pgto=pgto;
   if(dataRaw){financeiro[i].dataRaw=dataRaw;financeiro[i].data=fmtDateBr(dataRaw);}
   if(novoVal>0) financeiro[i].val=novoVal;
