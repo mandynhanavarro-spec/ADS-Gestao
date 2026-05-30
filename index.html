@@ -695,7 +695,7 @@ td.bold{color:var(--white);font-weight:700}
         <!-- tabela gerada por JS -->
       </div>
       <div id="clihist-total" style="display:none;margin-top:12px;display:flex;justify-content:space-between;padding:10px 14px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px">
-        <span style="font-size:12px;color:var(--silver2);font-weight:700">💰 Total gasto pelo cliente</span>
+        <span style="font-size:12px;color:var(--silver2);font-weight:700">💰 Total recebido do cliente</span>
         <span style="font-size:14px;font-weight:900;color:var(--green2)" id="clihist-total-val"></span>
       </div>
     </div>
@@ -1320,7 +1320,7 @@ td.bold{color:var(--white);font-weight:700}
 <!-- ══ PAGE: FINANCEIRO ══ -->
 <div id="page-financeiro" class="page">
   <div class="stats-row">
-    <div class="stat sg"><div class="stat-label">Receita Total</div><div class="stat-val green" id="fin-receita">R$ 0,00</div><div class="stat-d" id="fin-qtd-label">0 lançamentos</div></div>
+    <div class="stat sg"><div class="stat-label">Receita Recebida</div><div class="stat-val green" id="fin-receita">R$ 0,00</div><div class="stat-d" id="fin-qtd-label">0 lançamentos</div></div>
     <div class="stat sr"><div class="stat-label">Custo (Peças + Desl.)</div><div class="stat-val red" id="fin-custo">R$ 0,00</div><div class="stat-d">deduzido do lucro</div></div>
     <div class="stat sb"><div class="stat-label">Lucro Líquido</div><div class="stat-val blue" id="fin-lucro">R$ 0,00</div><div class="stat-d" id="fin-margem">Margem: —</div></div>
     <div class="stat sa"><div class="stat-label">Pendentes</div><div class="stat-val amber" id="fin-pend">0</div><div class="stat-d">orçamentos ativos</div></div>
@@ -3691,23 +3691,26 @@ function abrirCliOpcoes(id){
   if(c.cidade)subInfo+=' · '+c.cidade;
   subInfo+=' · '+c.end;
   document.getElementById('cliop-tel').textContent=subInfo;
-  // Monta histórico: orçamentos + recibos + lançamentos manuais deste cliente
+  // Monta histórico: recibos + orçamentos sem recibo + lançamentos manuais deste cliente
   var hist=[];
-  orcamentos.forEach(function(o){
-    if((o.cli||'').toLowerCase()===c.nm.toLowerCase()){
-      hist.push({tipo:'orc',data:o.data,dataRaw:o.dataRaw||o.data,desc:o.serv||o.desc,val:o.val,status:o.status,num:o.num,pgto:o.pgto});
-    }
-  });
+  // Adiciona recibos do cliente
   recibos.forEach(function(r){
     if((r.cli||'').toLowerCase()===c.nm.toLowerCase()){
-      hist.push({tipo:'rec',data:r.data,dataRaw:r.dataRaw||r.data,desc:r.serv,val:r.val,status:'recibo',num:r.num,pgto:r.pgto});
+      hist.push({tipo:'rec',data:r.data,dataRaw:r.dataRaw||r.data,desc:r.serv,val:r.val,status:'recibo',pgto:r.pgto});
     }
   });
+  // Adiciona orçamentos apenas se NÃO são finalizados (finalizados já geraram recibo)
+  orcamentos.forEach(function(o){
+    if((o.cli||'').toLowerCase()===c.nm.toLowerCase()&&o.status!=='finalizado'){
+      hist.push({tipo:'orc',data:o.data,dataRaw:o.dataRaw||o.data,desc:o.serv||o.desc,val:o.val,status:o.status,pgto:o.pgto});
+    }
+  });
+  // Adiciona lançamentos manuais (excluindo os já gerados automaticamente por recibo)
   financeiro.forEach(function(f){
     var byId=f.cliId&&String(f.cliId)===String(c.id);
     var byNome=!f.cliId&&(f.cli||f.nome||'').toLowerCase()===c.nm.toLowerCase();
-    if(byId||byNome){
-      hist.push({tipo:'fin',data:f.data,dataRaw:f.dataRaw||f.data,desc:f.desc||f.nome||'Lançamento manual',val:f.val,status:'manual',num:f.num,pgto:f.pgto});
+    if((byId||byNome)&&!f.finLancado){
+      hist.push({tipo:'fin',data:f.data,dataRaw:f.dataRaw||f.data,desc:f.desc||f.nome||'Lançamento manual',val:f.val,status:'manual',pgto:f.pgto,tipoLanc:f.tipoLanc,finStatus:f.finStatus});
     }
   });
   // Ordena por data desc
@@ -3723,6 +3726,11 @@ function abrirCliOpcoes(id){
       var ic=h.tipo==='orc'?'📋':h.tipo==='fin'?'💰':'🧾';
       var lbl=STATUS_LABEL[h.status]||h.status;
       var clr=STATUS_COLOR[h.status]||'var(--silver2)';
+      // Valor em cinza para itens não contabilizados no total
+      var valNaoContabilizado=(h.tipo==='orc'&&(h.status==='cancelado'||h.status==='negociacao'||h.status==='pendente'))
+        ||(h.tipo==='fin'&&h.tipoLanc!=='recebido'&&h.finStatus!=='pago');
+      var valColor=valNaoContabilizado?'var(--silver)':'var(--green2)';
+      var valExtra=valNaoContabilizado?' <span style="font-size:9px;color:var(--silver)">(não contabilizado)</span>':'';
       var row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)';
       row.innerHTML=
@@ -3732,18 +3740,22 @@ function abrirCliOpcoes(id){
           '<div style="font-size:10px;color:var(--silver2)">'+h.data+' · '+h.pgto+'</div>'+
         '</div>'+
         '<div style="text-align:right;flex-shrink:0">'+
-          '<div style="font-size:12px;font-weight:800;color:var(--green2)">'+fmtVal(h.val)+'</div>'+
+          '<div style="font-size:12px;font-weight:800;color:'+valColor+'">'+fmtVal(h.val)+valExtra+'</div>'+
           '<div style="font-size:10px;font-weight:700;color:'+clr+'">'+lbl+'</div>'+
         '</div>';
       hEl.appendChild(row);
     });
   }
-  // Total gasto
-  var totalGasto=hist.reduce(function(s,h){return s+(h.val||0);},0);
+  // Total recebido (recibos + manuais efetivamente pagos)
+  var totalGasto=hist.filter(function(h){
+    if(h.tipo==='rec') return true;
+    if(h.tipo==='fin') return h.tipoLanc==='recebido'||h.finStatus==='pago';
+    return false;
+  }).reduce(function(s,h){return s+(h.val||0);},0);
   if(hist.length>0){
     var totDiv=document.createElement('div');
     totDiv.style.cssText='margin-top:10px;display:flex;justify-content:space-between;padding:8px 12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:7px';
-    totDiv.innerHTML='<span style="font-size:12px;color:var(--silver2);font-weight:700">Total gasto pelo cliente</span>'+
+    totDiv.innerHTML='<span style="font-size:12px;color:var(--silver2);font-weight:700">Total recebido do cliente</span>'+
       '<span style="font-size:13px;font-weight:900;color:var(--green2)">'+fmtVal(totalGasto)+'</span>';
     hEl.appendChild(totDiv);
   }
@@ -3763,23 +3775,26 @@ function abrirHistoricoCliente(id){
   document.getElementById('clihist-nome').textContent='📂 '+c.nm;
   document.getElementById('clihist-sub').textContent=(c.tel||'')+(c.cidade?' — '+c.cidade:'');
 
-  // Coleta orçamentos e recibos e lançamentos manuais deste cliente
+  // Coleta recibos + orçamentos sem recibo + lançamentos manuais deste cliente
   var hist=[];
-  orcamentos.forEach(function(o){
-    if((o.cli||'').toLowerCase()===c.nm.toLowerCase()){
-      hist.push({tipo:'orc',data:o.data,dataRaw:o.dataRaw||o.data,desc:o.serv||o.desc||'—',val:o.val,status:o.status,num:o.num});
-    }
-  });
+  // Recibos do cliente (documento final — representa serviço concluído/pago)
   recibos.forEach(function(r){
     if((r.cli||'').toLowerCase()===c.nm.toLowerCase()){
-      hist.push({tipo:'rec',data:r.data,dataRaw:r.dataRaw||r.data,desc:r.serv||r.desc||'—',val:r.val,status:'recibo',num:r.num});
+      hist.push({tipo:'rec',data:r.data,dataRaw:r.dataRaw||r.data,desc:r.serv||r.desc||'—',val:r.val,status:'recibo'});
     }
   });
+  // Orçamentos apenas se NÃO finalizados (finalizados já têm recibo correspondente)
+  orcamentos.forEach(function(o){
+    if((o.cli||'').toLowerCase()===c.nm.toLowerCase()&&o.status!=='finalizado'){
+      hist.push({tipo:'orc',data:o.data,dataRaw:o.dataRaw||o.data,desc:o.serv||o.desc||'—',val:o.val,status:o.status});
+    }
+  });
+  // Lançamentos manuais (excluindo os gerados automaticamente por recibo)
   financeiro.forEach(function(f){
     var byId=f.cliId&&String(f.cliId)===String(c.id);
     var byNome=!f.cliId&&(f.cli||f.nome||'').toLowerCase()===c.nm.toLowerCase();
-    if(byId||byNome){
-      hist.push({tipo:'fin',data:f.data,dataRaw:f.dataRaw||f.data,desc:f.desc||f.nome||'Lançamento manual',val:f.val,status:'manual',num:f.num});
+    if((byId||byNome)&&!f.finLancado){
+      hist.push({tipo:'fin',data:f.data,dataRaw:f.dataRaw||f.data,desc:f.desc||f.nome||'Lançamento manual',val:f.val,status:'manual',tipoLanc:f.tipoLanc,finStatus:f.finStatus});
     }
   });
   // Ordena por data desc
@@ -3800,11 +3815,15 @@ function abrirHistoricoCliente(id){
       var clr=STATUS_COLOR[h.status]||'var(--silver2)';
       var descShort=(h.desc||'').split('\n')[0];
       if(descShort.length>55)descShort=descShort.substring(0,55)+'…';
+      // Valor em cinza para itens não contabilizados no total
+      var valNaoContabilizado=(h.tipo==='orc'&&(h.status==='cancelado'||h.status==='negociacao'||h.status==='pendente'))
+        ||(h.tipo==='fin'&&h.tipoLanc!=='recebido'&&h.finStatus!=='pago');
+      var valColor=valNaoContabilizado?'var(--silver)':'var(--green2)';
+      var valExtra=valNaoContabilizado?'<br><span style="font-size:9px;color:var(--silver);font-weight:400">não contabilizado</span>':'';
       return '<tr>'+
         '<td style="padding:9px 8px 9px 0;border-top:1px solid var(--border);color:var(--silver2);font-size:11px;white-space:nowrap">'+h.data+'</td>'+
-        '<td style="padding:9px 8px;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--blue3);white-space:nowrap">'+ic+' '+h.num+'</td>'+
-        '<td style="padding:9px 8px;border-top:1px solid var(--border);font-size:12px;color:var(--white);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+descShort+'</td>'+
-        '<td style="padding:9px 0 9px 8px;border-top:1px solid var(--border);text-align:right;font-size:12px;font-weight:800;color:var(--green2);white-space:nowrap">'+fmtVal(h.val)+'</td>'+
+        '<td style="padding:9px 8px;border-top:1px solid var(--border);font-size:12px;color:var(--white);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+ic+' '+descShort+'</td>'+
+        '<td style="padding:9px 0 9px 8px;border-top:1px solid var(--border);text-align:right;font-size:12px;font-weight:800;color:'+valColor+';white-space:nowrap">'+fmtVal(h.val)+valExtra+'</td>'+
         '<td style="padding:9px 0 9px 8px;border-top:1px solid var(--border);text-align:right;white-space:nowrap"><span style="font-size:10px;font-weight:700;color:'+clr+'">'+lbl+'</span></td>'+
         '</tr>';
     }).join('');
@@ -3812,15 +3831,18 @@ function abrirHistoricoCliente(id){
       '<table style="width:100%;border-collapse:collapse">'+
         '<thead><tr>'+
           '<th style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:1px;padding:0 8px 9px 0;text-align:left;font-weight:700">Data</th>'+
-          '<th style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:1px;padding:0 8px 9px;text-align:left;font-weight:700">Nº Doc.</th>'+
           '<th style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:1px;padding:0 8px 9px;text-align:left;font-weight:700">Serviço</th>'+
           '<th style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:1px;padding:0 0 9px 8px;text-align:right;font-weight:700">Valor</th>'+
           '<th style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:1px;padding:0 0 9px 8px;text-align:right;font-weight:700">Status</th>'+
         '</tr></thead>'+
         '<tbody>'+rows+'</tbody>'+
       '</table>';
-    // Total gasto (apenas orçamentos finalizados/aprovados + recibos)
-    var totalGasto=hist.reduce(function(s,h){return s+(h.val||0);},0);
+    // Total recebido (recibos + manuais efetivamente pagos)
+    var totalGasto=hist.filter(function(h){
+      if(h.tipo==='rec') return true;
+      if(h.tipo==='fin') return h.tipoLanc==='recebido'||h.finStatus==='pago';
+      return false;
+    }).reduce(function(s,h){return s+(h.val||0);},0);
     var totEl=document.getElementById('clihist-total');
     if(totEl){totEl.style.display='flex';}
     document.getElementById('clihist-total-val').textContent=fmtVal(totalGasto);
@@ -6726,7 +6748,10 @@ function salvarLancamentoManual(){
     pecas:parseFloat(document.getElementById('lanc-pecas').value||0),
     desloc:parseFloat(document.getElementById('lanc-desloc').value||0),
     obs:obs,
-    num:'MAN'+Date.now()
+    num:'MAN'+Date.now(),
+    finStatus:'pago',
+    tipoLanc:'recebido',
+    finLancado:false
   };
   if(cliId)lancFin.cliId=parseInt(cliId);
   financeiro.unshift(lancFin);
@@ -6788,15 +6813,21 @@ function renderFinanceiroPage(){
     return true;
   });
 
-  var totalRec=0,totalPecas=0,totalDesloc=0;
-  lista.forEach(function(f){totalRec+=f.val||0;totalPecas+=f.pecas||0;totalDesloc+=f.desloc||0;});
+  var totalRec=0,totalAReceber=0,totalPecas=0,totalDesloc=0;
+  lista.forEach(function(f){
+    var pago=f.tipoLanc==='recebido'||f.finStatus==='pago'||f.finStatus==='parcial';
+    if(pago) totalRec+=f.val||0;
+    else totalAReceber+=f.val||0;
+    totalPecas+=f.pecas||0;
+    totalDesloc+=f.desloc||0;
+  });
   var totalCusto=totalPecas+totalDesloc;
   var lucro=totalRec-totalCusto;
   var margem=totalRec>0?Math.round(lucro/totalRec*100):0;
   document.getElementById('fin-receita').textContent=fmtVal(totalRec);
   document.getElementById('fin-custo').textContent=fmtVal(totalCusto);
   document.getElementById('fin-lucro').textContent=fmtVal(lucro);
-  document.getElementById('fin-margem').textContent='Margem: '+margem+'%';
+  document.getElementById('fin-margem').textContent='Margem: '+margem+'%'+(totalAReceber>0?' · A receber: '+fmtVal(totalAReceber):'');
   var pend=orcamentos.filter(function(o){return o.status==='pendente'||o.status==='negociacao'||o.status==='execucao';}).length;
   document.getElementById('fin-pend').textContent=pend;
   var mesesNome=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
