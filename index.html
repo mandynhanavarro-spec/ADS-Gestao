@@ -35,6 +35,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 /* ═══ BIOMETRIC LOCK (mobile only) ═══ */
 #bio-lock-screen{position:fixed;inset:0;background:var(--bg);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
 #bio-lock-screen.active{display:flex}
+
+/* ═══ PIN LOCK (checagem a cada 3h) ═══ */
+#pin-lock-screen{position:fixed;inset:0;background:var(--bg);z-index:10001;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+#pin-lock-screen.active{display:flex}
+.pin-input{width:100%;max-width:200px;text-align:center;letter-spacing:10px;font-size:22px}
+
+/* ═══ CADASTRO DE PIN (primeiro login) ═══ */
+#pin-setup-screen{position:fixed;inset:0;background:var(--bg);z-index:10002;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+#pin-setup-screen.active{display:flex}
 .bio-logo{width:64px;height:64px;background:var(--blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;border:1px solid var(--border2);box-shadow:0 0 32px rgba(37,99,235,.25)}
 .bio-title{font-size:20px;font-weight:800;color:var(--white);margin-bottom:6px;text-align:center}
 .bio-sub{font-size:12px;color:var(--silver);margin-bottom:36px;text-align:center;letter-spacing:.5px}
@@ -149,6 +158,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .fg4{grid-template-columns:1fr 1fr 1fr 1fr}
 .fl{font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-weight:700}
 .fi,.fs,.ft{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;color:var(--white);font-size:12px;font-family:inherit}
+.fi:disabled,.fs:disabled{opacity:.5;cursor:not-allowed;color:var(--silver)}
 .ft{resize:vertical}
 .fi:focus,.fs:focus,.ft:focus{outline:none;border-color:var(--blue2)}
 .fi::placeholder,.ft::placeholder{color:var(--silver)}
@@ -356,6 +366,27 @@ td.bold{color:var(--white);font-weight:700}
   <div class="bio-btn" id="bio-btn" onclick="solicitarBiometria()">👆</div>
   <div class="bio-status" id="bio-status">Toque para autenticar</div>
   <div class="bio-alt" onclick="bioUsarSenha()">Usar usuário e senha</div>
+</div>
+
+<!-- PIN LOCK (checagem a cada 3h) -->
+<div id="pin-lock-screen">
+  <div class="bio-logo">🔑</div>
+  <div class="bio-title">Verificação de segurança</div>
+  <div class="bio-sub" id="pin-user-label">Digite seu PIN para continuar</div>
+  <input class="login-field pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-lock-input" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarPinSessao()">
+  <button class="login-btn" style="max-width:200px" onclick="confirmarPinSessao()">Confirmar</button>
+  <div class="login-err" id="pin-lock-err">PIN incorreto</div>
+</div>
+
+<!-- CADASTRO DE PIN (obrigatório no primeiro login) -->
+<div id="pin-setup-screen">
+  <div class="bio-logo">🔑</div>
+  <div class="bio-title">Cadastre seu PIN</div>
+  <div class="bio-sub">Crie um PIN de 4 dígitos. Ele será pedido a cada 3h de uso para confirmar que é você.</div>
+  <input class="login-field pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-setup-input" placeholder="Novo PIN">
+  <input class="login-field pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-setup-input2" placeholder="Confirmar PIN" onkeydown="if(event.key==='Enter')salvarPinSetup()">
+  <button class="login-btn" style="max-width:200px" onclick="salvarPinSetup()">Salvar PIN</button>
+  <div class="login-err" id="pin-setup-err"></div>
 </div>
 
 <!-- SIDEBAR -->
@@ -1688,9 +1719,10 @@ td.bold{color:var(--white);font-weight:700}
   <div class="panel" style="margin-bottom:16px">
     <div class="panel-hd">
       <div class="panel-title">👤 Usuários e Acesso</div>
-      <button class="btn btn-primary btn-sm" onclick="abrirModalNovoUsuario()">+ Novo Usuário</button>
+      <button class="btn btn-primary btn-sm" id="cfg-btn-novo-usuario" onclick="abrirModalNovoUsuario()">+ Novo Usuário</button>
     </div>
     <div class="panel-bd" style="padding:0 16px">
+      <div id="cfg-usuarios-aviso" style="display:none;font-size:11px;color:var(--silver2);padding:10px 0">🔒 Somente administradores podem ver e gerenciar outros usuários. Abaixo estão apenas os seus dados.</div>
       <table>
         <thead><tr><th>Usuário</th><th>Nome</th><th>Perfil</th><th>Status</th><th>Ações</th></tr></thead>
         <tbody id="cfg-usuarios-tbody"></tbody>
@@ -1738,9 +1770,13 @@ td.bold{color:var(--white);font-weight:700}
       <button class="modal-x" onclick="fecharModalUsuario()">✕</button>
     </div>
     <div class="modal-bd">
+      <div id="mu-restrito-aviso" style="display:none;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:8px 12px;font-size:11px;color:var(--amber);margin-bottom:12px">🔒 Você só pode editar seus próprios dados básicos (nome, avatar, senha e PIN). Login e permissões só um Administrador altera.</div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Nome completo</div><input class="fi" id="mu-nome" placeholder="Ex: João Silva"></div>
         <div><div class="fl">Login (usuário)</div><input class="fi" id="mu-user" placeholder="Ex: joao" autocomplete="off"></div>
+      </div>
+      <div class="fgrid fg2" id="mu-pass-atual-row" style="margin-bottom:10px;display:none">
+        <div><div class="fl">Senha atual (confirme p/ trocar)</div><input class="fi" type="password" id="mu-pass-atual" placeholder="Sua senha atual" autocomplete="current-password"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Senha</div><input class="fi" type="password" id="mu-pass" placeholder="Mínimo 4 caracteres" autocomplete="new-password"></div>
@@ -1753,8 +1789,16 @@ td.bold{color:var(--white);font-weight:700}
             <option value="Administrador">Administrador</option>
             <option value="Vendedor">Vendedor</option>
           </select>
+          <div id="mu-role-lock-aviso" style="display:none;font-size:10px;color:var(--amber);margin-top:4px">🔒 Você é o único Administrador — não é possível trocar seu próprio perfil.</div>
         </div>
         <div><div class="fl">Avatar (2 letras)</div><input class="fi" id="mu-avatar" placeholder="Ex: JS" maxlength="2" style="text-transform:uppercase"></div>
+      </div>
+      <div class="fgrid fg2" id="mu-pin-atual-row" style="margin-bottom:10px;display:none">
+        <div><div class="fl">PIN atual (confirme p/ trocar)</div><input class="fi" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="mu-pin-atual" placeholder="Seu PIN atual" autocomplete="off"></div>
+      </div>
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">PIN (4 dígitos)</div><input class="fi" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="mu-pin" placeholder="Deixe em branco p/ manter" autocomplete="off"></div>
+        <div><div class="fl">Confirmar PIN</div><input class="fi" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="mu-pin2" placeholder="Repita o PIN" autocomplete="off"></div>
       </div>
       <div id="mu-erro" style="color:var(--red);font-size:12px;display:none;margin-top:6px"></div>
 
@@ -7874,6 +7918,149 @@ function aplicarUsuario(found){
   _activeUser=found;
   _aplicarPermissoesMenu(found);
   BIO.init(found);
+  iniciarChecadorSessao();
+  if(!found.pinHash){
+    _abrirCadastroPin();
+  }
+}
+
+// ── Hash de senha/PIN (SHA-256 + salt, via Web Crypto) ────────
+async function _sha256Hex(str){
+  var buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+function _randomSalt(){
+  var arr=new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+async function _hashSecret(secret, salt){
+  return await _sha256Hex(salt+':'+secret);
+}
+async function _hashPin(pin, salt){
+  return await _hashSecret(pin, salt);
+}
+async function _hashPass(pass, salt){
+  return await _hashSecret(pass, salt);
+}
+// Confirma a senha/PIN ATUAL de um usuário (aceita 'pass' legado em texto puro, ainda não migrado)
+async function _verificarSenhaAtual(user, senhaDigitada){
+  if(user.passHash&&user.passSalt) return (await _hashPass(senhaDigitada,user.passSalt))===user.passHash;
+  return user.pass===senhaDigitada;
+}
+async function _verificarPinAtual(user, pinDigitado){
+  if(!user.pinHash||!user.pinSalt) return false;
+  return (await _hashPin(pinDigitado,user.pinSalt))===user.pinHash;
+}
+
+// ── Sessão do dia + checagem de PIN a cada 3h ─────────────────
+var MS_3H=3*60*60*1000;
+function _todayStr(){return new Date().toDateString();}
+function _saveSession(userLogin, persist){
+  var data={user:userLogin, loginDate:_todayStr(), lastPinTs:Date.now()};
+  try{
+    if(persist){localStorage.setItem('ads_session',JSON.stringify(data));sessionStorage.removeItem('ads_session');}
+    else{sessionStorage.setItem('ads_session',JSON.stringify(data));localStorage.removeItem('ads_session');}
+  }catch(e){}
+}
+function _loadSession(){
+  try{
+    var raw=localStorage.getItem('ads_session')||sessionStorage.getItem('ads_session');
+    return raw?JSON.parse(raw):null;
+  }catch(e){return null;}
+}
+function _clearSession(){
+  localStorage.removeItem('ads_session');
+  sessionStorage.removeItem('ads_session');
+  localStorage.removeItem('ads_user'); // formato antigo (guardava senha em texto puro)
+}
+function _updatePinTs(){
+  var persist=!!localStorage.getItem('ads_session');
+  var raw=persist?localStorage.getItem('ads_session'):sessionStorage.getItem('ads_session');
+  if(!raw)return;
+  try{
+    var data=JSON.parse(raw);
+    data.lastPinTs=Date.now();
+    if(persist)localStorage.setItem('ads_session',JSON.stringify(data));
+    else sessionStorage.setItem('ads_session',JSON.stringify(data));
+  }catch(e){}
+}
+
+var _sessaoCheckInterval=null;
+function iniciarChecadorSessao(){
+  if(_sessaoCheckInterval)clearInterval(_sessaoCheckInterval);
+  _sessaoCheckInterval=setInterval(_checarExpiracaoSessao,20000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)_checarExpiracaoSessao();});
+  window.addEventListener('focus',_checarExpiracaoSessao);
+}
+function _checarExpiracaoSessao(){
+  if(!_activeUser)return;
+  var dados=_loadSession();
+  if(!dados)return;
+  if(dados.loginDate!==_todayStr()){
+    _clearSession();
+    location.reload();
+    return;
+  }
+  var pinScreen=document.getElementById('pin-lock-screen');
+  var pinSetupScreen=document.getElementById('pin-setup-screen');
+  var jaAbertoAlgumOverlay=(pinScreen&&pinScreen.classList.contains('active'))||(pinSetupScreen&&pinSetupScreen.classList.contains('active'));
+  if(!jaAbertoAlgumOverlay&&_activeUser.pinHash&&Date.now()-dados.lastPinTs>=MS_3H){
+    _abrirCheckPin(_activeUser);
+  }
+}
+
+function _abrirCheckPin(user){
+  var el=document.getElementById('pin-lock-screen');
+  var label=document.getElementById('pin-user-label');
+  if(label)label.textContent='Olá, '+user.nome+'. Digite seu PIN para continuar.';
+  document.getElementById('pin-lock-input').value='';
+  document.getElementById('pin-lock-err').style.display='none';
+  el.classList.add('active');
+  setTimeout(function(){document.getElementById('pin-lock-input').focus();},50);
+}
+async function confirmarPinSessao(){
+  var pin=document.getElementById('pin-lock-input').value;
+  var err=document.getElementById('pin-lock-err');
+  var user=USUARIOS.find(function(x){return x.user===_activeUser.user;});
+  if(!user||!user.pinHash){err.textContent='PIN não cadastrado. Faça login novamente.';err.style.display='block';return;}
+  var hash=await _hashPin(pin,user.pinSalt);
+  if(hash===user.pinHash){
+    document.getElementById('pin-lock-screen').classList.remove('active');
+    _updatePinTs();
+  } else {
+    err.textContent='PIN incorreto. Tente novamente.';
+    err.style.display='block';
+    document.getElementById('pin-lock-input').value='';
+    document.getElementById('pin-lock-input').focus();
+  }
+}
+
+function _abrirCadastroPin(){
+  document.getElementById('pin-setup-input').value='';
+  document.getElementById('pin-setup-input2').value='';
+  document.getElementById('pin-setup-err').style.display='none';
+  document.getElementById('pin-setup-screen').classList.add('active');
+  setTimeout(function(){document.getElementById('pin-setup-input').focus();},50);
+}
+async function salvarPinSetup(){
+  var pin=document.getElementById('pin-setup-input').value;
+  var pin2=document.getElementById('pin-setup-input2').value;
+  var err=document.getElementById('pin-setup-err');
+  if(!/^\d{4}$/.test(pin)){err.textContent='O PIN deve ter exatamente 4 dígitos.';err.style.display='block';return;}
+  if(pin!==pin2){err.textContent='Os PINs não coincidem.';err.style.display='block';return;}
+  var user=USUARIOS.find(function(x){return x.user===_activeUser.user;});
+  if(!user)return;
+  var salt=_randomSalt();
+  user.pinHash=await _hashPin(pin,salt);
+  user.pinSalt=salt;
+  _activeUser.pinHash=user.pinHash;
+  _activeUser.pinSalt=user.pinSalt;
+  salvarCFG();
+  if(typeof sbSalvarCFG==='function')sbSalvarCFG('usuarios',USUARIOS);
+  document.getElementById('pin-setup-screen').classList.remove('active');
+  err.style.display='none';
+  _updatePinTs();
 }
 
 var PAGINAS_SISTEMA=[
@@ -7922,23 +8109,40 @@ function _aplicarPermissoesMenu(u){
 
 function fazerLogout(){
   if(!confirm('Deseja sair da conta?'))return;
-  localStorage.removeItem('ads_user');
+  _clearSession();
+  if(_sessaoCheckInterval)clearInterval(_sessaoCheckInterval);
   // Limpa biometria se existir
   if(window.BIO&&BIO.clearBio)BIO.clearBio();
   // Recarrega a página para voltar ao login
   location.reload();
 }
 
-function fazerLogin(){
+async function fazerLogin(){
   var u=document.getElementById('login-user').value.trim().toLowerCase();
   var p=document.getElementById('login-pass').value;
   var lembrar=document.getElementById('lembrar-me').checked;
   var err=document.getElementById('login-err');
-  var found=USUARIOS.find(function(x){return x.user===u&&x.pass===p;});
+  var found=null, migrou=false;
+  for(var i=0;i<USUARIOS.length;i++){
+    var cand=USUARIOS[i];
+    if(cand.user!==u)continue;
+    if(cand.passHash&&cand.passSalt){
+      if((await _hashPass(p,cand.passSalt))===cand.passHash){found=cand;}
+    } else if(cand.pass===p){
+      // Migração automática: senha em texto puro -> hash, no primeiro login bem-sucedido
+      var salt=_randomSalt();
+      cand.passHash=await _hashPass(p,salt);
+      cand.passSalt=salt;
+      delete cand.pass;
+      found=cand;
+      migrou=true;
+    }
+    if(found)break;
+  }
   if(found){
     err.style.display='none';
-    if(lembrar){localStorage.setItem('ads_user',JSON.stringify({user:found.user,pass:found.pass}));}
-    else{localStorage.removeItem('ads_user');}
+    if(migrou){salvarCFG();sbSalvarCFG('usuarios',USUARIOS);}
+    _saveSession(found.user, lembrar);
     aplicarUsuario(found);
   } else {
     err.style.display='block';
@@ -7948,12 +8152,20 @@ function fazerLogin(){
 
 (function verificarSessao(){
   try{
-    var salvo=localStorage.getItem('ads_user');
-    if(salvo){
-      var dados=JSON.parse(salvo);
-      var found=USUARIOS.find(function(x){return x.user===dados.user&&x.pass===dados.pass;});
-      if(found){document.getElementById('login-user').value=found.user;document.getElementById('lembrar-me').checked=true;aplicarUsuario(found);}
+    carregarCFG(); // garante USUARIOS atualizado (com pinHash/senhas salvos) antes de restaurar a sessão
+    var dados=_loadSession();
+    if(dados&&dados.loginDate===_todayStr()){
+      var found=USUARIOS.find(function(x){return x.user===dados.user;});
+      if(found){
+        document.getElementById('login-user').value=found.user;
+        document.getElementById('lembrar-me').checked=!!localStorage.getItem('ads_session');
+        aplicarUsuario(found);
+        if(found.pinHash&&Date.now()-dados.lastPinTs>=MS_3H){_abrirCheckPin(found);}
+        return;
+      }
     }
+    // Sessão expirada (virou o dia), inexistente ou usuário não encontrado mais
+    _clearSession();
   }catch(e){}
 })();
 
@@ -9338,18 +9550,35 @@ var _editUserIdx=null;
 function renderTabelaUsuarios(){
   var tb=document.getElementById('cfg-usuarios-tbody');
   if(!tb)return;
-  tb.innerHTML=USUARIOS.map(function(u,i){
+  var isAdmin=!!(_activeUser&&_activeUser.role==='Administrador');
+  var novoBtn=document.getElementById('cfg-btn-novo-usuario');
+  if(novoBtn)novoBtn.style.display=isAdmin?'':'none';
+  var aviso=document.getElementById('cfg-usuarios-aviso');
+  if(aviso)aviso.style.display=isAdmin?'none':'';
+  var lista=isAdmin?USUARIOS:USUARIOS.filter(function(u){return _activeUser&&u.user===_activeUser.user;});
+  tb.innerHTML=lista.map(function(u){
+    var i=USUARIOS.indexOf(u);
     var roleColor=u.role==='Administrador'?'var(--blue3)':u.role==='Vendedor'?'var(--amber)':'var(--green2)';
     var permCount=u.role==='Administrador'?PAGINAS_SISTEMA.length:(u.permissoes?u.permissoes.length:PAGINAS_SISTEMA.length);
     var permBadge='<span style="font-size:10px;color:var(--silver);margin-left:4px">('+permCount+'/'+PAGINAS_SISTEMA.length+' módulos)</span>';
+    var editLabel=isAdmin?'✏️ Editar':'✏️ Editar meus dados';
+    var isSoleAdmin=u.role==='Administrador'&&_countAdmins()<=1;
+    var delBtn='';
+    if(isAdmin&&USUARIOS.length>1){
+      if(isSoleAdmin){
+        delBtn='<button class="btn btn-ghost btn-sm" disabled title="Único Administrador do sistema — promova outro usuário a Administrador antes de excluir esta conta" style="opacity:.5;cursor:not-allowed">🔒 Único Admin</button>';
+      } else {
+        delBtn='<button class="btn btn-red btn-sm" onclick="excluirUsuario('+i+')">🗑</button>';
+      }
+    }
     return '<tr>'+
       '<td class="bold">'+u.user+'</td>'+
       '<td>'+u.nome+'</td>'+
       '<td><span style="color:'+roleColor+';font-weight:700;font-size:11px">'+u.role+'</span>'+permBadge+'</td>'+
       '<td><span class="badge badge-ok">Ativo</span></td>'+
       '<td><div style="display:flex;gap:5px">'+
-        '<button class="btn btn-ghost btn-sm" onclick="editarUsuario('+i+')">✏️ Editar</button>'+
-        (USUARIOS.length>1?'<button class="btn btn-red btn-sm" onclick="excluirUsuario('+i+')">🗑</button>':'')+
+        '<button class="btn btn-ghost btn-sm" onclick="editarUsuario('+i+')">'+editLabel+'</button>'+
+        delBtn+
       '</div></td>'+
       '</tr>';
   }).join('');
@@ -9385,58 +9614,148 @@ function _getPermGridValues(){
   return vals;
 }
 
+function _countAdmins(){
+  return USUARIOS.filter(function(u){return u.role==='Administrador';}).length;
+}
+
+function _aplicarRestricoesModal(isAdmin, isSelf, alvo){
+  var travarLoginRole=!isAdmin&&isSelf;
+  var isSoleAdminSelf=!!(isSelf&&alvo&&alvo.role==='Administrador'&&_countAdmins()<=1);
+  document.getElementById('mu-user').disabled=travarLoginRole;
+  document.getElementById('mu-role').disabled=travarLoginRole||isSoleAdminSelf;
+  document.getElementById('mu-perm-box').style.display=travarLoginRole?'none':'';
+  var aviso=document.getElementById('mu-restrito-aviso');
+  if(aviso)aviso.style.display=travarLoginRole?'block':'none';
+  var roleLockAviso=document.getElementById('mu-role-lock-aviso');
+  if(roleLockAviso)roleLockAviso.style.display=isSoleAdminSelf?'':'none';
+  var rowPassAtual=document.getElementById('mu-pass-atual-row');
+  if(rowPassAtual)rowPassAtual.style.display=isSelf?'':'none';
+  var rowPinAtual=document.getElementById('mu-pin-atual-row');
+  if(rowPinAtual)rowPinAtual.style.display=(isSelf&&alvo&&alvo.pinHash)?'':'none';
+}
+
 function abrirModalNovoUsuario(){
+  if(!_activeUser||_activeUser.role!=='Administrador'){
+    alert('Apenas administradores podem criar novos usuários.');
+    return;
+  }
   _editUserIdx=null;
   document.getElementById('modal-usuario-title').textContent='👤 Novo Usuário';
-  ['mu-nome','mu-user','mu-pass','mu-pass2','mu-avatar'].forEach(function(id){_cfgSet(id,'');});
+  ['mu-nome','mu-user','mu-pass','mu-pass2','mu-pass-atual','mu-avatar','mu-pin','mu-pin2','mu-pin-atual'].forEach(function(id){_cfgSet(id,'');});
   document.getElementById('mu-role').value='Técnico';
   document.getElementById('mu-erro').style.display='none';
   _renderPermGrid(PAGINAS_SISTEMA.map(function(p){return p.id;}), 'Técnico');
   document.getElementById('mu-role').onchange=function(){_renderPermGrid(_getPermGridValues(),this.value);};
+  _aplicarRestricoesModal(true, false, null);
   document.getElementById('modal-usuario').classList.add('open');
 }
 function editarUsuario(i){
-  _editUserIdx=i;var u=USUARIOS[i];
-  document.getElementById('modal-usuario-title').textContent='✏️ Editar Usuário';
-  _cfgSet('mu-nome',u.nome);_cfgSet('mu-user',u.user);
-  _cfgSet('mu-pass','');_cfgSet('mu-pass2','');
-  _cfgSet('mu-avatar',u.avatar);
-  document.getElementById('mu-role').value=u.role;
+  var alvo=USUARIOS[i];
+  var isAdmin=!!(_activeUser&&_activeUser.role==='Administrador');
+  var isSelf=!!(_activeUser&&alvo.user===_activeUser.user);
+  if(!isAdmin&&!isSelf){
+    alert('Você não tem permissão para editar outros usuários. Apenas administradores podem fazer isso.');
+    return;
+  }
+  _editUserIdx=i;
+  document.getElementById('modal-usuario-title').textContent=isSelf?'✏️ Meus Dados':'✏️ Editar Usuário';
+  _cfgSet('mu-nome',alvo.nome);_cfgSet('mu-user',alvo.user);
+  _cfgSet('mu-pass','');_cfgSet('mu-pass2','');_cfgSet('mu-pass-atual','');
+  _cfgSet('mu-avatar',alvo.avatar);
+  _cfgSet('mu-pin','');_cfgSet('mu-pin2','');_cfgSet('mu-pin-atual','');
+  document.getElementById('mu-role').value=alvo.role;
   document.getElementById('mu-erro').style.display='none';
-  _renderPermGrid(u.permissoes&&u.permissoes.length?u.permissoes:PAGINAS_SISTEMA.map(function(p){return p.id;}), u.role);
+  _renderPermGrid(alvo.permissoes&&alvo.permissoes.length?alvo.permissoes:PAGINAS_SISTEMA.map(function(p){return p.id;}), alvo.role);
   document.getElementById('mu-role').onchange=function(){_renderPermGrid(_getPermGridValues(),this.value);};
+  _aplicarRestricoesModal(isAdmin, isSelf, alvo);
   document.getElementById('modal-usuario').classList.add('open');
 }
 function fecharModalUsuario(){document.getElementById('modal-usuario').classList.remove('open');}
 function excluirUsuario(i){
+  if(!_activeUser||_activeUser.role!=='Administrador'){
+    alert('Apenas administradores podem excluir usuários.');
+    return;
+  }
   if(USUARIOS.length<=1){alert('Deve haver pelo menos 1 usuário no sistema.');return;}
-  if(!confirm('Excluir usuário "'+USUARIOS[i].nome+'"?'))return;
+  var alvo=USUARIOS[i];
+  if(alvo.role==='Administrador'&&_countAdmins()<=1){
+    alert('Você é o único Administrador do sistema. Não é possível excluir esta conta — promova outro usuário a Administrador antes.');
+    return;
+  }
+  if(!confirm('Excluir usuário "'+alvo.nome+'"?'))return;
   USUARIOS.splice(i,1);salvarCFG();sbSalvarCFG('usuarios',USUARIOS);renderTabelaUsuarios();
 }
-function salvarUsuario(){
-  var nome=_cfgGet('mu-nome'),user=_cfgGet('mu-user').toLowerCase(),
-      pass=_cfgGet('mu-pass'),pass2=_cfgGet('mu-pass2'),
-      role=document.getElementById('mu-role').value,
-      avatar=_cfgGet('mu-avatar').toUpperCase().substring(0,2)||user.substring(0,2).toUpperCase();
+async function salvarUsuario(){
   var erroEl=document.getElementById('mu-erro');
   erroEl.style.display='none';
+  var isAdmin=!!(_activeUser&&_activeUser.role==='Administrador');
+  var isSelf=_editUserIdx!==null&&_activeUser&&USUARIOS[_editUserIdx].user===_activeUser.user;
+
+  if(_editUserIdx===null&&!isAdmin){
+    erroEl.textContent='Apenas administradores podem criar novos usuários.';erroEl.style.display='block';return;
+  }
+  if(_editUserIdx!==null&&!isAdmin&&!isSelf){
+    erroEl.textContent='Você só pode editar os seus próprios dados.';erroEl.style.display='block';return;
+  }
+
+  var nome=_cfgGet('mu-nome'),user=_cfgGet('mu-user').toLowerCase(),
+      pass=_cfgGet('mu-pass'),pass2=_cfgGet('mu-pass2'),passAtual=_cfgGet('mu-pass-atual'),
+      pin=_cfgGet('mu-pin'),pin2=_cfgGet('mu-pin2'),pinAtual=_cfgGet('mu-pin-atual'),
+      role=document.getElementById('mu-role').value,
+      avatar=_cfgGet('mu-avatar').toUpperCase().substring(0,2)||user.substring(0,2).toUpperCase();
+
+  // Não-administrador editando a si mesmo não pode mudar login nem perfil/permissões
+  if(!isAdmin&&isSelf){
+    var atualUser=USUARIOS[_editUserIdx];
+    user=atualUser.user;
+    role=atualUser.role;
+  }
+
   if(!nome||!user){erroEl.textContent='Nome e login são obrigatórios.';erroEl.style.display='block';return;}
+  if(_editUserIdx!==null&&USUARIOS[_editUserIdx].role==='Administrador'&&role!=='Administrador'&&_countAdmins()<=1){
+    erroEl.textContent='Este é o único Administrador do sistema. Promova outro usuário a Administrador antes de trocar este perfil.';erroEl.style.display='block';return;
+  }
   if(_editUserIdx===null&&!pass){erroEl.textContent='Informe uma senha.';erroEl.style.display='block';return;}
   if(pass&&pass.length<4){erroEl.textContent='A senha deve ter pelo menos 4 caracteres.';erroEl.style.display='block';return;}
   if(pass&&pass!==pass2){erroEl.textContent='As senhas não coincidem.';erroEl.style.display='block';return;}
+  if((pin||pin2)&&!/^\d{4}$/.test(pin)){erroEl.textContent='O PIN deve ter exatamente 4 dígitos.';erroEl.style.display='block';return;}
+  if(pin&&pin!==pin2){erroEl.textContent='Os PINs não coincidem.';erroEl.style.display='block';return;}
+
+  // Trocar a PRÓPRIA senha/PIN exige confirmar a credencial atual (mesmo para Administrador)
+  if(isSelf&&pass){
+    if(!passAtual){erroEl.textContent='Digite sua senha atual para confirmar a troca de senha.';erroEl.style.display='block';return;}
+    if(!(await _verificarSenhaAtual(USUARIOS[_editUserIdx],passAtual))){erroEl.textContent='Senha atual incorreta.';erroEl.style.display='block';return;}
+  }
+  if(isSelf&&pin&&USUARIOS[_editUserIdx].pinHash){
+    if(!pinAtual){erroEl.textContent='Digite seu PIN atual para confirmar a troca de PIN.';erroEl.style.display='block';return;}
+    if(!(await _verificarPinAtual(USUARIOS[_editUserIdx],pinAtual))){erroEl.textContent='PIN atual incorreto.';erroEl.style.display='block';return;}
+  }
+
   // Verifica login duplicado
   var dupIdx=USUARIOS.findIndex(function(u,i){return u.user===user&&i!==_editUserIdx;});
   if(dupIdx>=0){erroEl.textContent='Este login já está em uso.';erroEl.style.display='block';return;}
-  var permissoes=_getPermGridValues();
+
+  var permissoes=isAdmin?_getPermGridValues():null;
+  var passSalt,passHash;
+  if(pass){passSalt=_randomSalt();passHash=await _hashPass(pass,passSalt);}
+  var pinSalt,pinHash;
+  if(pin){pinSalt=_randomSalt();pinHash=await _hashPin(pin,pinSalt);}
+
   if(_editUserIdx!==null){
     var u=USUARIOS[_editUserIdx];
-    u.nome=nome;u.user=user;u.role=role;u.avatar=avatar;u.permissoes=permissoes;
-    if(pass)u.pass=pass;
+    u.nome=nome;u.avatar=avatar;
+    if(isAdmin){u.user=user;u.role=role;u.permissoes=permissoes;}
+    if(pass){u.passHash=passHash;u.passSalt=passSalt;delete u.pass;}
+    if(pin){u.pinHash=pinHash;u.pinSalt=pinSalt;}
   } else {
-    USUARIOS.push({user:user,pass:pass,nome:nome,role:role,avatar:avatar,permissoes:permissoes});
+    var novo={user:user,nome:nome,role:role,avatar:avatar,permissoes:permissoes||[]};
+    novo.passHash=passHash;novo.passSalt=passSalt;
+    if(pin){novo.pinHash=pinHash;novo.pinSalt=pinSalt;}
+    USUARIOS.push(novo);
   }
   salvarCFG();fecharModalUsuario();renderTabelaUsuarios();
   sbSalvarCFG('usuarios', USUARIOS);
+  if(isSelf&&pin)_updatePinTs(); // acabou de reconfirmar identidade com o PIN atual, não precisa pedir de novo agora
   _cfgToast('✅ Usuário '+nome+' salvo com sucesso!');
 }
 
@@ -9732,7 +10051,7 @@ var BIO = (function(){
     if(ls){ ls.classList.remove('hide'); }
     _activeUser = null;
     clearTimeout(_timer);
-    localStorage.removeItem('ads_user');
+    _clearSession();
   }
 
   return {
