@@ -1440,7 +1440,7 @@ td.bold{color:var(--white);font-weight:700}
   </div>
   <div class="panel"><div class="panel-bd" style="padding:0 16px">
     <table>
-      <thead><tr><th>Nome</th><th>Descrição</th><th>Data</th><th>Pgto</th><th>Status</th><th>Serviço R$</th><th>Peças R$</th><th>Desl. R$</th><th>Líquido</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Data</th><th>Nome</th><th>Descrição</th><th>Pgto</th><th>Status</th><th>Serviço R$</th><th>Peças R$</th><th>Desl. R$</th><th>Líquido</th><th>Ações</th></tr></thead>
       <tbody id="fin-table-body"></tbody>
     </table>
     <div id="fin-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum lançamento. Conclua um orçamento para lançar aqui.</div>
@@ -7020,6 +7020,16 @@ function renderFinanceiroPage(){
     return true;
   });
 
+  function _finDataOrdenavel(f){
+    if(f.dataRaw)return f.dataRaw; // já é 'AAAA-MM-DD', comparável direto
+    if(f.data&&f.data.includes('/')){
+      var p=f.data.split('/');
+      if(p.length===3)return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+    }
+    return '';
+  }
+  lista.sort(function(a,b){return _finDataOrdenavel(a).localeCompare(_finDataOrdenavel(b));});
+
   var totalRec=0,totalAReceber=0,totalPecas=0,totalDesloc=0;
   lista.forEach(function(f){
     var pago=f.tipoLanc==='recebido'||f.finStatus==='pago'||f.finStatus==='parcial';
@@ -7052,9 +7062,9 @@ function renderFinanceiroPage(){
     var liq=(f.val||0)-(f.pecas||0)-(f.desloc||0);
     var finStatusBadge=f.finStatus?getFinStatusBadge(f.finStatus):'<span class="badge badge-fin-pendente" style="font-size:9px">⚪ A Receber</span>';
     var tr=document.createElement('tr');
-    tr.innerHTML='<td class="bold">'+(f.nome||f.cli||'—')+'</td>'+
+    tr.innerHTML='<td>'+f.data+'</td>'+
+      '<td class="bold">'+(f.nome||f.cli||'—')+'</td>'+
       '<td style="color:var(--silver2);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.desc+'</td>'+
-      '<td>'+f.data+'</td>'+
       '<td>'+f.pgto+'</td>'+
       '<td>'+finStatusBadge+'</td>'+
       '<td style="color:var(--green2);font-weight:700">'+_mascaraValor(f.val,_finRev)+'</td>'+
