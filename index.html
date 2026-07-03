@@ -7030,6 +7030,14 @@ function renderFinanceiroPage(){
   }
   lista.sort(function(a,b){return _finDataOrdenavel(a).localeCompare(_finDataOrdenavel(b));});
 
+  // Exibição sempre em DD/MM/AAAA, mesmo se o dado salvo estiver em AAAA-MM-DD
+  function _finDataExibicao(f){
+    if(f.dataRaw)return fmtDateBr(f.dataRaw);
+    if(f.data&&f.data.includes('/'))return f.data;
+    if(f.data&&f.data.includes('-'))return fmtDateBr(f.data);
+    return f.data||'—';
+  }
+
   var totalRec=0,totalAReceber=0,totalPecas=0,totalDesloc=0;
   lista.forEach(function(f){
     var pago=f.tipoLanc==='recebido'||f.finStatus==='pago'||f.finStatus==='parcial';
@@ -7062,7 +7070,7 @@ function renderFinanceiroPage(){
     var liq=(f.val||0)-(f.pecas||0)-(f.desloc||0);
     var finStatusBadge=f.finStatus?getFinStatusBadge(f.finStatus):'<span class="badge badge-fin-pendente" style="font-size:9px">⚪ A Receber</span>';
     var tr=document.createElement('tr');
-    tr.innerHTML='<td>'+f.data+'</td>'+
+    tr.innerHTML='<td>'+_finDataExibicao(f)+'</td>'+
       '<td class="bold">'+(f.nome||f.cli||'—')+'</td>'+
       '<td style="color:var(--silver2);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.desc+'</td>'+
       '<td>'+f.pgto+'</td>'+
