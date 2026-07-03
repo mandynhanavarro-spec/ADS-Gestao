@@ -602,6 +602,18 @@ td.bold{color:var(--white);font-weight:700}
     <span style="font-size:12px;color:var(--silver);margin-left:4px" id="orc-count-label"></span>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       <input class="fi" id="orc-search" style="width:160px" placeholder="🔍 Buscar..." oninput="renderOrcTable()">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px">
+        <span style="font-size:11px;color:var(--silver2);font-weight:700">📅 Mês:</span>
+        <select class="fs" id="orc-filter-mes" style="background:transparent;border:none;font-size:11px;padding:0;min-width:70px" onchange="renderOrcTable()">
+          <option value="">Todos</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select class="fs" id="orc-filter-ano" style="background:transparent;border:none;font-size:11px;padding:0;min-width:60px" onchange="renderOrcTable()">
+        </select>
+      </div>
       <select class="fs" id="orc-filter-status" style="font-size:11px" onchange="renderOrcTable()">
         <option value="">Todos os status</option>
         <option value="negociacao">Em Negociação</option>
@@ -617,7 +629,7 @@ td.bold{color:var(--white);font-weight:700}
   <div class="panel desktop-table">
     <div class="panel-bd" style="padding:0 16px">
       <table>
-        <thead><tr><th width="50">#</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Pgto</th><th>Status Serviço</th><th>Status Financeiro</th><th width="200">Ações</th></tr></thead>
+        <thead><tr><th width="50">#</th><th width="90">Data</th><th width="140">Cliente</th><th width="220">Serviço</th><th width="100">Valor</th><th width="110">Pgto</th><th width="150">Status Serviço</th><th width="90">Status Financeiro</th><th width="200">Ações</th></tr></thead>
         <tbody id="orc-table-body"></tbody>
       </table>
     </div>
@@ -3388,7 +3400,7 @@ function goPage(id){
   if(id==='rapido')resetFlow();
   if(id==='servicos')renderTplManage();
   if(id==='materiais')renderMateriaisPage();
-  if(id==='orcamentos'){renderOrcTable();atualizarContadores();}
+  if(id==='orcamentos'){initOrcFiltros();renderOrcTable();atualizarContadores();}
   if(id==='clientes')renderClientesPage();
   if(id==='recibos')renderRecibosPage();
   if(id==='financeiro'){initFinanceiroFiltros();renderFinanceiroPage();}
@@ -6991,6 +7003,29 @@ function initFinanceiroFiltros(){
   });
 }
 
+// ════════════ ORÇAMENTOS — FILTRO MÊS/ANO ══════════════
+function initOrcFiltros(){
+  var anoEl=document.getElementById('orc-filter-ano');
+  if(!anoEl)return;
+  var anosSet=new Set();
+  orcamentos.forEach(function(o){
+    var raw=o.dataRaw||'';
+    if(raw&&raw.includes('-'))anosSet.add(raw.split('-')[0]);
+    else if(o.data&&o.data.includes('/')){var p=o.data.split('/');if(p[2])anosSet.add(p[2]);}
+    else if(o.data&&o.data.includes('-'))anosSet.add(o.data.split('-')[0]);
+  });
+  var anoAtual=new Date().getFullYear().toString();
+  anosSet.add(anoAtual);
+  var anos=Array.from(anosSet).sort().reverse();
+  anoEl.innerHTML='';
+  anos.forEach(function(a){
+    var opt=document.createElement('option');
+    opt.value=a;opt.textContent=a;
+    if(a===anoAtual)opt.selected=true;
+    anoEl.appendChild(opt);
+  });
+}
+
 function renderFinanceiroPage(){
   // Inicializa filtro de anos se necessário
   var anoEl=document.getElementById('fin-filter-ano');
@@ -7693,13 +7728,44 @@ function renderOrcTable(){
   var tb=document.getElementById('orc-table-body');
   var mobList=document.getElementById('orc-mob-list');
   if(!tb)return;
+  var anoElChk=document.getElementById('orc-filter-ano');
+  if(anoElChk&&anoElChk.options.length===0)initOrcFiltros();
+
+  function _orcDataOrdenavel(o){
+    if(o.dataRaw)return o.dataRaw; // já é 'AAAA-MM-DD', comparável direto
+    if(o.data&&o.data.includes('/')){
+      var p=o.data.split('/');
+      if(p.length===3)return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+    }
+    if(o.data&&o.data.includes('-'))return o.data; // já em AAAA-MM-DD
+    return '';
+  }
+  function _orcDataExibicao(o){
+    if(o.dataRaw)return fmtDateBr(o.dataRaw);
+    if(o.data&&o.data.includes('/'))return o.data;
+    if(o.data&&o.data.includes('-'))return fmtDateBr(o.data);
+    return '—';
+  }
+
   var busca=((document.getElementById('orc-search')||{}).value||'').toLowerCase();
   var filtroStatus=((document.getElementById('orc-filter-status')||{}).value||'');
+  var mesFil=((document.getElementById('orc-filter-mes')||{}).value||'');
+  var anoFil=((document.getElementById('orc-filter-ano')||{}).value||'');
   var lista=orcamentos.filter(function(o){
     var matchBusca=!busca||(o.cli.toLowerCase().includes(busca)||o.serv.toLowerCase().includes(busca)||('#'+o.num).includes(busca));
     var matchStatus=!filtroStatus||o.status===filtroStatus;
-    return matchBusca&&matchStatus;
+    var matchData=true;
+    if(mesFil||anoFil){
+      var iso=_orcDataOrdenavel(o);
+      var ano=iso?iso.substring(0,4):'';
+      var mes=iso?String(parseInt(iso.substring(5,7),10)):'';
+      if(mesFil&&mes!==mesFil)matchData=false;
+      if(anoFil&&ano!==anoFil)matchData=false;
+    }
+    return matchBusca&&matchStatus&&matchData;
   });
+  lista.sort(function(a,b){return _orcDataOrdenavel(a).localeCompare(_orcDataOrdenavel(b));});
+
   tb.innerHTML='';
   if(mobList)mobList.innerHTML='';
   lista.forEach(function(o){
@@ -7733,6 +7799,7 @@ function renderOrcTable(){
       acoes.appendChild(btnEdit);acoes.appendChild(btnAprov);acoes.appendChild(btnEmitir);acoes.appendChild(btnPgto);acoes.appendChild(btnPDF);acoes.appendChild(btnDel);
     })(o, orcamentos.indexOf(o));
     var tdNum=document.createElement('td');tdNum.innerHTML='<span style="font-weight:800;color:var(--blue3)">#'+o.num+'</span>';
+    var tdData=document.createElement('td');tdData.textContent=_orcDataExibicao(o);
     var tdCli=document.createElement('td');tdCli.innerHTML='<span style="font-weight:700">'+o.cli+'</span>';
     var tdServ=document.createElement('td');tdServ.style.color='var(--silver2)';tdServ.textContent=o.serv;
     var tdVal=document.createElement('td');tdVal.innerHTML='<span style="color:var(--green2);font-weight:700">'+fmtVal(o.val)+'</span>';
@@ -7740,7 +7807,7 @@ function renderOrcTable(){
     var tdStatus=document.createElement('td');tdStatus.appendChild(sel);
     var tdFinStatus=document.createElement('td');tdFinStatus.innerHTML=o.finStatus?getFinStatusBadge(o.finStatus):'<span style="color:var(--silver);font-size:10px">—</span>';
     var tdAcoes=document.createElement('td');tdAcoes.appendChild(acoes);
-    [tdNum,tdCli,tdServ,tdVal,tdPgto,tdStatus,tdFinStatus,tdAcoes].forEach(function(td){tr.appendChild(td);});
+    [tdNum,tdData,tdCli,tdServ,tdVal,tdPgto,tdStatus,tdFinStatus,tdAcoes].forEach(function(td){tr.appendChild(td);});
     tb.appendChild(tr);
 
     // ── MOBILE CARD ──
@@ -10203,6 +10270,8 @@ function togglePixInfo(selectId, infoBoxId){
 (function(){
   var mesEl=document.getElementById('fin-filter-mes');
   if(mesEl){var m=new Date().getMonth()+1;mesEl.value=String(m);}
+  var mesOrcEl=document.getElementById('orc-filter-mes');
+  if(mesOrcEl){var mo=new Date().getMonth()+1;mesOrcEl.value=String(mo);}
   // Inicializa info Pix nos selects que já estão com Pix selecionado por padrão
   setTimeout(function(){
     [['f-pgto','pix-info-orc'],['nof-pgto','pix-info-nof'],['so-pgto','pix-info-so'],['eo-pgto','pix-info-eo']]
