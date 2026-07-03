@@ -44,6 +44,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 /* ═══ CADASTRO DE PIN (primeiro login) ═══ */
 #pin-setup-screen{position:fixed;inset:0;background:var(--bg);z-index:10002;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
 #pin-setup-screen.active{display:flex}
+
+/* ═══ REVELAR VALORES SENSÍVEIS (Financeiro/Relatórios) ═══ */
+#pin-reveal-screen{position:fixed;inset:0;background:var(--bg);z-index:10001;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+#pin-reveal-screen.active{display:flex}
 .bio-logo{width:64px;height:64px;background:var(--blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;border:1px solid var(--border2);box-shadow:0 0 32px rgba(37,99,235,.25)}
 .bio-title{font-size:20px;font-weight:800;color:var(--white);margin-bottom:6px;text-align:center}
 .bio-sub{font-size:12px;color:var(--silver);margin-bottom:36px;text-align:center;letter-spacing:.5px}
@@ -387,6 +391,17 @@ td.bold{color:var(--white);font-weight:700}
   <input class="login-field pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-setup-input2" placeholder="Confirmar PIN" onkeydown="if(event.key==='Enter')salvarPinSetup()">
   <button class="login-btn" style="max-width:200px" onclick="salvarPinSetup()">Salvar PIN</button>
   <div class="login-err" id="pin-setup-err"></div>
+</div>
+
+<!-- REVELAR VALORES SENSÍVEIS (Financeiro/Relatórios) — variação cancelável do pin-lock-screen -->
+<div id="pin-reveal-screen">
+  <div class="bio-logo">👁️</div>
+  <div class="bio-title">Confirmar identidade</div>
+  <div class="bio-sub" id="pin-reveal-label">Digite seu PIN para revelar os valores</div>
+  <input class="login-field pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="pin-reveal-input" placeholder="••••" onkeydown="if(event.key==='Enter')confirmarPinRevelar()">
+  <button class="login-btn" style="max-width:200px" onclick="confirmarPinRevelar()">Confirmar</button>
+  <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="cancelarPinRevelar()">Cancelar</button>
+  <div class="login-err" id="pin-reveal-err">PIN incorreto</div>
 </div>
 
 <!-- SIDEBAR -->
@@ -1421,6 +1436,7 @@ td.bold{color:var(--white);font-weight:700}
         </select>
       </div>
     </div>
+    <button class="btn btn-ghost btn-sm" id="fin-reveal-btn" onclick="alternarValoresFinanceiro()">👁️ Revelar valores</button>
   </div>
   <div class="panel"><div class="panel-bd" style="padding:0 16px">
     <table>
@@ -1830,6 +1846,7 @@ td.bold{color:var(--white);font-weight:700}
       <span style="font-size:11px;color:var(--silver2);font-weight:700">📅 Ano:</span>
       <select class="fs" id="rel-ano" style="font-size:12px" onchange="renderRelatorios()"></select>
       <button class="btn btn-ghost btn-sm" onclick="renderRelatorios()">↻ Atualizar</button>
+      <button class="btn btn-ghost btn-sm" id="rel-reveal-btn" onclick="alternarValoresRelatorios()">👁️ Revelar valores</button>
     </div>
   </div>
 
@@ -3350,6 +3367,9 @@ function atualizarContadores(){
 
 // ════════════ NAVIGATION ════════════
 function goPage(id){
+  // Financeiro/Relatórios: valores sensíveis sempre voltam a ficar ocultos ao trocar de página
+  _finValoresRevelados=false;
+  _relValoresRevelados=false;
   // Verificar permissão
   if(typeof _activeUser!=='undefined'&&_activeUser){
     var _perm=_getPermissoes(_activeUser);
@@ -7011,10 +7031,12 @@ function renderFinanceiroPage(){
   var totalCusto=totalPecas+totalDesloc;
   var lucro=totalRec-totalCusto;
   var margem=totalRec>0?Math.round(lucro/totalRec*100):0;
-  document.getElementById('fin-receita').textContent=fmtVal(totalRec);
-  document.getElementById('fin-custo').textContent=fmtVal(totalCusto);
-  document.getElementById('fin-lucro').textContent=fmtVal(lucro);
-  document.getElementById('fin-margem').textContent='Margem: '+margem+'%'+(totalAReceber>0?' · A receber: '+fmtVal(totalAReceber):'');
+  var _finRev=_finValoresRevelados;
+  document.getElementById('fin-receita').textContent=_mascaraValor(totalRec,_finRev);
+  document.getElementById('fin-custo').textContent=_mascaraValor(totalCusto,_finRev);
+  document.getElementById('fin-lucro').textContent=_mascaraValor(lucro,_finRev);
+  document.getElementById('fin-margem').textContent='Margem: '+_mascaraPct(margem,_finRev)+(totalAReceber>0?' · A receber: '+_mascaraValor(totalAReceber,_finRev):'');
+  _atualizarBotaoRevelar('fin-reveal-btn',_finRev);
   var pend=orcamentos.filter(function(o){return o.status==='pendente'||o.status==='negociacao'||o.status==='execucao';}).length;
   document.getElementById('fin-pend').textContent=pend;
   var mesesNome=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -7035,10 +7057,10 @@ function renderFinanceiroPage(){
       '<td>'+f.data+'</td>'+
       '<td>'+f.pgto+'</td>'+
       '<td>'+finStatusBadge+'</td>'+
-      '<td style="color:var(--green2);font-weight:700">'+fmtVal(f.val)+'</td>'+
-      '<td style="color:var(--red)">'+fmtVal(f.pecas||0)+'</td>'+
-      '<td style="color:var(--red)">'+fmtVal(f.desloc||0)+'</td>'+
-      '<td style="color:var(--green2);font-weight:800">'+fmtVal(liq)+'</td>'+
+      '<td style="color:var(--green2);font-weight:700">'+_mascaraValor(f.val,_finRev)+'</td>'+
+      '<td style="color:var(--red)">'+_mascaraValor(f.pecas||0,_finRev)+'</td>'+
+      '<td style="color:var(--red)">'+_mascaraValor(f.desloc||0,_finRev)+'</td>'+
+      '<td style="color:var(--green2);font-weight:800">'+_mascaraValor(liq,_finRev)+'</td>'+
       '<td><div style="display:flex;gap:4px">'+
         '<button class="btn btn-ghost btn-sm" onclick="editarFinanceiro('+realIdx+')">✏️</button>'+
         '<button class="btn btn-red btn-sm" onclick="excluirFinanceiro('+realIdx+')">🗑</button>'+
@@ -7951,6 +7973,76 @@ async function _verificarSenhaAtual(user, senhaDigitada){
 async function _verificarPinAtual(user, pinDigitado){
   if(!user.pinHash||!user.pinSalt) return false;
   return (await _hashPin(pinDigitado,user.pinSalt))===user.pinHash;
+}
+
+// ── Revelar valores sensíveis (Financeiro/Relatórios) via PIN ─
+// Reaproveita _verificarPinAtual; variação cancelável do pin-lock-screen (não bloqueia o app).
+var _pinRevelarCallback=null;
+function _abrirPinRevelar(mensagem, callback){
+  _pinRevelarCallback=callback;
+  var el=document.getElementById('pin-reveal-screen');
+  var label=document.getElementById('pin-reveal-label');
+  if(label)label.textContent=mensagem||'Digite seu PIN para revelar os valores';
+  document.getElementById('pin-reveal-input').value='';
+  document.getElementById('pin-reveal-err').style.display='none';
+  el.classList.add('active');
+  setTimeout(function(){document.getElementById('pin-reveal-input').focus();},50);
+}
+function cancelarPinRevelar(){
+  document.getElementById('pin-reveal-screen').classList.remove('active');
+  _pinRevelarCallback=null;
+}
+async function confirmarPinRevelar(){
+  var pin=document.getElementById('pin-reveal-input').value;
+  var err=document.getElementById('pin-reveal-err');
+  if(!_activeUser||!_activeUser.pinHash){
+    err.textContent='PIN não cadastrado. Cadastre um PIN em Configurações.';err.style.display='block';return;
+  }
+  var ok=await _verificarPinAtual(_activeUser,pin);
+  if(ok){
+    document.getElementById('pin-reveal-screen').classList.remove('active');
+    var cb=_pinRevelarCallback;
+    _pinRevelarCallback=null;
+    if(cb)cb();
+  } else {
+    err.textContent='PIN incorreto. Tente novamente.';
+    err.style.display='block';
+    document.getElementById('pin-reveal-input').value='';
+    document.getElementById('pin-reveal-input').focus();
+  }
+}
+
+// ── Máscara de valores sensíveis (Financeiro/Relatórios) ──────
+var _finValoresRevelados=false;
+var _relValoresRevelados=false;
+function _mascaraValor(valor, revelado){return revelado?fmtVal(valor):'R$ ••••';}
+function _mascaraPct(pct, revelado){return revelado?(pct+'%'):'••%';}
+function _atualizarBotaoRevelar(id, revelado){
+  var btn=document.getElementById(id);
+  if(!btn)return;
+  btn.textContent=revelado?'🙈 Ocultar valores':'👁️ Revelar valores';
+}
+function alternarValoresFinanceiro(){
+  if(_finValoresRevelados){
+    _finValoresRevelados=false;
+    renderFinanceiroPage();
+    return;
+  }
+  _abrirPinRevelar('Digite seu PIN para revelar os valores do Financeiro', function(){
+    _finValoresRevelados=true;
+    renderFinanceiroPage();
+  });
+}
+function alternarValoresRelatorios(){
+  if(_relValoresRevelados){
+    _relValoresRevelados=false;
+    renderRelatorios();
+    return;
+  }
+  _abrirPinRevelar('Digite seu PIN para revelar os valores dos Relatórios', function(){
+    _relValoresRevelados=true;
+    renderRelatorios();
+  });
 }
 
 // ── Sessão do dia + checagem de PIN a cada 3h ─────────────────
@@ -9158,13 +9250,16 @@ function renderRelatorios(){
   var margemTotal=receitaTotal>0?Math.round(lucroTotal/receitaTotal*100):0;
   var ticketMedio=finAno.length>0?receitaTotal/finAno.length:0;
 
-  document.getElementById('rel-receita-anual').textContent=fmtVal(receitaTotal);
-  document.getElementById('rel-custo-anual').textContent=fmtVal(custoTotal);
-  document.getElementById('rel-lucro-anual').textContent=fmtVal(lucroTotal);
-  document.getElementById('rel-margem-anual').textContent='Margem: '+margemTotal+'%';
+  var _relRev=_relValoresRevelados;
+  var BARRA_NEUTRA=35;
+  document.getElementById('rel-receita-anual').textContent=_mascaraValor(receitaTotal,_relRev);
+  document.getElementById('rel-custo-anual').textContent=_mascaraValor(custoTotal,_relRev);
+  document.getElementById('rel-lucro-anual').textContent=_mascaraValor(lucroTotal,_relRev);
+  document.getElementById('rel-margem-anual').textContent='Margem: '+_mascaraPct(margemTotal,_relRev);
   document.getElementById('rel-receita-sub').textContent=finAno.length+' serviço'+(finAno.length!==1?'s':'');
-  document.getElementById('rel-ticket').textContent=fmtVal(ticketMedio);
+  document.getElementById('rel-ticket').textContent=_mascaraValor(ticketMedio,_relRev);
   if(document.getElementById('rel-ano-label'))document.getElementById('rel-ano-label').textContent='Ano '+anoSel;
+  _atualizarBotaoRevelar('rel-reveal-btn',_relRev);
 
   // ── Tabela anual mês a mês ──
   var mesesData=[];
@@ -9180,7 +9275,7 @@ function renderRelatorios(){
   var tbody=document.getElementById('rel-anual-tbody');
   tbody.innerHTML='';
   mesesData.forEach(function(d){
-    var barW=maxRec>0?Math.round(d.rec/maxRec*100):0;
+    var barW=_relRev?(maxRec>0?Math.round(d.rec/maxRec*100):0):BARRA_NEUTRA;
     var isAtual=(parseInt(anoSel)===new Date().getFullYear()&&d.mes===new Date().getMonth()+1);
     var liqColor=d.liq>=0?'var(--green2)':'var(--red)';
     var mgColor=d.mg>=50?'var(--green2)':d.mg>=25?'var(--amber)':'var(--red)';
@@ -9188,10 +9283,10 @@ function renderRelatorios(){
     if(isAtual)tr.style.background='rgba(37,99,235,0.07)';
     tr.innerHTML=
       '<td class="bold" style="white-space:nowrap">'+(isAtual?'▶ ':'')+d.nome+'</td>'+
-      '<td style="text-align:right;color:var(--green2);font-weight:700">'+fmtVal(d.rec)+'</td>'+
-      '<td style="text-align:right;color:var(--red)">'+fmtVal(d.cst)+'</td>'+
-      '<td style="text-align:right;font-weight:800;color:'+liqColor+'">'+fmtVal(d.liq)+'</td>'+
-      '<td style="text-align:right;color:'+mgColor+';font-weight:700">'+(d.rec>0?d.mg+'%':'—')+'</td>'+
+      '<td style="text-align:right;color:var(--green2);font-weight:700">'+_mascaraValor(d.rec,_relRev)+'</td>'+
+      '<td style="text-align:right;color:var(--red)">'+_mascaraValor(d.cst,_relRev)+'</td>'+
+      '<td style="text-align:right;font-weight:800;color:'+liqColor+'">'+_mascaraValor(d.liq,_relRev)+'</td>'+
+      '<td style="text-align:right;color:'+mgColor+';font-weight:700">'+(d.rec>0?_mascaraPct(d.mg,_relRev):'—')+'</td>'+
       '<td style="text-align:right;color:var(--silver2)">'+d.qtd+'</td>'+
       '<td style="width:120px;padding-left:8px">'+
         '<div style="background:var(--bg3);border-radius:3px;height:8px;overflow:hidden">'+
@@ -9204,10 +9299,10 @@ function renderRelatorios(){
   var tfoot=document.getElementById('rel-anual-tfoot');
   tfoot.innerHTML='<tr style="border-top:2px solid var(--border2)">'+
     '<td style="font-size:11px;font-weight:800;color:var(--white);padding-top:10px">TOTAL '+anoSel+'</td>'+
-    '<td style="text-align:right;font-weight:900;color:var(--green2);padding-top:10px">'+fmtVal(receitaTotal)+'</td>'+
-    '<td style="text-align:right;font-weight:800;color:var(--red);padding-top:10px">'+fmtVal(custoTotal)+'</td>'+
-    '<td style="text-align:right;font-weight:900;color:'+(lucroTotal>=0?'var(--green2)':'var(--red)')+';padding-top:10px">'+fmtVal(lucroTotal)+'</td>'+
-    '<td style="text-align:right;font-weight:800;color:var(--blue3);padding-top:10px">'+margemTotal+'%</td>'+
+    '<td style="text-align:right;font-weight:900;color:var(--green2);padding-top:10px">'+_mascaraValor(receitaTotal,_relRev)+'</td>'+
+    '<td style="text-align:right;font-weight:800;color:var(--red);padding-top:10px">'+_mascaraValor(custoTotal,_relRev)+'</td>'+
+    '<td style="text-align:right;font-weight:900;color:'+(lucroTotal>=0?'var(--green2)':'var(--red)')+';padding-top:10px">'+_mascaraValor(lucroTotal,_relRev)+'</td>'+
+    '<td style="text-align:right;font-weight:800;color:var(--blue3);padding-top:10px">'+_mascaraPct(margemTotal,_relRev)+'</td>'+
     '<td style="text-align:right;color:var(--silver2);padding-top:10px">'+finAno.length+'</td>'+
     '<td></td>'+
     '</tr>';
@@ -9270,7 +9365,7 @@ function renderRelatorios(){
       return '<tr>'+
         '<td style="color:var(--silver);font-size:11px">'+(i+1)+'</td>'+
         '<td class="bold">'+c.nm+'</td>'+
-        '<td style="text-align:right;color:var(--green2);font-weight:800">'+fmtVal(c.total)+'</td>'+
+        '<td style="text-align:right;color:var(--green2);font-weight:800">'+_mascaraValor(c.total,_relRev)+'</td>'+
         '<td style="text-align:right;color:var(--silver2)">'+c.qtd+'</td>'+
         '</tr>';
     }).join('');
@@ -9296,7 +9391,7 @@ function renderRelatorios(){
         '<td style="color:var(--silver);font-size:11px">'+(i+1)+'</td>'+
         '<td class="bold" style="font-size:11px">'+nm+'</td>'+
         '<td style="text-align:right;color:var(--blue3)">'+s.qtd+'</td>'+
-        '<td style="text-align:right;color:var(--green2);font-weight:700">'+fmtVal(s.total)+'</td>'+
+        '<td style="text-align:right;color:var(--green2);font-weight:700">'+_mascaraValor(s.total,_relRev)+'</td>'+
         '</tr>';
     }).join('');
   }
@@ -9317,12 +9412,12 @@ function renderRelatorios(){
   else{
     if(pgtoEmp)pgtoEmp.style.display='none';
     pgtoBars.innerHTML=pgtoArr.map(function(p){
-      var pct=maxPg>0?Math.round(p.total/maxPg*100):0;
+      var pct=_relRev?(maxPg>0?Math.round(p.total/maxPg*100):0):BARRA_NEUTRA;
       var cor=PGTO_COLORS[p.pg]||'var(--silver2)';
       return '<div>'+
         '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
           '<span style="font-size:11px;color:var(--white);font-weight:600">'+p.pg+'</span>'+
-          '<span style="font-size:11px;color:var(--silver2)">'+p.qtd+' × '+fmtVal(p.total)+'</span>'+
+          '<span style="font-size:11px;color:var(--silver2)">'+p.qtd+' × '+_mascaraValor(p.total,_relRev)+'</span>'+
         '</div>'+
         '<div style="background:var(--bg3);border-radius:4px;height:10px">'+
           '<div style="background:'+cor+';height:100%;width:'+pct+'%;border-radius:4px;opacity:.85;transition:.3s"></div>'+
@@ -9345,7 +9440,7 @@ function renderRelatorios(){
       return '<tr>'+
         '<td class="bold">'+m.nome+'</td>'+
         '<td style="text-align:right;color:var(--blue3);font-weight:700">'+m.qtd+'</td>'+
-        '<td style="text-align:right;color:var(--green2);font-weight:800">'+fmtVal(m.total)+'</td>'+
+        '<td style="text-align:right;color:var(--green2);font-weight:800">'+_mascaraValor(m.total,_relRev)+'</td>'+
         '</tr>';
     }).join('');
   }
