@@ -320,7 +320,7 @@ td.bold{color:var(--white);font-weight:700}
 }
 
 /* FINANCEIRO — controles (desktop uma linha / mobile duas linhas) */
-.fin-controls-desktop{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.fin-controls-desktop{display:flex;align-items:center;margin-bottom:10px;gap:8px}
 .fin-controls-mobile{display:none;flex-direction:column;gap:8px;margin-bottom:10px}
 @media (max-width: 768px) {
   .fin-controls-desktop { display: none; }
@@ -1448,22 +1448,20 @@ td.bold{color:var(--white);font-weight:700}
   </div>
   <!-- Controles Financeiro — DESKTOP (uma linha, ≥768px) -->
   <div class="fin-controls-desktop">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button class="btn btn-primary btn-sm" onclick="abrirLancamentoManual()">+ Lançar manualmente</button>
-      <input class="fi" id="fin-search-desktop" style="width:180px" placeholder="🔍 Buscar descrição..." oninput="_finOnControlChange('fin-search',this.value)">
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px">
-        <span style="font-size:11px;color:var(--silver2);font-weight:700">📅 Mês:</span>
-        <select class="fs" id="fin-filter-mes-desktop" style="background:transparent;border:none;font-size:11px;padding:0;min-width:70px" onchange="_finOnControlChange('fin-filter-mes',this.value)">
-          <option value="">Todos</option>
-          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
-          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
-          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
-          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
-        </select>
-        <select class="fs" id="fin-filter-ano-desktop" style="background:transparent;border:none;font-size:11px;padding:0;min-width:60px" onchange="_finOnControlChange('fin-filter-ano',this.value)">
-        </select>
-      </div>
+    <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px">
+      <span style="font-size:11px;color:var(--silver2);font-weight:700">📅 Mês:</span>
+      <select class="fs" id="fin-filter-mes-desktop" style="background:transparent;border:none;font-size:11px;padding:0;min-width:70px" onchange="_finOnControlChange('fin-filter-mes',this.value)">
+        <option value="">Todos</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+        <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select class="fs" id="fin-filter-ano-desktop" style="background:transparent;border:none;font-size:11px;padding:0;min-width:60px" onchange="_finOnControlChange('fin-filter-ano',this.value)">
+      </select>
     </div>
+    <button class="btn btn-primary btn-sm" onclick="abrirLancamentoManual()">+ Lançar manualmente</button>
+    <input class="fi" id="fin-search-desktop" style="flex:1" placeholder="🔍 Buscar descrição..." oninput="_finOnControlChange('fin-search',this.value)">
     <button class="btn btn-ghost btn-sm" id="fin-reveal-btn-desktop" onclick="alternarValoresFinanceiro()">👁️ Revelar valores</button>
   </div>
   <!-- Controles Financeiro — MOBILE (duas linhas, <768px) -->
