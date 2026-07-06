@@ -312,6 +312,13 @@ td.bold{color:var(--white);font-weight:700}
 .mob-card-actions .btn{flex:1;min-width:0;justify-content:center;font-size:11px;padding:6px 8px}
 .mob-card-status-sel{font-size:11px;padding:3px 6px;border-radius:6px;font-weight:700;border:1px solid var(--border2);background:var(--bg3);color:var(--white);font-family:inherit;margin-bottom:6px;width:100%}
 
+/* FINANCEIRO — cards mobile (lançamentos) */
+.fin-cards-view{display:none}
+@media (max-width: 768px) {
+  .fin-table-view { display: none; }
+  .fin-cards-view { display: block; }
+}
+
 /* CLIENT CARD in clientes page */
 .cli-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:all .12s;margin-bottom:8px}
 .cli-card:hover{border-color:var(--blue2);background:var(--card2)}
@@ -1450,13 +1457,14 @@ td.bold{color:var(--white);font-weight:700}
     </div>
     <button class="btn btn-ghost btn-sm" id="fin-reveal-btn" onclick="alternarValoresFinanceiro()">👁️ Revelar valores</button>
   </div>
-  <div class="panel"><div class="panel-bd" style="padding:0 16px">
+  <div class="panel fin-table-view"><div class="panel-bd" style="padding:0 16px">
     <table>
       <thead><tr><th>Data</th><th>Nome</th><th>Descrição</th><th>Pgto</th><th>Status</th><th>Serviço R$</th><th>Peças R$</th><th>Desl. R$</th><th>Líquido</th><th>Ações</th></tr></thead>
       <tbody id="fin-table-body"></tbody>
     </table>
-    <div id="fin-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum lançamento. Conclua um orçamento para lançar aqui.</div>
   </div></div>
+  <div class="fin-cards-view" id="fin-cards-view"></div>
+  <div id="fin-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum lançamento. Conclua um orçamento para lançar aqui.</div>
 </div>
 
 <!-- ══ PAGE: CONFIGURAÇÕES ══ -->
@@ -7033,6 +7041,7 @@ function renderFinanceiroPage(){
 
   var tb=document.getElementById('fin-table-body');
   var emp=document.getElementById('fin-empty');
+  var cardsView=document.getElementById('fin-cards-view');
   if(!tb)return;
   var busca=((document.getElementById('fin-search')||{}).value||'').toLowerCase();
   var mesFil=((document.getElementById('fin-filter-mes')||{}).value||'');
@@ -7096,10 +7105,11 @@ function renderFinanceiroPage(){
   var labelPeriodo=mesFil?(mesesNome[parseInt(mesFil)]+(anoFil?' /'+anoFil:'')):(anoFil?anoFil:'total');
   document.getElementById('fin-qtd-label').textContent=lista.length+' lançamento'+(lista.length!==1?'s':'')+' — '+labelPeriodo;
   if(lista.length===0){
-    tb.innerHTML='';if(emp)emp.style.display='block';return;
+    tb.innerHTML='';if(cardsView)cardsView.innerHTML='';if(emp)emp.style.display='block';return;
   }
   if(emp)emp.style.display='none';
   tb.innerHTML='';
+  if(cardsView)cardsView.innerHTML='';
   lista.forEach(function(f,i){
     var realIdx=financeiro.indexOf(f);
     var liq=(f.val||0)-(f.pecas||0)-(f.desloc||0);
@@ -7119,6 +7129,58 @@ function renderFinanceiroPage(){
         '<button class="btn btn-red btn-sm" onclick="excluirFinanceiro('+realIdx+')">🗑</button>'+
       '</div></td>';
     tb.appendChild(tr);
+
+    // ── CARD MOBILE (mesmos dados/handlers da linha acima) ──
+    if(cardsView){
+      var finClsMatch=finStatusBadge.match(/class="([^"]+)"/);
+      var finBadgeCls=finClsMatch?finClsMatch[1]:'badge badge-fin-pendente';
+      var finBadgeTxt=finStatusBadge.replace(/<[^>]+>/g,'').trim();
+      var card=document.createElement('div');
+      card.className='mob-card';
+      card.style.marginBottom='10px';
+      card.innerHTML=
+        '<div class="mob-card-top">'+
+          '<span style="font-size:11px;color:var(--silver2);font-weight:700">'+_finDataExibicao(f)+'</span>'+
+          '<span class="'+finBadgeCls+'" style="font-size:10px">'+(f.pgto?f.pgto+' • ':'')+finBadgeTxt+'</span>'+
+        '</div>'+
+        '<div class="mob-card-cli">'+(f.nome||f.cli||'—')+'</div>'+
+        '<div style="font-size:12px;color:var(--silver2);margin-bottom:10px;white-space:normal;word-break:break-word">'+f.desc+'</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'+
+          '<div style="background:var(--bg3);border-radius:7px;padding:8px 10px">'+
+            '<div style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Serviço R$</div>'+
+            '<div style="font-size:13px;font-weight:700;color:var(--green2)">'+_mascaraValor(f.val,_finRev)+'</div>'+
+          '</div>'+
+          '<div style="background:var(--bg3);border-radius:7px;padding:8px 10px">'+
+            '<div style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Peças R$</div>'+
+            '<div style="font-size:13px;font-weight:700;color:var(--red)">'+_mascaraValor(f.pecas||0,_finRev)+'</div>'+
+          '</div>'+
+          '<div style="background:var(--bg3);border-radius:7px;padding:8px 10px">'+
+            '<div style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Desl. R$</div>'+
+            '<div style="font-size:13px;font-weight:700;color:var(--red)">'+_mascaraValor(f.desloc||0,_finRev)+'</div>'+
+          '</div>'+
+          '<div style="background:var(--bg3);border-radius:7px;padding:8px 10px">'+
+            '<div style="font-size:9px;color:var(--silver);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Líquido</div>'+
+            '<div style="font-size:15px;font-weight:900;color:var(--green2)">'+_mascaraValor(liq,_finRev)+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="mob-card-actions"></div>';
+      var cardActions=card.querySelector('.mob-card-actions');
+      (function(idxRef){
+        var btnEdit=document.createElement('button');
+        btnEdit.className='btn btn-ghost';
+        btnEdit.style.cssText='flex:1;justify-content:center;min-height:44px';
+        btnEdit.textContent='✏️ Editar';
+        btnEdit.onclick=function(){editarFinanceiro(idxRef);};
+        var btnDel=document.createElement('button');
+        btnDel.className='btn btn-red';
+        btnDel.style.cssText='flex:1;justify-content:center;min-height:44px';
+        btnDel.textContent='🗑 Excluir';
+        btnDel.onclick=function(){excluirFinanceiro(idxRef);};
+        cardActions.appendChild(btnEdit);
+        cardActions.appendChild(btnDel);
+      })(realIdx);
+      cardsView.appendChild(card);
+    }
   });
 }
 
