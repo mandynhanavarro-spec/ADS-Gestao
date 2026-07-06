@@ -319,6 +319,14 @@ td.bold{color:var(--white);font-weight:700}
   .fin-cards-view { display: block; }
 }
 
+/* FINANCEIRO — controles (desktop uma linha / mobile duas linhas) */
+.fin-controls-desktop{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.fin-controls-mobile{display:none;flex-direction:column;gap:8px;margin-bottom:10px}
+@media (max-width: 768px) {
+  .fin-controls-desktop { display: none; }
+  .fin-controls-mobile { display: flex; }
+}
+
 /* CLIENT CARD in clientes page */
 .cli-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 14px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:all .12s;margin-bottom:8px}
 .cli-card:hover{border-color:var(--blue2);background:var(--card2)}
@@ -1438,24 +1446,45 @@ td.bold{color:var(--white);font-weight:700}
     <div class="stat sb"><div class="stat-label">Lucro Líquido</div><div class="stat-val blue" id="fin-lucro">R$ 0,00</div><div class="stat-d" id="fin-margem">Margem: —</div></div>
     <div class="stat sa"><div class="stat-label">Pendentes</div><div class="stat-val amber" id="fin-pend">0</div><div class="stat-d">orçamentos ativos</div></div>
   </div>
-  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-primary btn-sm" style="flex:1.4;justify-content:center;min-width:0" onclick="abrirLancamentoManual()">+ Lançar manualmente</button>
-      <button class="btn btn-ghost btn-sm" id="fin-reveal-btn" style="flex:1;justify-content:center;min-width:0" onclick="alternarValoresFinanceiro()">👁️ Revelar valores</button>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px;flex:1;min-width:0">
-        <select class="fs" id="fin-filter-mes" style="background:transparent;border:none;font-size:11px;padding:0;flex:1;min-width:0" onchange="renderFinanceiroPage()">
+  <!-- Controles Financeiro — DESKTOP (uma linha, ≥768px) -->
+  <div class="fin-controls-desktop">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="abrirLancamentoManual()">+ Lançar manualmente</button>
+      <input class="fi" id="fin-search-desktop" style="width:180px" placeholder="🔍 Buscar descrição..." oninput="_finOnControlChange('fin-search',this.value)">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px">
+        <span style="font-size:11px;color:var(--silver2);font-weight:700">📅 Mês:</span>
+        <select class="fs" id="fin-filter-mes-desktop" style="background:transparent;border:none;font-size:11px;padding:0;min-width:70px" onchange="_finOnControlChange('fin-filter-mes',this.value)">
           <option value="">Todos</option>
           <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
           <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
           <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
           <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
         </select>
-        <select class="fs" id="fin-filter-ano" style="background:transparent;border:none;font-size:11px;padding:0;flex:1;min-width:0" onchange="renderFinanceiroPage()">
+        <select class="fs" id="fin-filter-ano-desktop" style="background:transparent;border:none;font-size:11px;padding:0;min-width:60px" onchange="_finOnControlChange('fin-filter-ano',this.value)">
         </select>
       </div>
-      <input class="fi" id="fin-search" style="flex:1.3;min-width:0" placeholder="🔍 Buscar descrição..." oninput="renderFinanceiroPage()">
+    </div>
+    <button class="btn btn-ghost btn-sm" id="fin-reveal-btn-desktop" onclick="alternarValoresFinanceiro()">👁️ Revelar valores</button>
+  </div>
+  <!-- Controles Financeiro — MOBILE (duas linhas, <768px) -->
+  <div class="fin-controls-mobile">
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-primary btn-sm" style="flex:1.4;justify-content:center;min-width:0" onclick="abrirLancamentoManual()">+ Lançar manualmente</button>
+      <button class="btn btn-ghost btn-sm" id="fin-reveal-btn-mobile" style="flex:1;justify-content:center;min-width:0" onclick="alternarValoresFinanceiro()">👁️ Revelar valores</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:4px 10px;flex:1;min-width:0">
+        <select class="fs" id="fin-filter-mes-mobile" style="background:transparent;border:none;font-size:11px;padding:0;flex:1;min-width:0" onchange="_finOnControlChange('fin-filter-mes',this.value)">
+          <option value="">Todos</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select class="fs" id="fin-filter-ano-mobile" style="background:transparent;border:none;font-size:11px;padding:0;flex:1;min-width:0" onchange="_finOnControlChange('fin-filter-ano',this.value)">
+        </select>
+      </div>
+      <input class="fi" id="fin-search-mobile" style="flex:1.3;min-width:0" placeholder="🔍 Buscar descrição..." oninput="_finOnControlChange('fin-search',this.value)">
     </div>
   </div>
   <div class="panel fin-table-view"><div class="panel-bd" style="padding:0 16px">
@@ -2813,9 +2842,11 @@ function salvarLocal(){
     localStorage.setItem('ads_recibos',JSON.stringify(recibos));
     localStorage.setItem('ads_materiais',JSON.stringify(materiais));
     localStorage.setItem('ads_notasfiscais',JSON.stringify(notasFiscais));
-    // Atualiza lista de anos no filtro
-    var anoEl=document.getElementById('fin-filter-ano');
-    if(anoEl)anoEl.options.length=0;
+    // Atualiza lista de anos no filtro (desktop + mobile)
+    ['fin-filter-ano-desktop','fin-filter-ano-mobile'].forEach(function(id){
+      var anoEl=document.getElementById(id);
+      if(anoEl)anoEl.options.length=0;
+    });
   }catch(e){console.warn('Erro ao salvar local:',e);}
 }
 function carregarLocal(){
@@ -6990,10 +7021,23 @@ function salvarLancamentoManual(){
 }
 
 // ════════════ FINANCEIRO PAGE ════════════
+// Controles duplicados (desktop uma linha / mobile duas linhas) — mantém os dois
+// sincronizados, já que só um fica visível por vez (CSS/media query).
+function _finSyncInput(baseId, valor){
+  ['-desktop','-mobile'].forEach(function(suf){
+    var el=document.getElementById(baseId+suf);
+    if(el&&el.value!==valor)el.value=valor;
+  });
+}
+function _finOnControlChange(baseId, valor){
+  _finSyncInput(baseId, valor);
+  renderFinanceiroPage();
+}
+
 function initFinanceiroFiltros(){
-  // Preenche anos disponíveis + ano corrente
-  var anoEl=document.getElementById('fin-filter-ano');
-  if(!anoEl)return;
+  // Preenche anos disponíveis + ano corrente (nos dois selects, desktop e mobile)
+  var anoElDesktop=document.getElementById('fin-filter-ano-desktop');
+  if(!anoElDesktop)return;
   var anosSet=new Set();
   financeiro.forEach(function(f){
     var raw=f.dataRaw||'';
@@ -7003,12 +7047,16 @@ function initFinanceiroFiltros(){
   var anoAtual=new Date().getFullYear().toString();
   anosSet.add(anoAtual);
   var anos=Array.from(anosSet).sort().reverse();
-  anoEl.innerHTML='';
-  anos.forEach(function(a){
-    var opt=document.createElement('option');
-    opt.value=a;opt.textContent=a;
-    if(a===anoAtual)opt.selected=true;
-    anoEl.appendChild(opt);
+  ['fin-filter-ano-desktop','fin-filter-ano-mobile'].forEach(function(id){
+    var anoEl=document.getElementById(id);
+    if(!anoEl)return;
+    anoEl.innerHTML='';
+    anos.forEach(function(a){
+      var opt=document.createElement('option');
+      opt.value=a;opt.textContent=a;
+      if(a===anoAtual)opt.selected=true;
+      anoEl.appendChild(opt);
+    });
   });
 }
 
@@ -7037,16 +7085,16 @@ function initOrcFiltros(){
 
 function renderFinanceiroPage(){
   // Inicializa filtro de anos se necessário
-  var anoEl=document.getElementById('fin-filter-ano');
+  var anoEl=document.getElementById('fin-filter-ano-desktop');
   if(anoEl&&anoEl.options.length===0)initFinanceiroFiltros();
 
   var tb=document.getElementById('fin-table-body');
   var emp=document.getElementById('fin-empty');
   var cardsView=document.getElementById('fin-cards-view');
   if(!tb)return;
-  var busca=((document.getElementById('fin-search')||{}).value||'').toLowerCase();
-  var mesFil=((document.getElementById('fin-filter-mes')||{}).value||'');
-  var anoFil=((document.getElementById('fin-filter-ano')||{}).value||'');
+  var busca=((document.getElementById('fin-search-desktop')||{}).value||'').toLowerCase();
+  var mesFil=((document.getElementById('fin-filter-mes-desktop')||{}).value||'');
+  var anoFil=((document.getElementById('fin-filter-ano-desktop')||{}).value||'');
 
   function getAnoMes(f){
     var raw=f.dataRaw||'';
@@ -8166,9 +8214,12 @@ var _relValoresRevelados=false;
 function _mascaraValor(valor, revelado){return revelado?fmtVal(valor):'R$ ••••';}
 function _mascaraPct(pct, revelado){return revelado?(pct+'%'):'••%';}
 function _atualizarBotaoRevelar(id, revelado){
-  var btn=document.getElementById(id);
-  if(!btn)return;
-  btn.textContent=revelado?'🙈 Ocultar valores':'👁️ Revelar valores';
+  // Cobre tanto páginas com um único botão (ex: Relatórios) quanto páginas com
+  // versões duplicadas desktop/mobile (ex: Financeiro) — atualiza o que existir.
+  ['',  '-desktop', '-mobile'].forEach(function(suf){
+    var btn=document.getElementById(id+suf);
+    if(btn)btn.textContent=revelado?'🙈 Ocultar valores':'👁️ Revelar valores';
+  });
 }
 function alternarValoresFinanceiro(){
   if(_finValoresRevelados){
@@ -10331,8 +10382,11 @@ function togglePixInfo(selectId, infoBoxId){
 }
 
 (function(){
-  var mesEl=document.getElementById('fin-filter-mes');
-  if(mesEl){var m=new Date().getMonth()+1;mesEl.value=String(m);}
+  var mAtual=new Date().getMonth()+1;
+  ['fin-filter-mes-desktop','fin-filter-mes-mobile'].forEach(function(id){
+    var mesEl=document.getElementById(id);
+    if(mesEl)mesEl.value=String(mAtual);
+  });
   var mesOrcEl=document.getElementById('orc-filter-mes');
   if(mesOrcEl){var mo=new Date().getMonth()+1;mesOrcEl.value=String(mo);}
   // Inicializa info Pix nos selects que já estão com Pix selecionado por padrão
