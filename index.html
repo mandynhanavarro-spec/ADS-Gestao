@@ -32,10 +32,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .login-btn:hover{background:var(--blue2)}
 .login-err{color:var(--red);font-size:12px;margin-top:10px;display:none}
 
-/* ═══ BIOMETRIC LOCK (mobile only) ═══ */
-#bio-lock-screen{position:fixed;inset:0;background:var(--bg);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
-#bio-lock-screen.active{display:flex}
-
 /* ═══ PIN LOCK (checagem a cada 3h) ═══ */
 #pin-lock-screen{position:fixed;inset:0;background:var(--bg);z-index:10001;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
 #pin-lock-screen.active{display:flex}
@@ -51,15 +47,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .bio-logo{width:64px;height:64px;background:var(--blue);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;border:1px solid var(--border2);box-shadow:0 0 32px rgba(37,99,235,.25)}
 .bio-title{font-size:20px;font-weight:800;color:var(--white);margin-bottom:6px;text-align:center}
 .bio-sub{font-size:12px;color:var(--silver);margin-bottom:36px;text-align:center;letter-spacing:.5px}
-.bio-btn{width:80px;height:80px;border-radius:50%;background:rgba(37,99,235,.12);border:2px solid var(--blue2);display:flex;align-items:center;justify-content:center;font-size:36px;cursor:pointer;transition:all .2s;margin-bottom:20px}
-.bio-btn:hover,.bio-btn:active{background:rgba(37,99,235,.25);transform:scale(0.96)}
-.bio-btn.pulse{animation:bioPulse .6s ease}
-@keyframes bioPulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,.5)}70%{box-shadow:0 0 0 18px rgba(37,99,235,0)}100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}}
-.bio-status{font-size:12px;color:var(--silver2);min-height:20px;text-align:center;margin-bottom:16px}
-.bio-status.ok{color:var(--green2)}
-.bio-status.fail{color:var(--red)}
-.bio-alt{font-size:12px;color:var(--blue3);cursor:pointer;text-decoration:underline;margin-top:8px}
-.bio-user{font-size:13px;color:var(--silver2);margin-bottom:4px;font-weight:600}
 
 /* SIDEBAR */
 .sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
@@ -375,16 +362,6 @@ td.bold{color:var(--white);font-weight:700}
     <button class="login-btn" onclick="fazerLogin()">Entrar</button>
     <div class="login-err" id="login-err">Usuário ou senha incorretos</div>
   </div>
-</div>
-
-<!-- BIOMETRIC LOCK (mobile) -->
-<div id="bio-lock-screen">
-  <div class="bio-logo">🔐</div>
-  <div class="bio-title">ADS Gestão</div>
-  <div class="bio-sub" id="bio-user-label">Verificação necessária</div>
-  <div class="bio-btn" id="bio-btn" onclick="solicitarBiometria()">👆</div>
-  <div class="bio-status" id="bio-status">Toque para autenticar</div>
-  <div class="bio-alt" onclick="bioUsarSenha()">Usar usuário e senha</div>
 </div>
 
 <!-- PIN LOCK (checagem a cada 3h) -->
@@ -8135,7 +8112,6 @@ function aplicarUsuario(found){
   document.getElementById('user-avatar').textContent=found.avatar;
   _activeUser=found;
   _aplicarPermissoesMenu(found);
-  BIO.init(found);
   iniciarChecadorSessao();
   if(!found.pinHash){
     _abrirCadastroPin();
@@ -8402,8 +8378,6 @@ function fazerLogout(){
   if(!confirm('Deseja sair da conta?'))return;
   _clearSession();
   if(_sessaoCheckInterval)clearInterval(_sessaoCheckInterval);
-  // Limpa biometria se existir
-  if(window.BIO&&BIO.clearBio)BIO.clearBio();
   // Recarrega a página para voltar ao login
   location.reload();
 }
@@ -10128,237 +10102,6 @@ function resetarTudo(){
 function cfgEmpresa(){return CFG.empresa||{};}
 function cfgDoc(){return CFG.doc||{};}
 
-
-// ════════════ SISTEMA BIOMÉTRICO (mobile) ════════════
-var BIO = (function(){
-  var INACTIVITY_MINUTES = 5;
-  var _timer = null;
-  var _activeUser = null;
-  var _isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  var _bioAvailable = false;
-  var _bioRegistered = false;
-
-  function checkSupport(){
-    return !!(window.PublicKeyCredential && navigator.credentials && _isMobile);
-  }
-
-  function getBioIcon(){
-    if(/iPhone|iPad/.test(navigator.userAgent)) return '\uD83D\uDD10';
-    return '\uD83D\uDC46';
-  }
-
-  function updateBioBtn(){
-    var btn = document.getElementById('bio-btn');
-    if(btn) btn.textContent = getBioIcon();
-  }
-
-  function makeChallenge(){
-    var arr = new Uint8Array(32);
-    crypto.getRandomValues(arr);
-    return arr;
-  }
-
-  function bufToB64(buf){
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
-  }
-
-  function b64ToBuf(b64){
-    var bin = atob(b64);
-    var arr = new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-    return arr.buffer;
-  }
-
-  function saveCredential(credentialId, userId){
-    localStorage.setItem('ads_bio_cred', JSON.stringify({id: credentialId, uid: userId}));
-    localStorage.setItem('ads_bio_registered', '1');
-    _bioRegistered = true;
-  }
-
-  function loadCredential(){
-    try{
-      var d = localStorage.getItem('ads_bio_cred');
-      return d ? JSON.parse(d) : null;
-    }catch(e){ return null; }
-  }
-
-  function clearCredential(){
-    localStorage.removeItem('ads_bio_cred');
-    localStorage.removeItem('ads_bio_registered');
-    _bioRegistered = false;
-  }
-
-  async function registrar(userId){
-    if(!_bioAvailable) return false;
-    try{
-      var challenge = makeChallenge();
-      var publicKeyOptions = {
-        challenge: challenge,
-        rp: { name: 'ADS Gestao', id: location.hostname || 'localhost' },
-        user: {
-          id: new TextEncoder().encode(userId),
-          name: userId,
-          displayName: 'ADS Gestao'
-        },
-        pubKeyCredParams: [
-          {alg: -7, type: 'public-key'},
-          {alg: -257, type: 'public-key'}
-        ],
-        authenticatorSelection: {
-          authenticatorAttachment: 'platform',
-          userVerification: 'required',
-          requireResidentKey: false
-        },
-        timeout: 60000,
-        attestation: 'none'
-      };
-      var credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
-      if(credential){
-        var credId = bufToB64(credential.rawId);
-        saveCredential(credId, userId);
-        return true;
-      }
-    }catch(e){
-      console.warn('Registro biometrico cancelado:', e.message);
-    }
-    return false;
-  }
-
-  async function autenticar(){
-    if(!_bioAvailable) return false;
-    var cred = loadCredential();
-    if(!cred) return false;
-    try{
-      var challenge = makeChallenge();
-      var credId = b64ToBuf(cred.id);
-      var publicKeyOptions = {
-        challenge: challenge,
-        allowCredentials: [{
-          id: credId,
-          type: 'public-key',
-          transports: ['internal']
-        }],
-        userVerification: 'required',
-        timeout: 60000
-      };
-      var assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
-      return !!assertion;
-    }catch(e){
-      console.warn('Autenticacao biometrica falhou:', e.message);
-      return false;
-    }
-  }
-
-  function mostrarBloqueio(userName){
-    if(!_isMobile) return;
-    var el = document.getElementById('bio-lock-screen');
-    var status = document.getElementById('bio-status');
-    var label = document.getElementById('bio-user-label');
-    if(!el) return;
-    if(label) label.textContent = userName ? 'Ola, ' + userName : 'Verificacao necessaria';
-    if(status) status.textContent = 'Toque para autenticar';
-    if(status) status.className = 'bio-status';
-    el.classList.add('active');
-    updateBioBtn();
-    setTimeout(function(){ solicitarBiometria(); }, 600);
-  }
-
-  function esconderBloqueio(){
-    var el = document.getElementById('bio-lock-screen');
-    if(el) el.classList.remove('active');
-    resetTimer();
-  }
-
-  function resetTimer(){
-    if(!_isMobile) return;
-    clearTimeout(_timer);
-    _timer = setTimeout(function(){
-      if(_activeUser){ mostrarBloqueio(_activeUser.nome); }
-    }, INACTIVITY_MINUTES * 60 * 1000);
-  }
-
-  function setupVisibilityHandler(){
-    document.addEventListener('visibilitychange', function(){
-      if(document.hidden){
-        localStorage.setItem('ads_bio_lock_ts', Date.now().toString());
-      } else {
-        if(_activeUser && _isMobile){
-          var lockTS = parseInt(localStorage.getItem('ads_bio_lock_ts') || '0');
-          if(Date.now() - lockTS > 60000){
-            mostrarBloqueio(_activeUser.nome);
-          }
-        }
-      }
-    });
-  }
-
-  function setupActivityListeners(){
-    var events = ['touchstart','touchmove','click','keydown','scroll'];
-    events.forEach(function(ev){
-      document.addEventListener(ev, function(){ resetTimer(); }, {passive:true});
-    });
-  }
-
-  async function init(userObj){
-    _activeUser = userObj;
-    if(!_isMobile) return;
-    _bioAvailable = checkSupport();
-    _bioRegistered = !!localStorage.getItem('ads_bio_registered');
-    setupActivityListeners();
-    setupVisibilityHandler();
-    resetTimer();
-    if(_bioAvailable && !_bioRegistered){
-      setTimeout(async function(){
-        var ok = confirm('Deseja ativar login biometrico (Face ID / impressao digital) neste dispositivo?');
-        if(ok){
-          var registered = await registrar(userObj.user);
-          if(registered){
-            alert('Biometria ativada! Na proxima vez use seu biometrico para entrar.');
-          } else {
-            alert('Nao foi possivel ativar a biometria neste dispositivo. O login por senha continua funcionando.');
-          }
-        }
-      }, 1500);
-    }
-  }
-
-  async function solicitarBiometria_pub(){
-    var status = document.getElementById('bio-status');
-    var btn = document.getElementById('bio-btn');
-    if(status) status.textContent = 'Verificando identidade...';
-    if(status) status.className = 'bio-status';
-    if(btn){ btn.classList.add('pulse'); setTimeout(function(){btn.classList.remove('pulse');},700); }
-    var ok = await autenticar();
-    if(ok){
-      if(status){ status.textContent = 'Acesso liberado!'; status.className = 'bio-status ok'; }
-      setTimeout(function(){ esconderBloqueio(); }, 400);
-    } else {
-      if(status){ status.textContent = 'Autenticacao negada. Tente novamente.'; status.className = 'bio-status fail'; }
-    }
-  }
-
-  function bioUsarSenha_pub(){
-    clearCredential();
-    var el = document.getElementById('bio-lock-screen');
-    if(el) el.classList.remove('active');
-    var ls = document.getElementById('login-screen');
-    if(ls){ ls.classList.remove('hide'); }
-    _activeUser = null;
-    clearTimeout(_timer);
-    _clearSession();
-  }
-
-  return {
-    init: init,
-    autenticar: solicitarBiometria_pub,
-    fallback: bioUsarSenha_pub,
-    isMobile: function(){ return _isMobile; },
-    clearBio: clearCredential
-  };
-})();
-
-function solicitarBiometria(){ BIO.autenticar(); }
-function bioUsarSenha(){ BIO.fallback(); }
 
 // ════════════ PIX INFO DINÂMICO ════════════
 function togglePixInfo(selectId, infoBoxId){
