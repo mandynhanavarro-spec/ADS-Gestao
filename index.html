@@ -8518,6 +8518,108 @@ async function sbSalvarCFG(chave, valor){
   }catch(e){console.warn('sbSalvarCFG erro:',e);}
 }
 
+// ════════════ USUARIOS: salvar com merge por usuário + trava otimista ════════════
+// Resolve a condição de corrida do blob único 'usuarios' em configuracoes:
+// em vez de sobrescrever o array inteiro com o que está na memória local,
+// busca a versão mais recente do servidor, aplica só a mudança pretendida
+// (via transformFn) e só grava se ninguém mais tiver salvo entre a leitura
+// e a escrita (comparando atualizado_em). Se houver conflito, refaz o ciclo
+// (busca -> aplica -> tenta salvar) até MAX_TENTATIVAS vezes.
+//
+// transformFn(listaAtual) deve retornar a nova lista (pode mutar e retornar
+// a própria listaAtual, já que ela é sempre uma cópia). Pode lançar um Error
+// para abortar o salvamento por uma regra de negócio (ex: "único admin") —
+// nesse caso NÃO há retentativa, o erro é repassado para quem chamou.
+//
+// window.__pdfve_testHookAposLeitura, se definido, é aguardado logo após a
+// leitura em cada tentativa — existe só para os testes de corrida conseguirem
+// intercalar duas chamadas de forma determinística, sem depender de timing
+// real de rede. Não tem efeito em produção (fica undefined).
+var MAX_TENTATIVAS_SALVAR_USUARIOS = 3;
+async function salvarUsuariosComMerge(transformFn){
+  if(!SUPABASE_ATIVO||!sb){
+    // Modo local/offline: não há servidor compartilhado para conflitar.
+    try{
+      USUARIOS = transformFn(USUARIOS);
+    }catch(e){
+      console.warn('salvarUsuariosComMerge (local) erro de validação:', e.message||e);
+      return {ok:false, motivo:'validacao', mensagem:e.message||'Não foi possível salvar.'};
+    }
+    salvarCFG();
+    return {ok:true};
+  }
+  for(var tentativa=1; tentativa<=MAX_TENTATIVAS_SALVAR_USUARIOS; tentativa++){
+    var atual, versaoConhecida;
+    try{
+      var leitura = await sb.from('configuracoes').select('dados,atualizado_em').eq('id','usuarios').maybeSingle();
+      if(leitura.error) throw leitura.error;
+      if(leitura.data){
+        atual = leitura.data.dados || [];
+        versaoConhecida = leitura.data.atualizado_em;
+      } else {
+        atual = [];
+        versaoConhecida = null;
+      }
+    }catch(e){
+      console.warn('salvarUsuariosComMerge: erro ao buscar versão atual:', e.message||e);
+      return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Verifique sua conexão e tente novamente.'};
+    }
+
+    if(typeof window.__pdfve_testHookAposLeitura==='function'){
+      await window.__pdfve_testHookAposLeitura(tentativa);
+    }
+
+    var copiaParaTransformar = JSON.parse(JSON.stringify(atual));
+    var novaLista;
+    try{
+      novaLista = transformFn(copiaParaTransformar);
+    }catch(e){
+      console.warn('salvarUsuariosComMerge: transformFn rejeitou a mudança:', e.message||e);
+      return {ok:false, motivo:'validacao', mensagem:e.message||'Não foi possível salvar.'};
+    }
+    var novaVersao = new Date().toISOString();
+
+    try{
+      if(versaoConhecida===null){
+        // Não deveria acontecer em produção (a linha já existe), mas por segurança
+        // trata o caso de a linha 'usuarios' ainda não existir.
+        var ins = await sb.from('configuracoes').upsert(
+          {id:'usuarios', dados:novaLista, atualizado_em:novaVersao},
+          {onConflict:'id'}
+        ).select();
+        if(ins.error){
+          console.warn('salvarUsuariosComMerge: erro no upsert inicial:', ins.error.message||ins.error);
+          return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Tente novamente.'};
+        }
+        USUARIOS = novaLista;
+        salvarCFG();
+        return {ok:true};
+      }
+      var res = await sb.from('configuracoes')
+        .update({dados:novaLista, atualizado_em:novaVersao})
+        .eq('id','usuarios')
+        .eq('atualizado_em', versaoConhecida)
+        .select();
+      if(res.error){
+        console.warn('salvarUsuariosComMerge: erro ao salvar:', res.error.message||res.error);
+        return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Tente novamente.'};
+      }
+      if(res.data && res.data.length>0){
+        // Sucesso: ninguém mais salvou entre a leitura e a escrita.
+        USUARIOS = novaLista;
+        salvarCFG();
+        return {ok:true};
+      }
+      // Conflito: 0 linhas afetadas -> outra escrita aconteceu nesse meio-tempo.
+      console.warn('salvarUsuariosComMerge: conflito de versão na tentativa', tentativa, '- refazendo...');
+    }catch(e){
+      console.warn('salvarUsuariosComMerge: exceção ao salvar:', e.message||e);
+      return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Tente novamente.'};
+    }
+  }
+  return {ok:false, motivo:'conflito_esgotado', mensagem:'Não foi possível salvar: outra alteração aconteceu ao mesmo tempo. Tente novamente.'};
+}
+
 function aplicarUsuario(found){
   document.getElementById('login-screen').classList.add('hide');
   document.getElementById('user-name').textContent=found.nome;
