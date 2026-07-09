@@ -238,10 +238,6 @@ td.bold{color:var(--white);font-weight:700}
 .clr-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .12s}
 .clr-opt.sel{border-color:var(--white);transform:scale(1.2)}
 
-/* NF EXTRA */
-.nf-box{background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:8px;padding:11px;margin-top:9px}
-.nf-box-title{font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:7px}
-
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
@@ -1974,64 +1970,101 @@ td.bold{color:var(--white);font-weight:700}
 <div id="page-notafiscal" class="page">
   <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
     <div>
-      <div style="font-weight:800;font-size:15px">📑 Notas Fiscais de Serviço Eletrônicas (NFS-e MEI)</div>
-      <div style="font-size:11px;color:var(--silver);margin-top:2px">Gerenciar e acompanhar emissão de NFS-e junto à Prefeitura</div>
+      <div style="font-weight:800;font-size:15px">📑 Nota Fiscal</div>
+      <div style="font-size:11px;color:var(--silver);margin-top:2px">Registro assistido de NFS-e emitidas no Emissor Nacional</div>
     </div>
-    <button class="btn btn-primary" style="margin-left:auto" onclick="iniciarNovoOrcamento()">+ Emitir NFS-e</button>
-  </div>
-  <div class="panel" style="margin-bottom:16px">
-    <div class="panel-hd"><div class="panel-title">⚙️ Configuração da NFS-e MEI</div></div>
-    <div class="panel-bd">
-      <div class="speed-banner" style="margin-bottom:14px">
-        <span style="font-size:14px">⚠️</span>
-        <span><strong>Status:</strong> <span style="color:var(--amber)">Aguardando configuração</span> — Siga os passos abaixo para configurar sua NFS-e</span>
-      </div>
-      <div style="margin-bottom:16px">
-        <div style="font-weight:700;color:var(--white);margin-bottom:8px;font-size:13px">Dados Cadastrais Obrigatórios:</div>
-        <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">CNPJ (MEI)</div><input class="fi" id="nf-cnpj" placeholder="00.000.000/0000-00" value="20.989.538/0001-88"></div>
-          <div><div class="fl">Prefeitura Municipal</div>
-            <select class="fs" id="nf-prefeitura">
-              <option>-- Selecione sua cidade --</option><option selected>São Paulo</option>
-              <option>Guarulhos</option><option>Diadema</option><option>Santo André</option>
-              <option>São Bernardo do Campo</option><option>Outra</option>
-            </select>
-          </div>
-        </div>
-        <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Inscrição Municipal (RPA/IM)</div><input class="fi" id="nf-inscricao" placeholder="Ex: 1234567"></div>
-          <div><div class="fl">Senha de Acesso (Prefeitura)</div><input class="fi" type="password" id="nf-senha" placeholder="••••••••"></div>
-        </div>
-        <button class="btn btn-primary" onclick="alert('✅ Dados salvos!')">💾 Salvar Configuração</button>
-      </div>
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
-        <div style="font-weight:700;color:var(--white);margin-bottom:8px;font-size:13px">Dados da Empresa:</div>
-        <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Razão Social</div><input class="fi fi-filled" value="ADS Portões Automáticos LTDA"></div>
-          <div><div class="fl">Nome Fantasia</div><input class="fi fi-filled" value="ADS Portões"></div>
-        </div>
-        <div class="fgrid" style="margin-bottom:10px">
-          <div><div class="fl">Endereço da Empresa</div><input class="fi fi-filled" value="Av. Paulista, 1000 — São Paulo, SP"></div>
-        </div>
-      </div>
-    </div>
+    <button class="btn btn-primary" style="margin-left:auto" onclick="abrirModalRegistrarNF()">+ Registrar nota</button>
   </div>
   <div class="panel">
-    <div class="panel-hd"><div class="panel-title">📋 Histórico de NFS-e Emitidas</div></div>
+    <div class="panel-hd"><div class="panel-title">📋 Notas Fiscais Registradas</div></div>
     <div class="panel-bd" style="padding:0 16px">
       <table>
-        <thead><tr><th>NFS-e</th><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+        <thead><tr><th>Data</th><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Nº da NFS-e</th><th>Ações</th></tr></thead>
         <tbody id="nf-table-body"></tbody>
       </table>
-      <div id="nf-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhuma NFS-e emitida ainda.</div>
+      <div id="nf-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhuma nota fiscal registrada ainda.</div>
     </div>
   </div>
   <div style="margin-top:16px;background:rgba(37,99,235,.08);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--silver2)">
     <div style="font-weight:700;color:var(--white);margin-bottom:8px">💡 Como Funciona?</div>
-    <div style="margin-bottom:8px"><strong>1. Configuração:</strong> Insira seus dados de acesso à Prefeitura</div>
-    <div style="margin-bottom:8px"><strong>2. Emissão:</strong> Ao aprovar um orçamento, selecione "Nota Fiscal"</div>
-    <div style="margin-bottom:8px"><strong>3. Envio:</strong> O sistema comunica-se com a Prefeitura para validar e emitir</div>
-    <div><strong>4. Acompanhamento:</strong> Acompanhe o status, baixe XML e gere PDF na aba "Histórico"</div>
+    <div style="margin-bottom:8px"><strong>1. Selecione</strong> o lançamento do Financeiro referente ao serviço prestado</div>
+    <div style="margin-bottom:8px"><strong>2. Copie</strong> o CPF/CNPJ do cliente e a descrição do serviço, já preenchidos automaticamente</div>
+    <div style="margin-bottom:8px"><strong>3. Emita</strong> a nota no Emissor Nacional (nfse.gov.br) usando esses dados</div>
+    <div><strong>4. Registre</strong> aqui o número da NFS-e emitida para manter o histórico organizado</div>
+  </div>
+</div>
+
+<!-- ══ MODAL: REGISTRAR NOTA FISCAL (ficha assistida) ══ -->
+<div class="modal-bg" id="modal-registrar-nf">
+  <div class="modal" style="width:520px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">📑 Registrar Nota Fiscal</span>
+      <button class="modal-x" onclick="fecharModalRegistrarNF()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div style="margin-bottom:14px">
+        <div class="fl">Lançamento de origem (Financeiro)</div>
+        <select class="fs" id="nf-lanc-sel" style="width:100%" onchange="onSelecionarLancamentoNF()">
+          <option value="">-- Selecione um lançamento --</option>
+        </select>
+      </div>
+      <div id="nf-ficha-detalhes" style="display:none">
+        <div class="fgrid fg2" style="margin-bottom:10px">
+          <div><div class="fl">Data</div><input class="fi fi-filled" id="nf-ficha-data" readonly></div>
+          <div><div class="fl">Valor</div><input class="fi fi-filled" id="nf-ficha-valor" readonly></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div class="fl" style="display:flex;align-items:center;justify-content:space-between">
+            <span>CPF/CNPJ do Cliente</span>
+            <button class="btn btn-ghost btn-sm" id="nf-copy-cpf" style="padding:2px 8px;font-size:10px" onclick="copiarCampoNF('nf-ficha-cpf','nf-copy-cpf')">📋 Copiar</button>
+          </div>
+          <input class="fi" id="nf-ficha-cpf" readonly>
+          <div id="nf-ficha-cpf-aviso" style="display:none;color:var(--amber);font-size:11px;margin-top:4px">⚠️ CPF/CNPJ não encontrado no cadastro deste cliente. Cadastre-o em Clientes para preencher automaticamente.</div>
+        </div>
+        <div style="margin-bottom:14px">
+          <div class="fl" style="display:flex;align-items:center;justify-content:space-between">
+            <span>Descrição do Serviço</span>
+            <button class="btn btn-ghost btn-sm" id="nf-copy-desc" style="padding:2px 8px;font-size:10px" onclick="copiarCampoNF('nf-ficha-desc','nf-copy-desc')">📋 Copiar</button>
+          </div>
+          <textarea class="fi" id="nf-ficha-desc" readonly rows="2" style="resize:none"></textarea>
+        </div>
+        <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:8px;padding:12px;margin-bottom:8px">
+          <div style="font-size:11px;color:var(--silver2);margin-bottom:10px">Emita a nota no portal oficial usando os dados acima e depois registre o número aqui:</div>
+          <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="window.open('https://www.nfse.gov.br','_blank')">🌐 Abrir Emissor Nacional</button>
+          <div class="fl">Nº da NFS-e emitida</div>
+          <input class="fi" id="nf-ficha-num" placeholder="Ex: 12345">
+        </div>
+      </div>
+      <div id="nf-ficha-erro" style="color:var(--red);font-size:12px;display:none;margin-top:6px"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharModalRegistrarNF()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarRegistroNF()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: EDITAR NOTA FISCAL ══ -->
+<div class="modal-bg" id="modal-editar-nf">
+  <div class="modal" style="width:460px;max-width:98vw">
+    <div class="modal-hd">
+      <span class="modal-title">✏️ Editar Nota Fiscal</span>
+      <button class="modal-x" onclick="fecharModalEditarNF()">✕</button>
+    </div>
+    <div class="modal-bd">
+      <div class="fgrid fg2" style="margin-bottom:10px">
+        <div><div class="fl">Data</div><input class="fi" type="date" id="nf-edit-data"></div>
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" step="0.01" id="nf-edit-valor"></div>
+      </div>
+      <div style="margin-bottom:10px"><div class="fl">Cliente</div><input class="fi" id="nf-edit-cliente"></div>
+      <div style="margin-bottom:10px"><div class="fl">Descrição do Serviço</div><textarea class="fi" id="nf-edit-desc" rows="2" style="resize:none"></textarea></div>
+      <div style="margin-bottom:10px"><div class="fl">Nº da NFS-e</div><input class="fi" id="nf-edit-num"></div>
+      <div id="nf-edit-erro" style="color:var(--red);font-size:12px;display:none;margin-top:6px"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="fecharModalEditarNF()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicaoNF()">💾 Salvar</button>
+    </div>
   </div>
 </div>
 
@@ -2268,16 +2301,11 @@ td.bold{color:var(--white);font-weight:700}
         <div style="font-size:13px;color:var(--green2);font-weight:700;margin-top:3px" id="qdoc-modal-val"></div>
       </div>
       <div style="font-size:12px;color:var(--silver2);margin-bottom:12px;font-weight:600">Qual documento o cliente deseja?</div>
-      <div class="aprov-opts" style="grid-template-columns:repeat(3,1fr)">
+      <div class="aprov-opts" style="grid-template-columns:repeat(2,1fr)">
         <div class="aprov-opt qdoc-opt" onclick="pickQdoc(this,'recibo')">
           <div class="ao-ic">🧾</div>
           <div class="ao-lb">Recibo</div>
           <div class="ao-sb">Emitir PDF do recibo</div>
-        </div>
-        <div class="aprov-opt qdoc-opt" onclick="pickQdoc(this,'nf')">
-          <div class="ao-ic">📑</div>
-          <div class="ao-lb">Nota Fiscal</div>
-          <div class="ao-sb">NFS-e MEI</div>
         </div>
         <div class="aprov-opt qdoc-opt" onclick="pickQdoc(this,'financeiro')">
           <div class="ao-ic">💰</div>
@@ -3053,6 +3081,21 @@ async function carregarTodosDados() {
     });
   }
 
+  // Notas Fiscais (histórico) — tabela opcional; se ainda não existir no Supabase,
+  // o erro é ignorado e o app segue operando com o cache local (mesmo padrão do resto do app)
+  try {
+    const {data:nfs, error:eNF} = await sb.from('notasfiscais').select('*').order('criado_em', {ascending:false});
+    if (!eNF && nfs && nfs.length > 0) {
+      notasFiscais = nfs.map(function(n) {
+        return {
+          sbId: n.id, num: n.numero||'', cli: n.cliente||'',
+          desc: n.descricao||'', val: parseFloat(n.valor||0),
+          data: n.data||'', dataRaw: n.data_raw||'', cpf: n.cpf_cnpj||''
+        };
+      });
+    }
+  } catch(e) { /* tabela ainda não existe — ignora, segue com o cache local */ }
+
   // Materiais
   const {data:mats, error:eMat} = await sb.from('materiais').select('*').order('titulo');
   if (!eMat && mats && mats.length > 0) {
@@ -3364,6 +3407,31 @@ async function sbDeletarFinanceiro(sbId) {
   try { await sb.from('financeiro').delete().eq('id', sbId); } catch(e) {}
 }
 
+// ── SALVAR/DELETAR NOTA FISCAL (histórico) ────────────────────
+async function sbSalvarNotaFiscal(n) {
+  if (!SUPABASE_ATIVO) return;
+  const payload = {
+    numero: n.num||'', cliente: n.cli||'', descricao: n.desc||'',
+    valor: n.val||0, data: fmtDateSB(n.data, n.dataRaw), data_raw: n.dataRaw||'',
+    cpf_cnpj: n.cpf||''
+  };
+  try {
+    if (n.sbId) {
+      const {error} = await sb.from('notasfiscais').update(payload).eq('id', n.sbId);
+      if (error) console.warn('Erro ao atualizar nota fiscal:', error);
+    } else {
+      const {data, error} = await sb.from('notasfiscais').insert(payload).select('id').single();
+      if (error) console.warn('Erro ao inserir nota fiscal:', error);
+      else if (data) n.sbId = data.id;
+    }
+  } catch(e) { console.warn('Erro ao salvar nota fiscal:', e); }
+}
+
+async function sbDeletarNotaFiscal(sbId) {
+  if (!SUPABASE_ATIVO || !sbId) return;
+  try { await sb.from('notasfiscais').delete().eq('id', sbId); } catch(e) {}
+}
+
 // ── SALVAR MATERIAL ──────────────────────────────────────────
 async function sbSalvarMaterial(m) {
   if (!SUPABASE_ATIVO) return;
@@ -3411,7 +3479,7 @@ function goPage(id){
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
   var map={rapido:'⚡ Acesso Rápido',orcamentos:'📋 Orçamentos',clientes:'👥 Clientes',servicos:'🔧 Serviços',materiais:'📦 Materiais',recibos:'🧾 Recibos',notafiscal:'📑 Nota Fiscal',financeiro:'💰 Financeiro',relatorios:'📊 Relatórios',configuracoes:'⚙️ Configurações'};
-  var subs={rapido:'— modo campo',orcamentos:'— histórico e gestão',clientes:'— cadastro completo',servicos:'— editar seus serviços',materiais:'— gestão de peças e componentes',recibos:'— documentos emitidos',notafiscal:'— NFS-e MEI integrada',financeiro:'— controle de caixa',relatorios:'— visão completa do negócio',configuracoes:'— personalize o sistema'};
+  var subs={rapido:'— modo campo',orcamentos:'— histórico e gestão',clientes:'— cadastro completo',servicos:'— editar seus serviços',materiais:'— gestão de peças e componentes',recibos:'— documentos emitidos',notafiscal:'— registro assistido de NFS-e',financeiro:'— controle de caixa',relatorios:'— visão completa do negócio',configuracoes:'— personalize o sistema'};
   document.getElementById('pg-title').textContent=map[id]||id;
   document.getElementById('pg-sub').textContent=subs[id]||'';
   if(id==='rapido')resetFlow();
@@ -4266,49 +4334,6 @@ async function emitirDoc(){
     return;
   }
 
-  if(STATE.aprov==='nf'){
-    var numNF='NFS-e #'+Math.floor(1000+Math.random()*9000);
-    var nfRec={num:numNF,cli:f.cliente,serv:f.descricao.split('\n')[0],
-      val:f.valor,data:fmtDateBr(f.data),dataRaw:f.data,status:'Aguardando prefeitura'};
-    notasFiscais.unshift(nfRec);
-    financeiro.unshift(lancFin);
-    sbSalvarFinanceiro(lancFin);
-    salvarLocal();
-    atualizarContadores();
-    var corBadgeNF='background:rgba(139,92,246,.2);color:var(--purple)';
-    document.getElementById('doc-render').innerHTML=
-      '<div class="doc-preview">'+
-      '<div class="doc-hd"><div><div class="doc-co">ADS Portões Automáticos</div><div class="doc-co-sub">CNPJ 20.989.538/0001-88 · (11) 96770-4116</div></div>'+
-      '<div class="doc-type" style="'+corBadgeNF+'">NOTA FISCAL</div></div>'+
-      '<div class="doc-bd">'+
-      '<div style="font-size:10px;color:var(--silver);margin-bottom:8px;font-weight:700">'+numNF+' · '+fmtDateBr(f.data)+'</div>'+
-      '<div class="doc-row"><span class="doc-dl">Cliente</span><span class="doc-dv">'+f.cliente+'</span></div>'+
-      '<div class="doc-row"><span class="doc-dl">Telefone</span><span class="doc-dv">'+f.tel+'</span></div>'+
-      '<div class="doc-row"><span class="doc-dl">Endereço</span><span class="doc-dv">'+f.endereco+'</span></div>'+
-      '<div class="doc-row"><span class="doc-dl">Serviço</span><span class="doc-dv">'+f.descricao.split('\n')[0]+'</span></div>'+
-      '<div class="doc-row"><span class="doc-dl">Pagamento</span><span class="doc-dv">'+f.pagamento+'</span></div>'+
-      '<div class="nf-box"><div class="nf-box-title">📑 Dados Fiscais — NFS-e MEI</div>'+
-      '<div class="doc-row"><span class="doc-dl">CNPJ Prestador</span><span class="doc-dv">20.989.538/0001-88</span></div>'+
-      '<div class="doc-row"><span class="doc-dl">ISS (2%)</span><span class="doc-dv">'+fmtVal(f.valor*0.02)+'</span></div>'+
-      '<div class="doc-row" style="border:none"><span class="doc-dl">Status</span><span class="doc-dv" style="color:var(--amber)">Aguardando envio prefeitura</span></div></div>'+
-      '<div class="doc-total"><span style="font-size:12px;color:var(--silver2);font-weight:700">VALOR TOTAL</span>'+
-      '<span style="font-size:20px;font-weight:900;color:var(--green2)">'+fmtVal(f.valor)+'</span></div></div>'+
-      '<div class="doc-ft" style="flex-direction:column;gap:8px">'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'+
-      '<button class="btn btn-ghost" onclick="enviarWpp()">📲 WhatsApp</button>'+
-      '<button class="btn btn-ghost" style="margin-left:auto" onclick="resetFlow()">⚡ Novo orçamento</button>'+
-      '</div>'+
-      '<div style="width:100%;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:10px 14px">'+
-      '<div style="font-size:10px;color:var(--purple);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">💳 Forma de Pagamento</div>'+
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-      '<select class="fs" id="pgto-nf-sel" style="flex:1;min-width:160px">'+_pgtoOpts(f.pagamento)+'</select>'+
-      '<button class="btn btn-primary btn-sm" onclick="atualizarPgtoNF()">✅ Confirmar pagamento</button>'+
-      '</div></div>'+
-      '</div></div>';
-    showBlock('doc');setStep(5);
-    document.getElementById('blk-doc').scrollIntoView({behavior:'smooth',block:'nearest'});
-    return;
-  }
 }
 
 // ════════════ HELPERS — FORMA DE PAGAMENTO (Recibo / NF) ════════════
@@ -4329,19 +4354,6 @@ function atualizarPgtoRecibo(){
     if(SUPABASE_ATIVO)sbSalvarRecibo(recibos[0]);
   }
   gerarPDFRecibo(0);
-}
-
-function atualizarPgtoNF(){
-  var sel=document.getElementById('pgto-nf-sel');
-  if(!sel)return;
-  var novoPgto=sel.value;
-  if(notasFiscais.length>0){
-    notasFiscais[0].pgto=novoPgto;
-    salvarLocal();
-  }
-  var el=document.getElementById('pgto-nf-sel');
-  if(el)el.style.borderColor='var(--green)';
-  setTimeout(function(){if(el)el.style.borderColor='';},1500);
 }
 
 // ════════════ PDF RECIBO (jsPDF) ════════════
@@ -6330,26 +6342,6 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
     setTimeout(function(){gerarPDFReciboComStatus(0);},200);
     fecharAprovacaoModal();
 
-  } else if(tipo==='nf'){
-    var numNF='NFS-e #'+Math.floor(1000+Math.random()*9000);
-    notasFiscais.unshift({num:numNF,cli:o.cli,serv:o.serv||'',
-      val:o.val,data:dataFormatada,dataRaw:o.data||'',status:'Aguardando prefeitura'});
-    var lancFinNF={
-      desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
-      cli:o.cli,val:o.val,pgto:forma,
-      data:dataFormatada,dataRaw:o.data||'',
-      pecas:o.custoPecas||0,desloc:0,num:o.num,
-      finStatus:statusFin,tipoLanc:statusFin==='pago'?'recebido':'a_receber'
-    };
-    financeiro.unshift(lancFinNF);
-    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFinNF);
-    if(SUPABASE_ATIVO)await sbSalvarOrcamento(o);
-    salvarLocal();
-    renderOrcTable();
-    atualizarContadores();
-    fecharAprovacaoModal();
-    alert('✅ Nota Fiscal registrada!');
-
   } else if(tipo==='financeiro'){
     var lancFinDireto={
       desc:(o.serv||o.desc||'Serviço')+' — '+o.cli,
@@ -7618,22 +7610,149 @@ function renderNFPage(){
   tb.innerHTML='';
   notasFiscais.forEach(function(n,i){
     var tr=document.createElement('tr');
-    var statusBadge='<span class="badge badge-pend">'+n.status+'</span>';
-    tr.innerHTML='<td class="bold" style="color:var(--purple)">'+n.num+'</td>'+
-      '<td class="bold">'+n.cli+'</td>'+
-      '<td>'+n.serv+'</td>'+
-      '<td style="color:var(--green2);font-weight:700">'+fmtVal(n.val)+'</td>'+
-      '<td>'+n.data+'</td>'+
-      '<td>'+statusBadge+'</td>'+
-      '<td><button class="btn btn-red btn-sm" onclick="excluirNF('+i+')">🗑 Excluir</button></td>';
+    tr.innerHTML='<td>'+(n.data||'—')+'</td>'+
+      '<td class="bold">'+(n.cli||'—')+'</td>'+
+      '<td style="color:var(--silver2);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(n.desc||n.serv||'—')+'</td>'+
+      '<td style="color:var(--green2);font-weight:700">'+fmtVal(n.val||0)+'</td>'+
+      '<td class="bold" style="color:var(--purple)">'+(n.num||'—')+'</td>'+
+      '<td><div style="display:flex;gap:4px">'+
+        '<button class="btn btn-ghost btn-sm" onclick="abrirModalEditarNF('+i+')">✏️</button>'+
+        '<button class="btn btn-red btn-sm" onclick="excluirNF('+i+')">🗑</button>'+
+      '</div></td>';
     tb.appendChild(tr);
   });
 }
 
 function excluirNF(i){
-  if(!confirm('Excluir esta NFS-e do histórico? Esta ação não pode ser desfeita.'))return;
+  if(!confirm('Excluir esta nota fiscal do histórico? Esta ação não pode ser desfeita.'))return;
+  var n=notasFiscais[i];
+  if(n&&n.sbId)sbDeletarNotaFiscal(n.sbId);
   notasFiscais.splice(i,1);
+  salvarLocal();
   renderNFPage();
+}
+
+// ── Ficha assistida: registrar nova NFS-e a partir de um lançamento do Financeiro ──
+function abrirModalRegistrarNF(){
+  var sel=document.getElementById('nf-lanc-sel');
+  sel.innerHTML='<option value="">-- Selecione um lançamento --</option>'+
+    financeiro.map(function(f,i){
+      var rotulo=(f.data||'—')+' · '+(f.nome||f.cli||'—')+' · '+(f.desc||'').split('\n')[0]+' · '+fmtVal(f.val||0);
+      return '<option value="'+i+'">'+rotulo+'</option>';
+    }).join('');
+  document.getElementById('nf-ficha-detalhes').style.display='none';
+  document.getElementById('nf-ficha-erro').style.display='none';
+  _cfgSet('nf-ficha-num','');
+  document.getElementById('modal-registrar-nf').classList.add('open');
+}
+function fecharModalRegistrarNF(){document.getElementById('modal-registrar-nf').classList.remove('open');}
+
+function onSelecionarLancamentoNF(){
+  var sel=document.getElementById('nf-lanc-sel');
+  var det=document.getElementById('nf-ficha-detalhes');
+  if(sel.value===''){det.style.display='none';return;}
+  var f=financeiro[parseInt(sel.value,10)];
+  if(!f){det.style.display='none';return;}
+  det.style.display='block';
+  var nomeCliente=f.nome||f.cli||'';
+  _cfgSet('nf-ficha-data',f.data||'');
+  _cfgSet('nf-ficha-valor',fmtVal(f.val||0));
+  _cfgSet('nf-ficha-desc',f.desc||'');
+  var cliente=clientes.find(function(c){return (c.nm||'').trim().toLowerCase()===nomeCliente.trim().toLowerCase();});
+  var avisoEl=document.getElementById('nf-ficha-cpf-aviso');
+  if(cliente&&cliente.cpf){
+    _cfgSet('nf-ficha-cpf',cliente.cpf);
+    avisoEl.style.display='none';
+  } else {
+    _cfgSet('nf-ficha-cpf','');
+    avisoEl.style.display='block';
+  }
+}
+
+function copiarCampoNF(campoId, btnId){
+  var el=document.getElementById(campoId);
+  if(!el||!el.value)return;
+  var texto=el.value;
+  var confirmarCopia=function(){
+    var btn=document.getElementById(btnId);
+    if(!btn)return;
+    var original=btn.textContent;
+    btn.textContent='✅ Copiado!';
+    setTimeout(function(){btn.textContent=original;},1500);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(confirmarCopia).catch(function(){
+      if(el.select)el.select();
+      confirmarCopia();
+    });
+  } else {
+    if(el.select)el.select();
+    try{document.execCommand('copy');}catch(e){}
+    confirmarCopia();
+  }
+}
+
+function salvarRegistroNF(){
+  var erroEl=document.getElementById('nf-ficha-erro');
+  erroEl.style.display='none';
+  var sel=document.getElementById('nf-lanc-sel');
+  if(!sel.value){erroEl.textContent='Selecione um lançamento de origem.';erroEl.style.display='block';return;}
+  var num=_cfgGet('nf-ficha-num');
+  if(!num){erroEl.textContent='Informe o número da NFS-e emitida.';erroEl.style.display='block';return;}
+  var f=financeiro[parseInt(sel.value,10)];
+  if(!f){erroEl.textContent='Lançamento não encontrado.';erroEl.style.display='block';return;}
+  var novaNF={
+    num:num,
+    data:f.data||'',
+    dataRaw:f.dataRaw||'',
+    cli:f.nome||f.cli||'',
+    desc:f.desc||'',
+    val:f.val||0,
+    cpf:_cfgGet('nf-ficha-cpf')
+  };
+  notasFiscais.unshift(novaNF);
+  salvarLocal();
+  sbSalvarNotaFiscal(novaNF);
+  fecharModalRegistrarNF();
+  renderNFPage();
+  _cfgToast('✅ Nota fiscal registrada!');
+}
+
+// ── Editar registro existente do histórico ──
+var _nfEditIdx=null;
+function abrirModalEditarNF(i){
+  _nfEditIdx=i;
+  var n=notasFiscais[i];
+  if(!n)return;
+  _cfgSet('nf-edit-data',n.dataRaw||'');
+  _cfgSet('nf-edit-valor',n.val||0);
+  _cfgSet('nf-edit-cliente',n.cli||'');
+  _cfgSet('nf-edit-desc',n.desc||n.serv||'');
+  _cfgSet('nf-edit-num',n.num||'');
+  document.getElementById('nf-edit-erro').style.display='none';
+  document.getElementById('modal-editar-nf').classList.add('open');
+}
+function fecharModalEditarNF(){document.getElementById('modal-editar-nf').classList.remove('open');}
+
+function salvarEdicaoNF(){
+  if(_nfEditIdx===null)return;
+  var erroEl=document.getElementById('nf-edit-erro');
+  erroEl.style.display='none';
+  var num=_cfgGet('nf-edit-num');
+  var cliente=_cfgGet('nf-edit-cliente');
+  if(!num||!cliente){erroEl.textContent='Cliente e número da NFS-e são obrigatórios.';erroEl.style.display='block';return;}
+  var dataRaw=document.getElementById('nf-edit-data').value;
+  var n=notasFiscais[_nfEditIdx];
+  n.num=num;
+  n.cli=cliente;
+  n.desc=_cfgGet('nf-edit-desc');
+  n.val=parseFloat(document.getElementById('nf-edit-valor').value||0);
+  if(dataRaw){n.dataRaw=dataRaw;n.data=fmtDateBr(dataRaw);}
+  salvarLocal();
+  sbSalvarNotaFiscal(n);
+  fecharModalEditarNF();
+  renderNFPage();
+  _cfgToast('✅ Nota fiscal atualizada!');
 }
 
 // ════════════ TEMPLATE MODAL ════════════
