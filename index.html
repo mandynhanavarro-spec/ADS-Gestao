@@ -1761,6 +1761,33 @@ td.bold{color:var(--white);font-weight:700}
     </div>
   </div>
 
+  <!-- ── 3c. EDITOR VISUAL DE PDF (NOVO — Fase 2) ── -->
+  <div class="panel" style="margin-bottom:16px;border:1px solid var(--blue3)">
+    <div class="panel-hd">
+      <div class="panel-title">🖼️ Editor Visual de PDF — Novo (com preview ao vivo)</div>
+      <span style="font-size:10px;color:var(--silver2)">Em teste — vai substituir as duas seções acima após sua validação</span>
+    </div>
+    <div class="panel-bd">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button id="pdfve-tab-orc" class="btn btn-primary btn-sm" onclick="pdfveSetTipo('orc')">📋 Orçamento</button>
+        <button id="pdfve-tab-rec" class="btn btn-ghost btn-sm" onclick="pdfveSetTipo('rec')">🧾 Recibo</button>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+        <div style="flex:0 0 auto">
+          <div id="pdfve-preview" style="width:300px;min-height:424px;background:#fff;border:1px solid var(--border2);border-radius:4px;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.15)"></div>
+          <div style="font-size:10px;color:var(--silver);margin-top:6px;text-align:center">Arraste os blocos para reordenar • clique para editar</div>
+        </div>
+        <div id="pdfve-panel" style="flex:1;min-width:240px;background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:14px">
+          <div style="font-size:12px;color:var(--silver2)">Clique em um bloco no preview ao lado para ver as opções aqui.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="pdfveSalvar()">💾 Salvar</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="pdfveResetar()">↺ Restaurar padrão (aba atual)</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── 4. USUÁRIOS ── -->
   <div class="panel" style="margin-bottom:16px">
     <div class="panel-hd">
@@ -4609,6 +4636,88 @@ function _initTipografiaSliders(){
   tipToggleBold('rec', t.recBold!==false?'sim':'nao');
   tipToggleAlign('orc', t.orcAlign||'center');
   tipToggleAlign('rec', t.recAlign||'center');
+}
+
+// ════════════ EDITOR VISUAL DE PDF (NOVO) — Fase 2 ════════════
+// Lê e grava exatamente as mesmas chaves de localStorage do sistema atual
+// (ads_pdf_ordem_orc/rec, ads_pdf_tipografia) — não introduz estrutura nova.
+// Coexiste com as seções antigas; gerarPDF/gerarPDFRecibo continuam intactas.
+var PDFVE = { tipo:'orc', blocos:null, tip:null, selecionado:null };
+
+var PDFVE_SAMPLE = {
+  cliente:  ['Nome: João da Silva','Tel: (11) 98888-7777','Endereço: Rua Exemplo, 123'],
+  servico:  ['Instalação de motor de portão basculante'],
+  valor:    ['R$ 1.250,00'],
+  garantia: ['Garantia: 12 meses'],
+  pagamento:['Forma de pagamento: Pix'],
+  obs:      ['Observações: revisão inclusa']
+};
+
+function pdfveInit(){
+  pdfveSetTipo(PDFVE.tipo||'orc');
+}
+
+function pdfveSetTipo(tipo){
+  PDFVE.tipo = tipo;
+  PDFVE.blocos = getOrdemPDF(tipo);
+  PDFVE.tip = getTipografiaPDF();
+  PDFVE.selecionado = null;
+  var bOrc=document.getElementById('pdfve-tab-orc'), bRec=document.getElementById('pdfve-tab-rec');
+  if(bOrc) bOrc.className = 'btn btn-sm '+(tipo==='orc'?'btn-primary':'btn-ghost');
+  if(bRec) bRec.className = 'btn btn-sm '+(tipo==='rec'?'btn-primary':'btn-ghost');
+  pdfveRenderPreview();
+  pdfveRenderPanel();
+}
+
+function pdfveRenderPreview(){
+  var wrap = document.getElementById('pdfve-preview');
+  if(!wrap || !PDFVE.blocos) return;
+  wrap.innerHTML='';
+  var tip = PDFVE.tip;
+  var pfx = PDFVE.tipo==='orc' ? 'orc' : 'rec';
+  PDFVE.blocos.forEach(function(b){
+    var div = document.createElement('div');
+    div.setAttribute('data-bloco-id', b.id);
+    div.style.cssText = 'padding:8px 10px;border-bottom:1px dashed #e5e7eb;font-size:10px;color:#333;position:relative;min-height:14px;'+
+      (b.fixo?'background:#f4f6fa;':'cursor:pointer;')+
+      (b.visivel?'':'opacity:0.35;');
+    if(PDFVE.selecionado===b.id){
+      div.style.outline='2px solid #2563eb';
+      div.style.outlineOffset='-2px';
+    }
+    if(b.id==='cabecalho'){
+      div.innerHTML = '<div style="font-weight:700;font-size:11px">'+((CFG&&CFG.empresa&&CFG.empresa.nome)||'ADS Portões Automáticos')+'</div><div style="font-size:9px;color:#888">Cabeçalho fixo — CNPJ, logo, nº, data</div>';
+    } else if(b.id==='rodape'){
+      div.innerHTML = '<div style="font-size:9px;color:#888">✍️ Assinatura + QR Code (rodapé fixo)</div>';
+    } else if(b.id==='titulo'){
+      var titTxt = PDFVE.tipo==='orc' ? 'Orçamento' : 'RECIBO';
+      var titTxt2 = PDFVE.tipo==='rec' ? 'PAGAMENTO' : null;
+      var align = tip[pfx+'Align']||'center';
+      var cor = tip[pfx+'Cor']||'#003399';
+      var bold = tip[pfx+'Bold']!==false;
+      var size1 = tip[pfx+'P1']||16;
+      var size2 = tip.recP2||14;
+      var offY = tip[pfx+'OffsetY']||0;
+      div.innerHTML = '<div style="text-align:'+align+';color:'+cor+';font-weight:'+(bold?'700':'400')+';font-size:'+Math.round(size1*0.85)+'px;margin-top:'+Math.round(offY*0.8)+'px">'+titTxt+'</div>'+
+        (titTxt2?'<div style="text-align:'+align+';color:'+cor+';font-weight:'+(bold?'700':'400')+';font-size:'+Math.round(size2*0.85)+'px">'+titTxt2+'</div>':'');
+    } else {
+      var linhas = PDFVE_SAMPLE[b.id]||[b.label];
+      div.innerHTML = linhas.map(function(l){return '<div>'+l+'</div>';}).join('');
+    }
+    if(!b.fixo){
+      var badge=document.createElement('span');
+      badge.textContent = b.visivel?'👁':'🙈';
+      badge.style.cssText='position:absolute;top:6px;right:8px;font-size:11px';
+      div.appendChild(badge);
+    }
+    wrap.appendChild(div);
+  });
+}
+
+function pdfveRenderPanel(){
+  var panel = document.getElementById('pdfve-panel');
+  if(!panel) return;
+  panel.innerHTML = '<div style="font-size:12px;color:var(--silver2)">Clique em um bloco no preview ao lado para ver as opções aqui.</div>';
 }
 
 // ════════════ gerarPDF — respeita ordem dos blocos ════════════
@@ -9760,6 +9869,7 @@ function renderConfiguracoes(){
   renderResumoDados();
   initOrdemPDFPanel();
   _initTipografiaSliders();
+  pdfveInit();
 }
 
 function carregarConfiguracoes(){
