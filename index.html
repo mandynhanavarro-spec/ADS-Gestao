@@ -1581,6 +1581,13 @@ td.bold{color:var(--white);font-weight:700}
           </div>
         </div>
       </div>
+      <!-- Integração NFS-e -->
+      <div style="margin-bottom:12px">
+        <div class="fl" style="margin-bottom:6px">🔗 URL do Emissor Nacional (NFS-e) — usada no botão "Abrir Emissor Nacional" da aba Nota Fiscal</div>
+        <input class="fi" id="cfg-doc-nfse-url" placeholder="https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2fEmissorNacional%2fDashboard">
+        <div id="cfg-doc-nfse-url-erro" style="display:none;color:var(--red);font-size:11px;margin-top:4px">⚠️ Isso não parece uma URL válida (precisa começar com http:// ou https://). Não foi salvo.</div>
+        <span style="font-size:10px;color:var(--silver);line-height:1.4">Deixe em branco para usar o padrão do Emissor Nacional automaticamente.</span>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
         <button class="btn btn-primary btn-sm" onclick="salvarPadraoDocumentos()">💾 Salvar Padrão dos Documentos</button>
       </div>
@@ -2030,7 +2037,7 @@ td.bold{color:var(--white);font-weight:700}
         </div>
         <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:8px;padding:12px;margin-bottom:8px">
           <div style="font-size:11px;color:var(--silver2);margin-bottom:10px">Emita a nota no portal oficial usando os dados acima e depois registre o número aqui:</div>
-          <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="window.open('https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2fEmissorNacional%2fDashboard','_blank')">🌐 Abrir Emissor Nacional</button>
+          <button class="btn btn-primary btn-sm" style="margin-bottom:12px" onclick="abrirEmissorNacional()">🌐 Abrir Emissor Nacional</button>
           <div class="fl">Nº da NFS-e emitida</div>
           <input class="fi" id="nf-ficha-num" placeholder="Ex: 12345">
         </div>
@@ -7632,6 +7639,12 @@ function excluirNF(i){
   renderNFPage();
 }
 
+// Lê a URL do Emissor Nacional configurada em Configurações; usa o padrão se estiver vazia
+function abrirEmissorNacional(){
+  var url=(CFG.doc&&CFG.doc.nfseUrl)?CFG.doc.nfseUrl:DEFAULT_NFSE_URL;
+  window.open(url,'_blank');
+}
+
 // ── Ficha assistida: registrar nova NFS-e a partir de um lançamento do Financeiro ──
 function abrirModalRegistrarNF(){
   var sel=document.getElementById('nf-lanc-sel');
@@ -8181,9 +8194,10 @@ var USUARIOS=[
 ];
 
 // ════════════ CONFIGURAÇÕES DO SISTEMA ════════════
+var DEFAULT_NFSE_URL='https://www.nfse.gov.br/EmissorNacional/Login?ReturnUrl=%2fEmissorNacional%2fDashboard';
 var CFG = {
   empresa:{nome:'ADS Portões Automáticos',cnpj:'20.989.538/0001-88',tel:'(11) 96770-4116',email:'ads.pg@hotmail.com',end:'São Paulo / SP',resp:'Ananias Santos',cargo:'Técnico Responsável'},
-  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:'',sigB64:'',logoB64:''}
+  doc:{validade:30,garantia:'12 meses',pgto:'Pix',pix:'ads.pg@hotmail.com',banco:'Banco Itaú AG 0466 CC 60864-3',rodape:'Qualquer dúvida estamos à disposição. Obrigado pela preferência!',qrWpp:'',sigB64:'',logoB64:'',nfseUrl:DEFAULT_NFSE_URL}
 };
 function salvarCFG(){try{localStorage.setItem('ads_cfg',JSON.stringify(CFG));localStorage.setItem('ads_usuarios',JSON.stringify(USUARIOS));}catch(e){}}
 function carregarCFG(){
@@ -9760,6 +9774,7 @@ function carregarConfiguracoes(){
   _cfgSet('cfg-doc-validade',d.validade);_cfgSet('cfg-doc-garantia',d.garantia);
   _cfgSet('cfg-doc-pix',d.pix);_cfgSet('cfg-doc-banco',d.banco);
   _cfgSet('cfg-doc-rodape',d.rodape);
+  _cfgSet('cfg-doc-nfse-url',d.nfseUrl||'');
   var pgSel=document.getElementById('cfg-doc-pgto');
   if(pgSel)pgSel.value=d.pgto;
   // QR Code preview
@@ -9806,6 +9821,14 @@ function salvarDadosEmpresa(){
 }
 
 function salvarPadraoDocumentos(){
+  var nfseUrlErro=document.getElementById('cfg-doc-nfse-url-erro');
+  if(nfseUrlErro)nfseUrlErro.style.display='none';
+  var nfseUrl=_cfgGet('cfg-doc-nfse-url');
+  if(nfseUrl&&!/^https?:\/\//i.test(nfseUrl)){
+    if(nfseUrlErro)nfseUrlErro.style.display='block';
+    _cfgToast('⚠️ Corrija a URL do Emissor Nacional antes de salvar.');
+    return;
+  }
   var qrVal=(typeof window._qrPendente!=='undefined')?window._qrPendente:(CFG.doc.qrWpp||'');
   var sigVal=(typeof window._sigPendente!=='undefined')?window._sigPendente:(CFG.doc.sigB64||'');
   var logoVal=(typeof window._logoPendente!=='undefined')?window._logoPendente:(CFG.doc.logoB64||'');
@@ -9818,7 +9841,8 @@ function salvarPadraoDocumentos(){
     rodape:_cfgGet('cfg-doc-rodape'),
     qrWpp:qrVal,
     sigB64:sigVal,
-    logoB64:logoVal
+    logoB64:logoVal,
+    nfseUrl:nfseUrl
   };
   window._qrPendente=undefined;
   window._sigPendente=undefined;
