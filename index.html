@@ -1782,8 +1782,8 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
       <div style="display:flex;gap:8px;margin-top:14px">
-        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="pdfveSalvar()">💾 Salvar</button>
-        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="pdfveResetar()">↺ Restaurar padrão (aba atual)</button>
+        <button id="pdfve-btn-salvar" class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="pdfveSalvar()">💾 Salvar</button>
+        <button id="pdfve-btn-resetar" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="pdfveResetar()">↺ Restaurar padrão (aba atual)</button>
       </div>
     </div>
   </div>
@@ -4678,9 +4678,10 @@ function pdfveRenderPreview(){
   PDFVE.blocos.forEach(function(b){
     var div = document.createElement('div');
     div.setAttribute('data-bloco-id', b.id);
-    div.style.cssText = 'padding:8px 10px;border-bottom:1px dashed #e5e7eb;font-size:10px;color:#333;position:relative;min-height:14px;'+
+    div.style.cssText = 'padding:8px 10px 8px '+(b.fixo?'10px':'26px')+';border-bottom:1px dashed #e5e7eb;font-size:10px;color:#333;position:relative;min-height:14px;'+
       (b.fixo?'background:#f4f6fa;':'cursor:pointer;')+
       (b.visivel?'':'opacity:0.35;');
+    if(!b.fixo) div.setAttribute('draggable','true');
     if(PDFVE.selecionado===b.id){
       div.style.outline='2px solid #2563eb';
       div.style.outlineOffset='-2px';
@@ -4705,6 +4706,10 @@ function pdfveRenderPreview(){
       div.innerHTML = linhas.map(function(l){return '<div>'+l+'</div>';}).join('');
     }
     if(!b.fixo){
+      var handle=document.createElement('span');
+      handle.textContent='⠿';
+      handle.style.cssText='position:absolute;top:6px;left:6px;font-size:14px;color:#9ca3af;line-height:1';
+      div.appendChild(handle);
       var badge=document.createElement('span');
       badge.textContent = b.visivel?'👁':'🙈';
       badge.style.cssText='position:absolute;top:6px;right:8px;font-size:11px';
@@ -4713,6 +4718,82 @@ function pdfveRenderPreview(){
     }
     wrap.appendChild(div);
   });
+  pdfveInitDragDrop(wrap);
+}
+
+function pdfveInitDragDrop(container){
+  var dragging=null;
+  container.querySelectorAll('[draggable="true"]').forEach(function(el){
+    el.addEventListener('dragstart',function(e){
+      dragging=el;
+      el.style.opacity='0.4';
+      e.dataTransfer.effectAllowed='move';
+      e.stopPropagation();
+    });
+    el.addEventListener('dragend',function(){
+      dragging=null;
+      pdfveSyncOrderFromDOM();
+    });
+    el.addEventListener('dragover',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect='move';
+      if(!dragging||dragging===el||el.getAttribute('draggable')!=='true')return;
+      var rect=el.getBoundingClientRect();
+      var mid=rect.top+rect.height/2;
+      if(e.clientY<mid){
+        container.insertBefore(dragging, el);
+      } else {
+        container.insertBefore(dragging, el.nextSibling);
+      }
+    });
+  });
+  container.addEventListener('dragover',function(e){e.preventDefault();});
+}
+
+function pdfveSyncOrderFromDOM(){
+  var wrap=document.getElementById('pdfve-preview');
+  if(!wrap)return;
+  var ids=Array.prototype.map.call(wrap.querySelectorAll('[data-bloco-id]'), function(el){return el.getAttribute('data-bloco-id');});
+  var nova=[];
+  ids.forEach(function(id){
+    var b=PDFVE.blocos.find(function(x){return x.id===id;});
+    if(b) nova.push(b);
+  });
+  PDFVE.blocos = nova;
+  pdfveRenderPreview();
+}
+
+function pdfveSalvar(){
+  var ordem = PDFVE.blocos.map(function(b){
+    return {id:b.id, label:b.label, fixo:b.fixo, visivel:b.visivel};
+  });
+  setOrdemPDF(PDFVE.tipo, ordem);
+  try{
+    var atual = getTipografiaPDF();
+    var novo = Object.assign({}, atual, PDFVE.tip);
+    localStorage.setItem('ads_pdf_tipografia', JSON.stringify(novo));
+  }catch(e){}
+  // Mantém as seções antigas (coexistindo) sincronizadas com o que acabou de ser salvo
+  if(typeof renderOrdemPDF==='function') renderOrdemPDF(PDFVE.tipo);
+  if(typeof _initTipografiaSliders==='function') _initTipografiaSliders();
+  _cfgToast('✅ Layout e tipografia salvos! Próximos PDFs já usam as novas configurações.');
+}
+
+function pdfveResetar(){
+  localStorage.removeItem('ads_pdf_ordem_'+PDFVE.tipo);
+  try{
+    var atual = getTipografiaPDF();
+    var pfx = PDFVE.tipo==='orc' ? 'orc' : 'rec';
+    Object.keys(PDF_TIP_PADRAO).forEach(function(k){
+      if(k.indexOf(pfx)===0) atual[k]=PDF_TIP_PADRAO[k];
+    });
+    localStorage.setItem('ads_pdf_tipografia', JSON.stringify(atual));
+  }catch(e){}
+  pdfveSetTipo(PDFVE.tipo);
+  if(typeof renderOrdemPDF==='function') renderOrdemPDF(PDFVE.tipo);
+  if(typeof _initTipografiaSliders==='function') _initTipografiaSliders();
+  _cfgToast('↺ Layout e tipografia (aba atual) restaurados para o padrão.');
 }
 
 function pdfveSelecionar(id){
