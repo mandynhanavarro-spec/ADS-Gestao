@@ -4709,15 +4709,105 @@ function pdfveRenderPreview(){
       badge.textContent = b.visivel?'👁':'🙈';
       badge.style.cssText='position:absolute;top:6px;right:8px;font-size:11px';
       div.appendChild(badge);
+      div.addEventListener('click', (function(id){return function(){pdfveSelecionar(id);};})(b.id));
     }
     wrap.appendChild(div);
   });
 }
 
+function pdfveSelecionar(id){
+  var b = PDFVE.blocos.find(function(x){return x.id===id;});
+  if(!b || b.fixo){ PDFVE.selecionado=null; }
+  else { PDFVE.selecionado = id; }
+  pdfveRenderPreview();
+  pdfveRenderPanel();
+}
+
+function pdfveToggleVisivel(id){
+  var b = PDFVE.blocos.find(function(x){return x.id===id;});
+  if(!b) return;
+  b.visivel = !b.visivel;
+  pdfveRenderPreview();
+  pdfveRenderPanel();
+}
+
 function pdfveRenderPanel(){
   var panel = document.getElementById('pdfve-panel');
   if(!panel) return;
-  panel.innerHTML = '<div style="font-size:12px;color:var(--silver2)">Clique em um bloco no preview ao lado para ver as opções aqui.</div>';
+  var id = PDFVE.selecionado;
+  if(!id){
+    panel.innerHTML = '<div style="font-size:12px;color:var(--silver2)">Clique em um bloco no preview ao lado para ver as opções aqui.</div>';
+    return;
+  }
+  var b = PDFVE.blocos.find(function(x){return x.id===id;});
+  if(!b){ panel.innerHTML=''; return; }
+  if(id==='titulo') pdfveRenderPainelTitulo(panel);
+  else pdfveRenderPainelSimples(panel, b);
+}
+
+function pdfveRenderPainelSimples(panel, b){
+  panel.innerHTML =
+    '<div style="font-size:11px;font-weight:700;color:var(--blue3);margin-bottom:10px">'+b.label+'</div>'+
+    '<div style="font-size:11px;color:var(--silver2);margin-bottom:12px">Este bloco não tem opções de tipografia hoje — apenas ordem (arraste no preview) e visibilidade.</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn btn-sm '+(b.visivel?'btn-primary':'btn-ghost')+'" onclick="pdfveToggleVisivel(\''+b.id+'\')">👁 Visível</button>'+
+      '<button class="btn btn-sm '+(!b.visivel?'btn-primary':'btn-ghost')+'" onclick="pdfveToggleVisivel(\''+b.id+'\')">🙈 Oculto</button>'+
+    '</div>';
+}
+
+function pdfveRenderPainelTitulo(panel){
+  var tipo = PDFVE.tipo;
+  var pfx = tipo==='orc' ? 'orc' : 'rec';
+  var t = PDFVE.tip;
+  var html = '<div style="font-size:11px;font-weight:700;color:var(--blue3);margin-bottom:12px">🔤 Título — Tipografia</div>';
+
+  html += '<div style="margin-bottom:12px"><div class="fl" style="margin-bottom:4px">Tamanho da fonte'+(tipo==='rec'?' — linha 1':'')+'</div>'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<input type="range" id="pdfve-tip-p1" min="8" max="36" step="1" value="'+(t[pfx+'P1']||18)+'" style="flex:1;accent-color:var(--blue2)" oninput="pdfveSetTip(\''+pfx+'P1\', parseInt(this.value)); document.getElementById(\'pdfve-tip-p1-val\').textContent=this.value+\'pt\'">'+
+      '<span id="pdfve-tip-p1-val" style="font-size:12px;font-weight:700;color:var(--blue3);min-width:32px;text-align:right">'+(t[pfx+'P1']||18)+'pt</span>'+
+    '</div></div>';
+
+  if(tipo==='rec'){
+    html += '<div style="margin-bottom:12px"><div class="fl" style="margin-bottom:4px">Tamanho da fonte — linha 2</div>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<input type="range" id="pdfve-tip-p2" min="8" max="36" step="1" value="'+(t.recP2||14)+'" style="flex:1;accent-color:var(--blue2)" oninput="pdfveSetTip(\'recP2\', parseInt(this.value)); document.getElementById(\'pdfve-tip-p2-val\').textContent=this.value+\'pt\'">'+
+        '<span id="pdfve-tip-p2-val" style="font-size:12px;font-weight:700;color:var(--blue3);min-width:32px;text-align:right">'+(t.recP2||14)+'pt</span>'+
+      '</div></div>';
+  }
+
+  html += '<div style="margin-bottom:12px"><div class="fl" style="margin-bottom:4px">Cor do título</div>'+
+    '<input type="color" id="pdfve-tip-cor" value="'+(t[pfx+'Cor']||'#003399')+'" style="width:40px;height:32px;border:none;border-radius:6px;background:none;cursor:pointer;padding:2px" oninput="pdfveSetTip(\''+pfx+'Cor\', this.value)">'+
+    '</div>';
+
+  html += '<div style="margin-bottom:12px"><div class="fl" style="margin-bottom:6px">Negrito</div>'+
+    '<div style="display:flex;gap:6px">'+
+      '<button class="btn btn-sm '+(t[pfx+'Bold']!==false?'btn-primary':'btn-ghost')+'" style="font-weight:900" onclick="pdfveSetTip(\''+pfx+'Bold\', true, true)">B Sim</button>'+
+      '<button class="btn btn-sm '+(t[pfx+'Bold']===false?'btn-primary':'btn-ghost')+'" onclick="pdfveSetTip(\''+pfx+'Bold\', false, true)">Não</button>'+
+    '</div></div>';
+
+  html += '<div style="margin-bottom:12px"><div class="fl" style="margin-bottom:6px">Alinhamento</div>'+
+    '<div style="display:flex;gap:6px">'+
+      ['left','center','right'].map(function(a){
+        var lbl = a==='left'?'⬅ Esq':(a==='center'?'↔ Centro':'➡ Dir');
+        var ativo = (t[pfx+'Align']||'center')===a;
+        return '<button class="btn btn-sm '+(ativo?'btn-primary':'btn-ghost')+'" onclick="pdfveSetTip(\''+pfx+'Align\', \''+a+'\', true)">'+lbl+'</button>';
+      }).join('')+
+    '</div></div>';
+
+  var offY = t[pfx+'OffsetY']||0;
+  html += '<div><div class="fl" style="margin-bottom:4px">Posição vertical (offset Y em mm)</div>'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<input type="range" id="pdfve-tip-y" min="-20" max="40" step="1" value="'+offY+'" style="flex:1;accent-color:var(--blue2)" oninput="pdfveSetTip(\''+pfx+'OffsetY\', parseInt(this.value)); document.getElementById(\'pdfve-tip-y-val\').textContent=(this.value>0?\'+\':\'\')+this.value+\'mm\'">'+
+      '<span id="pdfve-tip-y-val" style="font-size:12px;font-weight:700;color:var(--blue3);min-width:40px;text-align:right">'+(offY>0?'+':'')+offY+'mm</span>'+
+    '</div><div style="font-size:10px;color:var(--silver);margin-top:2px">Negativo = sobe · Positivo = desce</div></div>';
+
+  panel.innerHTML = html;
+}
+
+function pdfveSetTip(field, val, rerenderPanel){
+  PDFVE.tip[field] = val;
+  pdfveRenderPreview();
+  if(rerenderPanel) pdfveRenderPanel();
 }
 
 // ════════════ gerarPDF — respeita ordem dos blocos ════════════
