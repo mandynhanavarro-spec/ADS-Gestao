@@ -8951,7 +8951,25 @@ async function fazerLogin(){
   }
   if(found){
     err.style.display='none';
-    if(migrou){salvarCFG();sbSalvarCFG('usuarios',USUARIOS);}
+    if(migrou){
+      salvarCFG();
+      // Sincroniza a migração em segundo plano — não trava o login (a UX de
+      // entrar no sistema já foi resolvida localmente). Usa merge por login
+      // (não índice), então é seguro e idempotente mesmo se outra aba/
+      // dispositivo já tiver migrado essa mesma senha nesse meio-tempo.
+      var loginMigrado=found.user, passHashMigrado=found.passHash, passSaltMigrado=found.passSalt;
+      salvarUsuariosComMerge(function(lista){
+        var alvo=lista.find(function(x){return x.user===loginMigrado;});
+        if(alvo && alvo.pass!==undefined){
+          alvo.passHash=passHashMigrado;
+          alvo.passSalt=passSaltMigrado;
+          delete alvo.pass;
+        }
+        return lista;
+      }).then(function(resultado){
+        if(!resultado.ok) console.warn('Migração de senha (login) não sincronizou com o servidor agora:', resultado.mensagem);
+      });
+    }
     _saveSession(found.user, lembrar);
     aplicarUsuario(found);
   } else {
