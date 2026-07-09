@@ -8523,35 +8523,54 @@ async function sbSalvarCFG(chave, valor){
 // em vez de sobrescrever o array inteiro com o que está na memória local,
 // busca a versão mais recente do servidor, aplica só a mudança pretendida
 // (via transformFn) e só grava se ninguém mais tiver salvo entre a leitura
-// e a escrita (comparando atualizado_em). Se houver conflito, refaz o ciclo
-// (busca -> aplica -> tenta salvar) até MAX_TENTATIVAS vezes.
+// e a escrita (comparando atualizado_em). Se houver conflito REAL (o servidor
+// respondeu, mas outra escrita venceu a corrida), refaz o ciclo automaticamente
+// (busca -> aplica -> tenta salvar) até MAX_TENTATIVAS vezes, e só falha de
+// forma visível se esgotar as tentativas.
+//
+// Se o Supabase estiver simplesmente inalcançável (erro de rede/timeout, não
+// uma resposta de conflito), cai para salvar só localmente — mesma tolerância
+// a modo offline que o resto do app já tem (localStorage é o cache; a próxima
+// sincronização bem-sucedida reconcilia). Isso é diferente de um conflito real,
+// que É detectável (o servidor respondeu) e por isso tem retentativa própria.
 //
 // transformFn(listaAtual) deve retornar a nova lista (pode mutar e retornar
 // a própria listaAtual, já que ela é sempre uma cópia). Pode lançar um Error
 // para abortar o salvamento por uma regra de negócio (ex: "único admin") —
-// nesse caso NÃO há retentativa, o erro é repassado para quem chamou.
+// nesse caso NÃO há retentativa nem fallback local, o erro é repassado para
+// quem chamou.
 //
 // window.__pdfve_testHookAposLeitura, se definido, é aguardado logo após a
 // leitura em cada tentativa — existe só para os testes de corrida conseguirem
 // intercalar duas chamadas de forma determinística, sem depender de timing
 // real de rede. Não tem efeito em produção (fica undefined).
 var MAX_TENTATIVAS_SALVAR_USUARIOS = 3;
+var TIMEOUT_MS_SALVAR_USUARIOS = 4000;
+function _comTimeout(promessa, ms){
+  return new Promise(function(resolve, reject){
+    var t = setTimeout(function(){ reject(new Error('timeout')); }, ms);
+    promessa.then(function(v){ clearTimeout(t); resolve(v); }, function(e){ clearTimeout(t); reject(e); });
+  });
+}
+function _salvarUsuariosLocal(transformFn, listaBase){
+  var novaLista;
+  try{
+    novaLista = transformFn(JSON.parse(JSON.stringify(listaBase)));
+  }catch(e){
+    return {ok:false, motivo:'validacao', mensagem:e.message||'Não foi possível salvar.'};
+  }
+  USUARIOS = novaLista;
+  salvarCFG();
+  return {ok:true};
+}
 async function salvarUsuariosComMerge(transformFn){
   if(!SUPABASE_ATIVO||!sb){
-    // Modo local/offline: não há servidor compartilhado para conflitar.
-    try{
-      USUARIOS = transformFn(USUARIOS);
-    }catch(e){
-      console.warn('salvarUsuariosComMerge (local) erro de validação:', e.message||e);
-      return {ok:false, motivo:'validacao', mensagem:e.message||'Não foi possível salvar.'};
-    }
-    salvarCFG();
-    return {ok:true};
+    return _salvarUsuariosLocal(transformFn, USUARIOS);
   }
   for(var tentativa=1; tentativa<=MAX_TENTATIVAS_SALVAR_USUARIOS; tentativa++){
     var atual, versaoConhecida;
     try{
-      var leitura = await sb.from('configuracoes').select('dados,atualizado_em').eq('id','usuarios').maybeSingle();
+      var leitura = await _comTimeout(sb.from('configuracoes').select('dados,atualizado_em').eq('id','usuarios').maybeSingle(), TIMEOUT_MS_SALVAR_USUARIOS);
       if(leitura.error) throw leitura.error;
       if(leitura.data){
         atual = leitura.data.dados || [];
@@ -8561,8 +8580,10 @@ async function salvarUsuariosComMerge(transformFn){
         versaoConhecida = null;
       }
     }catch(e){
-      console.warn('salvarUsuariosComMerge: erro ao buscar versão atual:', e.message||e);
-      return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Verifique sua conexão e tente novamente.'};
+      // Supabase inalcançável agora (rede/timeout) — cai para o modo local,
+      // igual ao resto do app quando o servidor não responde.
+      console.warn('salvarUsuariosComMerge: Supabase inalcançável, salvando só localmente:', e.message||e);
+      return _salvarUsuariosLocal(transformFn, USUARIOS);
     }
 
     if(typeof window.__pdfve_testHookAposLeitura==='function'){
@@ -8583,38 +8604,35 @@ async function salvarUsuariosComMerge(transformFn){
       if(versaoConhecida===null){
         // Não deveria acontecer em produção (a linha já existe), mas por segurança
         // trata o caso de a linha 'usuarios' ainda não existir.
-        var ins = await sb.from('configuracoes').upsert(
+        var ins = await _comTimeout(sb.from('configuracoes').upsert(
           {id:'usuarios', dados:novaLista, atualizado_em:novaVersao},
           {onConflict:'id'}
-        ).select();
-        if(ins.error){
-          console.warn('salvarUsuariosComMerge: erro no upsert inicial:', ins.error.message||ins.error);
-          return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Tente novamente.'};
-        }
+        ).select(), TIMEOUT_MS_SALVAR_USUARIOS);
+        if(ins.error) throw ins.error;
         USUARIOS = novaLista;
         salvarCFG();
         return {ok:true};
       }
-      var res = await sb.from('configuracoes')
+      var res = await _comTimeout(sb.from('configuracoes')
         .update({dados:novaLista, atualizado_em:novaVersao})
         .eq('id','usuarios')
         .eq('atualizado_em', versaoConhecida)
-        .select();
-      if(res.error){
-        console.warn('salvarUsuariosComMerge: erro ao salvar:', res.error.message||res.error);
-        return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Tente novamente.'};
-      }
+        .select(), TIMEOUT_MS_SALVAR_USUARIOS);
+      if(res.error) throw res.error;
       if(res.data && res.data.length>0){
         // Sucesso: ninguém mais salvou entre a leitura e a escrita.
         USUARIOS = novaLista;
         salvarCFG();
         return {ok:true};
       }
-      // Conflito: 0 linhas afetadas -> outra escrita aconteceu nesse meio-tempo.
+      // Conflito REAL: o servidor respondeu, mas 0 linhas afetadas -> outra
+      // escrita venceu a corrida nesse meio-tempo. Refaz o ciclo.
       console.warn('salvarUsuariosComMerge: conflito de versão na tentativa', tentativa, '- refazendo...');
     }catch(e){
-      console.warn('salvarUsuariosComMerge: exceção ao salvar:', e.message||e);
-      return {ok:false, motivo:'erro_rede', mensagem:'Não foi possível salvar agora. Tente novamente.'};
+      // Erro ao tentar escrever (rede caiu no meio do caminho) — mesma
+      // tolerância a modo offline usada na leitura.
+      console.warn('salvarUsuariosComMerge: Supabase inalcançável ao salvar, salvando só localmente:', e.message||e);
+      return _salvarUsuariosLocal(transformFn, atual);
     }
   }
   return {ok:false, motivo:'conflito_esgotado', mensagem:'Não foi possível salvar: outra alteração aconteceu ao mesmo tempo. Tente novamente.'};
@@ -8831,15 +8849,27 @@ async function salvarPinSetup(){
   var err=document.getElementById('pin-setup-err');
   if(!/^\d{4}$/.test(pin)){err.textContent='O PIN deve ter exatamente 4 dígitos.';err.style.display='block';return;}
   if(pin!==pin2){err.textContent='Os PINs não coincidem.';err.style.display='block';return;}
-  var user=USUARIOS.find(function(x){return x.user===_activeUser.user;});
-  if(!user)return;
+  var loginAlvo=_activeUser.user;
   var salt=_randomSalt();
-  user.pinHash=await _hashPin(pin,salt);
-  user.pinSalt=salt;
-  _activeUser.pinHash=user.pinHash;
-  _activeUser.pinSalt=user.pinSalt;
-  salvarCFG();
-  if(typeof sbSalvarCFG==='function')sbSalvarCFG('usuarios',USUARIOS);
+  var hash=await _hashPin(pin,salt);
+  var btn=document.querySelector('#pin-setup-screen .login-btn');
+  var btnTextoOriginal=btn?btn.textContent:null;
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  var resultado=await salvarUsuariosComMerge(function(lista){
+    var user=lista.find(function(x){return x.user===loginAlvo;});
+    if(!user) throw new Error('Usuário não encontrado. Faça login novamente.');
+    user.pinHash=hash;
+    user.pinSalt=salt;
+    return lista;
+  });
+  if(btn){btn.disabled=false;btn.textContent=btnTextoOriginal;}
+  if(!resultado.ok){
+    err.textContent=resultado.mensagem||'Não foi possível salvar o PIN agora. Tente novamente.';
+    err.style.display='block';
+    return;
+  }
+  var userSalvo=USUARIOS.find(function(x){return x.user===loginAlvo;});
+  if(userSalvo){_activeUser.pinHash=userSalvo.pinHash;_activeUser.pinSalt=userSalvo.pinSalt;}
   document.getElementById('pin-setup-screen').classList.remove('active');
   err.style.display='none';
   _updatePinTs();
