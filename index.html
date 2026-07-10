@@ -95,6 +95,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .panel-title{font-weight:700;font-size:13px}
 .panel-bd{padding:14px 16px}
 
+/* ACORDEÃO (Configurações) */
+.cfg-acc-hd{cursor:pointer;user-select:none}
+.cfg-acc-hd:hover{background:rgba(59,130,246,.05)}
+.cfg-acc-seta{font-size:12px;color:var(--silver2);flex-shrink:0;line-height:1}
+.cfg-acc-body{overflow:hidden;transition:max-height .3s ease}
+
+/* Logo/QR/Assinatura lado a lado (Padrão dos Documentos PDF) */
+.cfg-uploads-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:768px){
+  .cfg-uploads-grid{grid-template-columns:1fr}
+}
+
 /* STEPS */
 .steps{display:flex;align-items:center;gap:0;margin-bottom:16px;flex-wrap:wrap;gap:4px}
 .stp{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700}
@@ -1475,10 +1487,14 @@ td.bold{color:var(--white);font-weight:700}
 
   <!-- ── 1. DADOS DA EMPRESA ── -->
   <div class="panel" style="margin-bottom:16px">
-    <div class="panel-hd">
+    <div class="panel-hd cfg-acc-hd" onclick="cfgAccordionToggle('cfg-acc-empresa')">
       <div class="panel-title">🏢 Dados da Empresa</div>
-      <span style="font-size:10px;color:var(--silver2)">Aparecem em todos os PDFs gerados</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;color:var(--silver2)">Aparecem em todos os PDFs gerados</span>
+        <span class="cfg-acc-seta" id="cfg-acc-empresa-seta">⌃</span>
+      </div>
     </div>
+    <div class="cfg-acc-body cfg-acc-aberto" id="cfg-acc-empresa-body" style="max-height:none">
     <div class="panel-bd">
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Nome da Empresa</div><input class="fi" id="cfg-empresa-nome" placeholder="Ex: ADS Portões Automáticos"></div>
@@ -1500,14 +1516,19 @@ td.bold{color:var(--white);font-weight:700}
         <button class="btn btn-primary btn-sm" onclick="salvarDadosEmpresa()">💾 Salvar Dados da Empresa</button>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- ── 2. PADRÃO DOS DOCUMENTOS ── -->
   <div class="panel" style="margin-bottom:16px">
-    <div class="panel-hd">
+    <div class="panel-hd cfg-acc-hd" onclick="cfgAccordionToggle('cfg-acc-doc')">
       <div class="panel-title">🖨️ Padrão dos Documentos PDF</div>
-      <span style="font-size:10px;color:var(--silver2)">Valores padrão usados nos orçamentos e recibos</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;color:var(--silver2)">Valores padrão usados nos orçamentos e recibos</span>
+        <span class="cfg-acc-seta" id="cfg-acc-doc-seta">⌄</span>
+      </div>
     </div>
+    <div class="cfg-acc-body" id="cfg-acc-doc-body" style="max-height:0">
     <div class="panel-bd">
       <div class="fgrid fg3" style="margin-bottom:10px">
         <div><div class="fl">Validade do Orçamento (dias)</div><input class="fi" id="cfg-doc-validade" type="number" placeholder="30" min="1"></div>
@@ -1527,57 +1548,54 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Texto de rodapé / observação padrão nos documentos</div>
         <textarea class="ft" id="cfg-doc-rodape" rows="2" placeholder="Ex: Qualquer dúvida estamos à disposição. Obrigado pela preferência!"></textarea></div>
       </div>
-      <!-- Logo da Empresa -->
-      <div style="margin-bottom:12px">
-        <div class="fl" style="margin-bottom:6px">🖼️ Logo da Empresa (exibida no cabeçalho dos PDFs, abaixo do nome e CNPJ)</div>
-        <div style="display:flex;align-items:center;gap:14px">
-          <div id="cfg-doc-logo-preview" style="width:120px;height:52px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0">
-            <span id="cfg-doc-logo-empty" style="font-size:22px;opacity:.5">🖼️</span>
-            <img id="cfg-doc-logo-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
-          </div>
-          <div style="display:flex;flex-direction:column;gap:7px">
-            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">
-              📤 Carregar logo
+      <!-- Logo / QR Code / Assinatura — lado a lado no desktop, empilhado no mobile -->
+      <div class="cfg-uploads-grid" style="margin-bottom:14px">
+        <!-- Logo da Empresa -->
+        <div>
+          <div class="fl" style="margin-bottom:6px">🖼️ Logo da Empresa</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+            <div id="cfg-doc-logo-preview" style="width:70px;height:70px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0">
+              <span id="cfg-doc-logo-empty" style="font-size:22px;opacity:.5">🖼️</span>
+              <img id="cfg-doc-logo-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
+            </div>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:100%;justify-content:center">
+              📤 Carregar
               <input type="file" id="cfg-doc-logo-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleLogoUpload(this)" style="display:none">
             </label>
-            <button class="btn btn-red btn-sm" id="cfg-doc-logo-remove" onclick="removerLogo()" style="display:none;width:fit-content">🗑️ Remover logo</button>
-            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG com fundo transparente é ideal · aparece no canto superior direito dos PDFs, abaixo do nome e CNPJ</span>
+            <button class="btn btn-red btn-sm" id="cfg-doc-logo-remove" onclick="removerLogo()" style="display:none;width:100%;justify-content:center">🗑️ Remover</button>
+            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG com fundo transparente é ideal · aparece no cabeçalho dos PDFs, abaixo do nome e CNPJ</span>
           </div>
         </div>
-      </div>
-      <!-- QR Code WhatsApp -->
-      <div style="margin-bottom:12px">
-        <div class="fl" style="margin-bottom:6px">📲 QR Code WhatsApp (exibido no rodapé dos PDFs)</div>
-        <div style="display:flex;align-items:center;gap:14px">
-          <div id="cfg-doc-qr-preview" style="width:76px;height:76px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0;position:relative">
-            <span id="cfg-doc-qr-empty" style="font-size:26px;opacity:.5">📷</span>
-            <img id="cfg-doc-qr-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
-          </div>
-          <div style="display:flex;flex-direction:column;gap:7px">
-            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">
-              📤 Carregar imagem
+        <!-- QR Code WhatsApp -->
+        <div>
+          <div class="fl" style="margin-bottom:6px">📲 QR Code WhatsApp</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+            <div id="cfg-doc-qr-preview" style="width:70px;height:70px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0;position:relative">
+              <span id="cfg-doc-qr-empty" style="font-size:22px;opacity:.5">📷</span>
+              <img id="cfg-doc-qr-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
+            </div>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:100%;justify-content:center">
+              📤 Carregar
               <input type="file" id="cfg-doc-qr-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleQRUpload(this)" style="display:none">
             </label>
-            <button class="btn btn-red btn-sm" id="cfg-doc-qr-remove" onclick="removerQRCode()" style="display:none;width:fit-content">🗑️ Remover QR Code</button>
-            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG ou JPG recomendado · aparece no canto inferior esquerdo dos orçamentos e recibos em PDF</span>
+            <button class="btn btn-red btn-sm" id="cfg-doc-qr-remove" onclick="removerQRCode()" style="display:none;width:100%;justify-content:center">🗑️ Remover</button>
+            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG ou JPG · aparece no rodapé (canto inferior esquerdo) dos PDFs</span>
           </div>
         </div>
-      </div>
-      <!-- Assinatura -->
-      <div style="margin-bottom:12px">
-        <div class="fl" style="margin-bottom:6px">✍️ Assinatura (exibida no rodapé inferior direito dos PDFs)</div>
-        <div style="display:flex;align-items:center;gap:14px">
-          <div id="cfg-doc-sig-preview" style="width:140px;height:52px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0">
-            <span id="cfg-doc-sig-empty" style="font-size:22px;opacity:.5">✍️</span>
-            <img id="cfg-doc-sig-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
-          </div>
-          <div style="display:flex;flex-direction:column;gap:7px">
-            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:fit-content">
-              📤 Carregar assinatura
+        <!-- Assinatura -->
+        <div>
+          <div class="fl" style="margin-bottom:6px">✍️ Assinatura</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+            <div id="cfg-doc-sig-preview" style="width:70px;height:70px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg3);overflow:hidden;flex-shrink:0">
+              <span id="cfg-doc-sig-empty" style="font-size:22px;opacity:.5">✍️</span>
+              <img id="cfg-doc-sig-img" style="width:100%;height:100%;object-fit:contain;display:none;border-radius:8px">
+            </div>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;width:100%;justify-content:center">
+              📤 Carregar
               <input type="file" id="cfg-doc-sig-file" accept="image/png,image/jpeg,image/gif,image/webp" onchange="handleSigUpload(this)" style="display:none">
             </label>
-            <button class="btn btn-red btn-sm" id="cfg-doc-sig-remove" onclick="removerSig()" style="display:none;width:fit-content">🗑️ Remover assinatura</button>
-            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG com fundo transparente é ideal · fica no canto inferior direito, acima da linha de assinatura</span>
+            <button class="btn btn-red btn-sm" id="cfg-doc-sig-remove" onclick="removerSig()" style="display:none;width:100%;justify-content:center">🗑️ Remover</button>
+            <span style="font-size:10px;color:var(--silver);line-height:1.4">PNG com fundo transparente é ideal · fica no rodapé, acima da linha de assinatura</span>
           </div>
         </div>
       </div>
@@ -1592,14 +1610,19 @@ td.bold{color:var(--white);font-weight:700}
         <button class="btn btn-primary btn-sm" onclick="salvarPadraoDocumentos()">💾 Salvar Padrão dos Documentos</button>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- ── 3. EDITOR VISUAL DE PDF ── -->
   <div class="panel" style="margin-bottom:16px;border:1px solid var(--blue3)">
-    <div class="panel-hd">
+    <div class="panel-hd cfg-acc-hd" onclick="cfgAccordionToggle('cfg-acc-pdfve')">
       <div class="panel-title">🖼️ Editor Visual de PDF (com preview ao vivo)</div>
-      <span style="font-size:10px;color:var(--silver2)">Arraste para reordenar • clique num bloco para ver as opções</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;color:var(--silver2)">Arraste para reordenar • clique num bloco para ver as opções</span>
+        <span class="cfg-acc-seta" id="cfg-acc-pdfve-seta">⌄</span>
+      </div>
     </div>
+    <div class="cfg-acc-body" id="cfg-acc-pdfve-body" style="max-height:0">
     <div class="panel-bd">
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <button id="pdfve-tab-orc" class="btn btn-primary btn-sm" onclick="pdfveSetTipo('orc')">📋 Orçamento</button>
@@ -1619,14 +1642,19 @@ td.bold{color:var(--white);font-weight:700}
         <button id="pdfve-btn-resetar" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="pdfveResetar()">↺ Restaurar padrão (aba atual)</button>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- ── 4. USUÁRIOS ── -->
   <div class="panel" style="margin-bottom:16px">
-    <div class="panel-hd">
+    <div class="panel-hd cfg-acc-hd" onclick="cfgAccordionToggle('cfg-acc-usuarios')">
       <div class="panel-title">👤 Usuários e Acesso</div>
-      <button class="btn btn-primary btn-sm" id="cfg-btn-novo-usuario" onclick="abrirModalNovoUsuario()">+ Novo Usuário</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-primary btn-sm" id="cfg-btn-novo-usuario" onclick="event.stopPropagation();abrirModalNovoUsuario()">+ Novo Usuário</button>
+        <span class="cfg-acc-seta" id="cfg-acc-usuarios-seta">⌄</span>
+      </div>
     </div>
+    <div class="cfg-acc-body" id="cfg-acc-usuarios-body" style="max-height:0">
     <div class="panel-bd" style="padding:0 16px">
       <div id="cfg-usuarios-aviso" style="display:none;font-size:11px;color:var(--silver2);padding:10px 0">🔒 Somente administradores podem ver e gerenciar outros usuários. Abaixo estão apenas os seus dados.</div>
       <table>
@@ -1634,14 +1662,19 @@ td.bold{color:var(--white);font-weight:700}
         <tbody id="cfg-usuarios-tbody"></tbody>
       </table>
     </div>
+    </div>
   </div>
 
   <!-- ── 4. BACKUP E DADOS ── -->
   <div class="panel" style="margin-bottom:16px">
-    <div class="panel-hd">
+    <div class="panel-hd cfg-acc-hd" onclick="cfgAccordionToggle('cfg-acc-backup')">
       <div class="panel-title">🗄️ Backup e Dados</div>
-      <span style="font-size:10px;color:var(--silver2)">Exporte ou importe todos os dados do sistema</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:10px;color:var(--silver2)">Exporte ou importe todos os dados do sistema</span>
+        <span class="cfg-acc-seta" id="cfg-acc-backup-seta">⌄</span>
+      </div>
     </div>
+    <div class="cfg-acc-body" id="cfg-acc-backup-body" style="max-height:0">
     <div class="panel-bd">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
         <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:16px">
@@ -1663,6 +1696,7 @@ td.bold{color:var(--white);font-weight:700}
         <div id="cfg-resumo-dados" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
       </div>
 
+    </div>
     </div>
   </div>
 
@@ -3358,7 +3392,7 @@ function goPage(id){
   if(id==='financeiro'){initFinanceiroFiltros();renderFinanceiroPage();}
   if(id==='notafiscal')renderNFPage();
   if(id==='relatorios'){initRelatoriosFiltros();renderRelatorios();}
-  if(id==='configuracoes')renderConfiguracoes();
+  if(id==='configuracoes'){renderConfiguracoes();cfgAccordionResetPadrao();}
   // Ativa item do menu correspondente
   document.querySelectorAll('.ni').forEach(function(n){
     if(n.getAttribute('onclick')&&n.getAttribute('onclick').indexOf("'"+id+"'")>=0)n.classList.add('active');
@@ -9832,6 +9866,69 @@ function renderRelatorios(){
     }).join('');
   }
 }
+
+// ════════════ CONFIGURAÇÕES — ACORDEÃO DAS SEÇÕES ════════════
+var CFG_ACCORDION_IDS=['cfg-acc-empresa','cfg-acc-doc','cfg-acc-pdfve','cfg-acc-usuarios','cfg-acc-backup'];
+
+function cfgAccordionAbrir(id){
+  var body=document.getElementById(id+'-body');
+  var seta=document.getElementById(id+'-seta');
+  if(!body||body.classList.contains('cfg-acc-aberto'))return;
+  body.classList.add('cfg-acc-aberto');
+  body.style.maxHeight=body.scrollHeight+'px';
+  if(seta)seta.textContent='⌃';
+}
+function cfgAccordionFechar(id){
+  var body=document.getElementById(id+'-body');
+  var seta=document.getElementById(id+'-seta');
+  if(!body||!body.classList.contains('cfg-acc-aberto'))return;
+  // garante um valor concreto de partida (caso esteja em "none" por conteúdo dinâmico)
+  body.style.maxHeight=body.scrollHeight+'px';
+  body.offsetHeight; // força reflow antes de zerar, senão não anima
+  body.classList.remove('cfg-acc-aberto');
+  body.style.maxHeight='0px';
+  if(seta)seta.textContent='⌄';
+}
+function cfgAccordionToggle(id){
+  var body=document.getElementById(id+'-body');
+  if(!body)return;
+  if(body.classList.contains('cfg-acc-aberto'))cfgAccordionFechar(id);
+  else cfgAccordionAbrir(id);
+}
+// Estado padrão ao entrar na página: só "Dados da Empresa" (a 1ª) aberta.
+function cfgAccordionResetPadrao(){
+  CFG_ACCORDION_IDS.forEach(function(id,i){
+    var body=document.getElementById(id+'-body');
+    var seta=document.getElementById(id+'-seta');
+    if(!body)return;
+    body.style.transition='none'; // troca de página não deve animar o acordeão
+    if(i===0){
+      body.classList.add('cfg-acc-aberto');
+      body.style.maxHeight='none';
+      if(seta)seta.textContent='⌃';
+    } else {
+      body.classList.remove('cfg-acc-aberto');
+      body.style.maxHeight='0px';
+      if(seta)seta.textContent='⌄';
+    }
+    body.offsetHeight; // força reflow antes de reativar a transição
+    body.style.transition='';
+  });
+}
+// Enquanto a seção está aberta, mantém max-height "none" (não um pixel fixo)
+// para que conteúdo dinâmico (tabela de usuários, editor de PDF) não seja
+// cortado — só volta a um valor fixo no instante de fechar (ver cfgAccordionFechar).
+(function _cfgAccordionInitListeners(){
+  CFG_ACCORDION_IDS.forEach(function(id){
+    var body=document.getElementById(id+'-body');
+    if(!body)return;
+    body.addEventListener('transitionend',function(e){
+      if(e.propertyName==='max-height'&&body.classList.contains('cfg-acc-aberto')){
+        body.style.maxHeight='none';
+      }
+    });
+  });
+})();
 
 // ════════════ CONFIGURAÇÕES — FUNÇÕES ════════════
 
