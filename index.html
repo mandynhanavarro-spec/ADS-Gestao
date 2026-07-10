@@ -10590,7 +10590,8 @@ async function salvarUsuario(){
     if(!(await _verificarPinAtual(USUARIOS[_editUserIdx],pinAtual))){erroEl.textContent='PIN atual incorreto.';erroEl.style.display='block';return;}
   }
 
-  // Verifica login duplicado
+  // Verifica login duplicado (checagem rápida local; a checagem que vale é
+  // refeita contra o dado mais recente do servidor dentro do merge abaixo)
   var dupIdx=USUARIOS.findIndex(function(u,i){return u.user===user&&i!==_editUserIdx;});
   if(dupIdx>=0){erroEl.textContent='Este login já está em uso.';erroEl.style.display='block';return;}
 
@@ -10600,20 +10601,48 @@ async function salvarUsuario(){
   var pinSalt,pinHash;
   if(pin){pinSalt=_randomSalt();pinHash=await _hashPin(pin,pinSalt);}
 
-  if(_editUserIdx!==null){
-    var u=USUARIOS[_editUserIdx];
-    u.nome=nome;u.avatar=avatar;
-    if(isAdmin){u.user=user;u.role=role;u.permissoes=permissoes;}
-    if(pass){u.passHash=passHash;u.passSalt=passSalt;delete u.pass;}
-    if(pin){u.pinHash=pinHash;u.pinSalt=pinSalt;}
-  } else {
-    var novo={user:user,nome:nome,role:role,avatar:avatar,permissoes:permissoes||[]};
-    novo.passHash=passHash;novo.passSalt=passSalt;
-    if(pin){novo.pinHash=pinHash;novo.pinSalt=pinSalt;}
-    USUARIOS.push(novo);
+  var loginOriginal=_editUserIdx!==null?USUARIOS[_editUserIdx].user:null;
+  var resultado=await salvarUsuariosComMerge(function(lista){
+    if(loginOriginal!==null){
+      var idx=lista.findIndex(function(x){return x.user===loginOriginal;});
+      if(idx<0) throw new Error('Este usuário foi removido por outra sessão. Recarregue a página.');
+      // Login duplicado, revalidado contra o array fresco
+      if(isAdmin&&user!==loginOriginal){
+        var dup=lista.findIndex(function(x,i){return x.user===user&&i!==idx;});
+        if(dup>=0) throw new Error('Este login já está em uso.');
+      }
+      // Único administrador, revalidado contra o array fresco
+      if(lista[idx].role==='Administrador'&&role!=='Administrador'){
+        var adminsFrescos=lista.filter(function(x){return x.role==='Administrador';}).length;
+        if(adminsFrescos<=1) throw new Error('Este é o único Administrador do sistema. Promova outro usuário a Administrador antes de trocar este perfil.');
+      }
+      var u=lista[idx];
+      u.nome=nome;u.avatar=avatar;
+      if(isAdmin){u.user=user;u.role=role;u.permissoes=permissoes;}
+      if(pass){u.passHash=passHash;u.passSalt=passSalt;delete u.pass;}
+      if(pin){u.pinHash=pinHash;u.pinSalt=pinSalt;}
+    } else {
+      var dupNovo=lista.findIndex(function(x){return x.user===user;});
+      if(dupNovo>=0) throw new Error('Este login já está em uso.');
+      var novo={user:user,nome:nome,role:role,avatar:avatar,permissoes:permissoes||[]};
+      novo.passHash=passHash;novo.passSalt=passSalt;
+      if(pin){novo.pinHash=pinHash;novo.pinSalt=pinSalt;}
+      lista.push(novo);
+    }
+    return lista;
+  });
+
+  if(!resultado.ok){
+    erroEl.textContent=resultado.mensagem||'Não foi possível salvar agora. Tente novamente.';
+    erroEl.style.display='block';
+    return;
   }
-  salvarCFG();fecharModalUsuario();renderTabelaUsuarios();
-  sbSalvarCFG('usuarios', USUARIOS);
+
+  if(isSelf){
+    var euAtualizado=USUARIOS.find(function(x){return x.user===user;});
+    if(euAtualizado) Object.assign(_activeUser, euAtualizado);
+  }
+  fecharModalUsuario();renderTabelaUsuarios();
   if(isSelf&&pin)_updatePinTs(); // acabou de reconfirmar identidade com o PIN atual, não precisa pedir de novo agora
   _cfgToast('✅ Usuário '+nome+' salvo com sucesso!');
 }
