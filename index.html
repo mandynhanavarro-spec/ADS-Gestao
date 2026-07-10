@@ -10513,19 +10513,36 @@ function editarUsuario(i){
   document.getElementById('modal-usuario').classList.add('open');
 }
 function fecharModalUsuario(){document.getElementById('modal-usuario').classList.remove('open');}
-function excluirUsuario(i){
+async function excluirUsuario(i){
   if(!_activeUser||_activeUser.role!=='Administrador'){
     alert('Apenas administradores podem excluir usuários.');
     return;
   }
   if(USUARIOS.length<=1){alert('Deve haver pelo menos 1 usuário no sistema.');return;}
   var alvo=USUARIOS[i];
+  if(!alvo)return;
   if(alvo.role==='Administrador'&&_countAdmins()<=1){
     alert('Você é o único Administrador do sistema. Não é possível excluir esta conta — promova outro usuário a Administrador antes.');
     return;
   }
   if(!confirm('Excluir usuário "'+alvo.nome+'"?'))return;
-  USUARIOS.splice(i,1);salvarCFG();sbSalvarCFG('usuarios',USUARIOS);renderTabelaUsuarios();
+  var loginAlvo=alvo.user;
+  var resultado=await salvarUsuariosComMerge(function(lista){
+    var idx=lista.findIndex(function(x){return x.user===loginAlvo;});
+    if(idx<0) return lista; // já foi excluído por outra sessão nesse meio-tempo
+    if(lista.length<=1) throw new Error('Deve haver pelo menos 1 usuário no sistema.');
+    if(lista[idx].role==='Administrador'){
+      var adminsFrescos=lista.filter(function(x){return x.role==='Administrador';}).length;
+      if(adminsFrescos<=1) throw new Error('Você é o único Administrador do sistema. Não é possível excluir esta conta — promova outro usuário a Administrador antes.');
+    }
+    lista.splice(idx,1);
+    return lista;
+  });
+  if(!resultado.ok){
+    alert(resultado.mensagem||'Não foi possível excluir o usuário agora. Tente novamente.');
+    return;
+  }
+  renderTabelaUsuarios();
 }
 async function salvarUsuario(){
   var erroEl=document.getElementById('mu-erro');
