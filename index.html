@@ -4548,7 +4548,8 @@ function gerarPDF(numOrc){
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   doc.setFont('times','normal');
-  var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
+  var PW=210,PH=297,ML=22,MR=20,MT=18,CW=PW-ML-MR;
+  var RODAPE_Y_ORC=PH-38; // ancora o rodapé perto do fim da página (ver Math.max abaixo)
 
   var descTipoF=f.descTipo||(document.getElementById('f-desc-tipo')||{}).value||'';
   var descQtdF=f.descQtd!=null&&f.descQtd>0?f.descQtd:parseFloat((document.getElementById('f-desc-qtd')||{}).value||0);
@@ -4686,8 +4687,12 @@ function gerarPDF(numOrc){
     }
   });
 
-  // Rodapé sempre fixo no final
-  y+=6;
+  // Rodapé: posição Y fixa perto do fim da página, igual o cabeçalho é fixo
+  // no topo — independente da quantidade de conteúdo. Se o conteúdo for
+  // longo o bastante para ultrapassar essa posição, o Math.max faz o
+  // rodapé descer para logo abaixo do conteúdo em vez de sobrepor (não há
+  // paginação real hoje, então isso evita a colisão nesse caso extremo).
+  y = Math.max(y+6, RODAPE_Y_ORC);
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(80,80,80);
   doc.text(CFG.empresa.tel||'(11) 96770-4116',ML,y+18);
@@ -4709,7 +4714,8 @@ function gerarPDFRecibo(idx){
   if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
+  var PW=210,PH=297,ML=22,MR=20,MT=18,CW=PW-ML-MR;
+  var RODAPE_Y_REC=PH-56; // ancora o rodapé perto do fim da página (ver Math.max abaixo)
 
   var blocos=getOrdemPDF('rec');
   var y=MT;
@@ -4854,7 +4860,12 @@ function gerarPDFRecibo(idx){
     }
   });
 
-  // Rodapé fixo
+  // Rodapé: posição Y fixa perto do fim da página, igual o cabeçalho é fixo
+  // no topo — independente da quantidade de conteúdo. Se o conteúdo for
+  // longo o bastante para ultrapassar essa posição, o Math.max faz o
+  // rodapé descer para logo abaixo do conteúdo em vez de sobrepor (não há
+  // paginação real hoje, então isso evita a colisão nesse caso extremo).
+  y = Math.max(y, RODAPE_Y_REC);
   var fy=y+8;var sx=PW-MR-70;
   doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(0,0,0);
   doc.text('Qualquer d\xfavida estamos \xe0 disposi\xe7\xe3o',sx+35,fy,{align:'center'});
