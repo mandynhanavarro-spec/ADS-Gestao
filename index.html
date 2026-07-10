@@ -10669,7 +10669,7 @@ function importarBackup(evt){
   var file=evt.target.files[0];if(!file)return;
   if(!confirm('ATENÇÃO: Importar o backup vai substituir TODOS os dados atuais. Continuar?')){evt.target.value='';return;}
   var reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
     try{
       var bk=JSON.parse(e.target.result);
       if(bk.clientes)clientes=bk.clientes;
@@ -10680,9 +10680,20 @@ function importarBackup(evt){
       if(bk.templates)templates=bk.templates;
       if(bk.notasFiscais)notasFiscais=bk.notasFiscais;
       if(bk.cfg){CFG.empresa=Object.assign({},CFG.empresa,bk.cfg.empresa||{});CFG.doc=Object.assign({},CFG.doc,bk.cfg.doc||{});}
-      if(bk.usuarios&&Array.isArray(bk.usuarios)&&bk.usuarios.length>0)USUARIOS=bk.usuarios;
       salvarLocal();salvarCFG();
-      if(SUPABASE_ATIVO){sbSalvarCFG('empresa',CFG.empresa);sbSalvarCFG('doc',CFG.doc);sbSalvarCFG('usuarios',USUARIOS);}
+      if(SUPABASE_ATIVO){sbSalvarCFG('empresa',CFG.empresa);sbSalvarCFG('doc',CFG.doc);}
+      if(bk.usuarios&&Array.isArray(bk.usuarios)&&bk.usuarios.length>0){
+        // Restaurar backup é uma substituição TOTAL deliberada (o usuário já
+        // confirmou isso no diálogo acima) — o transform ignora o array atual
+        // do servidor e sempre devolve o do backup. Ainda assim passa pela
+        // trava otimista, então uma escrita concorrente só faz refazer o
+        // ciclo (mesmo resultado final), nunca se perde silenciosamente.
+        var usuariosDoBackup=bk.usuarios;
+        var resultadoUsuarios=await salvarUsuariosComMerge(function(){return usuariosDoBackup;});
+        if(!resultadoUsuarios.ok){
+          alert('O restante do backup foi importado, mas os usuários não puderam ser restaurados agora: '+(resultadoUsuarios.mensagem||'tente novamente')+'. Você pode importar o backup de novo para restaurar só os usuários.');
+        }
+      }
       renderizarTudo();renderConfiguracoes();
       _cfgToast('✅ Backup importado com sucesso! Dados restaurados.');
     }catch(err){alert('Erro ao ler o arquivo de backup. Verifique se é um arquivo JSON válido exportado pelo ADS Gestão.');}
