@@ -930,11 +930,8 @@ td.bold{color:var(--white);font-weight:700}
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
           <div><div class="fl">Garantia</div><input class="fi" id="nr-gtia" placeholder="Ex: 12 meses"></div>
-          <div><div class="fl">Pagamento</div>
-            <select class="fs" id="nr-pgto">
-              <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
-              <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
-            </select>
+          <div><div class="fl">Condições de Pagamento</div>
+            <div id="nr-pgto-cond"></div>
           </div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
@@ -1184,14 +1181,8 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">Garantia</div><input class="fi" id="nof-gtia" placeholder="Ex: 12 meses"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Pagamento</div>
-            <select class="fs" id="nof-pgto" onchange="togglePixInfo('nof-pgto','pix-info-nof')">
-              <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
-              <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
-            </select>
-            <div id="pix-info-nof" style="display:none;margin-top:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--green2)">
-              💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-nof-key" style="color:var(--white)"></span>
-            </div>
+          <div><div class="fl">Condições de Pagamento</div>
+            <div id="nof-pgto-cond"></div>
           </div>
           <div>
             <div class="fl">Validade do Orçamento</div>
@@ -1299,15 +1290,8 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="so-desloc" placeholder="0,00" step="0.01" value="0" oninput="calcSerrOrc()"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Pagamento</div>
-            <select class="fs" id="so-pgto" onchange="togglePixInfo('so-pgto','pix-info-so')">
-              <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
-              <option>Sinal de 50% / Restante 50%</option>
-              <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
-            </select>
-            <div id="pix-info-so" style="display:none;margin-top:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--green2)">
-              💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-so-key" style="color:var(--white)"></span>
-            </div>
+          <div><div class="fl">Condições de Pagamento</div>
+            <div id="so-pgto-cond"></div>
           </div>
           <div><div class="fl">Validade</div><input class="fi" id="so-val" readonly style="color:var(--green2);cursor:default"></div>
         </div>
@@ -2692,6 +2676,7 @@ td.bold{color:var(--white);font-weight:700}
   </div>
 </div>
 
+<script src="condicoes-pagamento.js"></script>
 <script>
 // ════════════ DATA STORE ════════════
 var templates = [
@@ -2918,6 +2903,7 @@ async function carregarTodosDados() {
         serv: (o.descricao||'').split('\n')[0], desc: o.descricao||'',
         val: parseFloat(o.valor||0), gtia: o.garantia||'',
         pgto: o.pagamento||'Pix', status: o.status||'pendente',
+        condicoesPagamento: o.condicoes_pagamento||null,
         data: o.data_emissao||'', obs: o.observacoes||'',
         custoPecas: parseFloat(o.custo_pecas||0),
         matEdit: matEdit,
@@ -2946,6 +2932,7 @@ async function carregarTodosDados() {
         tel: r.cliente_tel||'', end: r.cliente_end||'',
         serv: r.servico||'', desc: r.descricao||'',
         val: parseFloat(r.valor||0), pgto: r.pagamento||'',
+        condicoesPagamento: r.condicoes_pagamento||null,
         gtia: r.garantia||'', data: r.data_emissao||'',
         dataRaw: r.data_raw||'',
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
@@ -3164,7 +3151,9 @@ async function sbSalvarOrcamento(o) {
   const payload = {
     numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
     cliente_end: o.end||'', descricao: o.desc, valor: o.val,
-    garantia: o.gtia, pagamento: o.pgto, status: o.status,
+    garantia: o.gtia, pagamento: o.pgto,
+    condicoes_pagamento: o.condicoesPagamento&&o.condicoesPagamento.length>0 ? o.condicoesPagamento : null,
+    status: o.status,
     data_emissao: fmtDateSB(o.data, o.dataRaw), observacoes: o.obs||'',
     custo_pecas: parseFloat(o.custoPecas||0),
     mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null,
@@ -3224,7 +3213,9 @@ async function sbSalvarRecibo(r) {
   const payload = {
     numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
     cliente_end: r.end||'', descricao: r.desc||r.serv||'',
-    valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
+    valor: r.val, pagamento: r.pgto,
+    condicoes_pagamento: r.condicoesPagamento&&r.condicoesPagamento.length>0 ? r.condicoesPagamento : null,
+    garantia: r.gtia||'',
     data_emissao: fmtDateSB(r.data, r.dataRaw),
     data_raw: r.dataRaw||'',
     custo_pecas: parseFloat(r.custoPecas||0),
@@ -4136,14 +4127,14 @@ function showAprov(){
   var oExist=orcamentos.find(function(o){return o.num===f.numero;});
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,desc:f.descricao,
-      val:f.valor,gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,status:'aprovado',
+      val:f.valor,gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],data:f.data,obs:f.obs,status:'aprovado',
       custoPecas:matTotais.custo,matEdit:matEditOrc});
     // sbId já está em oExist — o UPDATE vai funcionar corretamente
     sbSalvarOrcamento(oExist);
   } else {
     var novoOrc={num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,status:'aprovado',data:f.data,obs:f.obs,
+      gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],status:'aprovado',data:f.data,obs:f.obs,
       custoPecas:matTotais.custo,matEdit:matEditOrc};
     orcamentos.unshift(novoOrc);
     sbSalvarOrcamento(novoOrc);
@@ -4200,7 +4191,7 @@ async function emitirDoc(){
     var finStatusDoc=f.pagamento==='Dinheiro'||f.pagamento==='Cartão Crédito'||f.pagamento==='Cartão Débito'?'pago':(f.pagamento==='Pix'?'aguardando_pix':'pendente');
     var recibo={num:numR,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,
-      val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0,
+      val:f.valor,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0,
       finStatus:finStatusDoc,finForma:f.pagamento,finLancado:true};
     recibos.unshift(recibo);
     if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
@@ -4573,7 +4564,7 @@ function gerarPDF(numOrc){
     if(!o){alert('Orçamento não encontrado.');return;}
     f={numero:o.num,cliente:o.cli,tel:o.tel||'',endereco:o.end||'',
        descricao:o.desc||o.serv||'',valor:o.val,garantia:o.gtia||'',
-       pagamento:o.pgto,data:o.data,obs:o.obs||'',desloc:o.desloc||0,
+       pagamento:o.pgto,condicoesPagamento:o.condicoesPagamento||null,data:o.data,obs:o.obs||'',desloc:o.desloc||0,
        validade:o.validade||null,descTipo:o.descTipo||'',descQtd:o.descQtd||0};
   } else {
     f=getFormData();
@@ -4690,22 +4681,8 @@ function gerarPDF(numOrc){
       doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
       doc.line(ML,y-2,PW-MR,y-2);y+=4;
       doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
-      doc.setFont('helvetica','normal');
-      if(pg==='Parcelado'||pg==='Sinal de 50% / Restante 50%'){
-        doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
-        doc.text('Sendo Pix '+pixKey+' ou '+bancoInfo,ML+2,y);y+=6;
-      } else if(pg==='Pix'){
-        doc.text('via Pix: '+pixKey,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfo,ML+2,y);y+=6;
-      } else if(pg==='Pendente'){
-        doc.text('Pagamento Pendente \u2014 via Pix: '+pixKey,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfo,ML+2,y);y+=6;
-      } else if(pg==='Dinheiro'){
-        doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;
-      } else {
-        doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
-      }
-      doc.text(respNome,ML+2,y);y+=6;
+      var _condsOrc=condicoesPagamentoOuFallback(f.condicoesPagamento,pg,valorFinal);
+      y=imprimirCondicoesPagamento(doc,_condsOrc,ML+2,y);
 
     } else if(b.id==='obs'){
       if(f.obs){
@@ -4878,17 +4855,22 @@ function gerarPDFRecibo(idx){
       doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
       doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
       doc.setFont('helvetica','normal');
-      var pgtoLabel=r.finForma||r.pgto;
-      if(pgtoLabel==='Pix'||pgtoLabel==='Aguardando Pix'){
-        doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
-        doc.text(respNomeR,ML+2,y);y+=6;
-      } else if(pgtoLabel==='Parcelado'||pgtoLabel==='Sinal de 50% / Restante 50%'){
-        doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
-        doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
-        doc.text(respNomeR,ML+2,y);y+=6;
+      if(r.finForma){
+        var pgtoLabel=r.finForma;
+        if(pgtoLabel==='Pix'||pgtoLabel==='Aguardando Pix'){
+          doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
+          doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
+          doc.text(respNomeR,ML+2,y);y+=6;
+        } else if(pgtoLabel==='Parcelado'||pgtoLabel==='Sinal de 50% / Restante 50%'){
+          doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
+          doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
+          doc.text(respNomeR,ML+2,y);y+=6;
+        } else {
+          doc.text(pgtoLabel,ML+2,y);y+=6;
+        }
       } else {
-        doc.text(pgtoLabel,ML+2,y);y+=6;
+        var _condsRec=condicoesPagamentoOuFallback(r.condicoesPagamento,r.pgto,r.val);
+        y=imprimirCondicoesPagamento(doc,_condsRec,ML+2,y);
       }
       doc.line(ML,y-2,PW-MR,y-2);y+=4;
     }
@@ -5002,6 +4984,7 @@ function iniciarNovoRecibo(cliPre){
   document.getElementById('nr-cli-nome').value=NR.cli?NR.cli.nm:'';
   document.getElementById('nr-cli-tel').value=NR.cli?NR.cli.tel:'';
   document.getElementById('nr-cli-end').value=NR.cli?NR.cli.end:'';
+  montarCondicoesPagamento('nr-pgto-cond',0,{onChange:nrSincFormaFin});
   // Data hoje
   var today=new Date();
   var fmtD=function(x){return x.getFullYear()+'-'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'-'+(x.getDate()<10?'0':'')+x.getDate();};
@@ -5119,8 +5102,7 @@ function nrProxRecibo(){
   if(NR.tpl){
     document.getElementById('nr-valor').value=NR.tpl.val;
     document.getElementById('nr-gtia').value=NR.tpl.gtia;
-    var pgEl=document.getElementById('nr-pgto');
-    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NR.tpl.pgto){pgEl.selectedIndex=i;break;}}
+    montarCondicoesPagamento('nr-pgto-cond',NR.tpl.val,{tipoInicial:NR.tpl.pgto,onChange:nrSincFormaFin});
     document.getElementById('nr-desc').value=descTxt;
   }
   // Adiciona valor de venda de materiais ao valor total
@@ -5257,10 +5239,9 @@ function calcTotalRecibo(){
 
 // ════ INFORMAÇÕES DE PAGAMENTO — auxiliares ════
 function nrSincFormaFin(){
-  var pgtoEl=document.getElementById('nr-pgto');
   var finFormaEl=document.getElementById('nr-fin-forma');
-  if(!pgtoEl||!finFormaEl)return;
-  var pgto=pgtoEl.value;
+  if(!finFormaEl)return;
+  var pgto=condPagamentoTipoPrincipal('nr-pgto-cond');
   // Pré-seleciona a forma de recebimento igual ao pagamento escolhido
   for(var i=0;i<finFormaEl.options.length;i++){
     if(finFormaEl.options[i].text===pgto){finFormaEl.selectedIndex=i;break;}
@@ -5328,7 +5309,6 @@ async function nrEmitirRecibo(){
   var tel=(document.getElementById('nr-cli-tel').value||'').trim();
   var end=(document.getElementById('nr-cli-end').value||'').trim();
   var val=parseFloat(document.getElementById('nr-valor').value||0);
-  var pgto=document.getElementById('nr-pgto').value;
   var dataRaw=document.getElementById('nr-data').value;
   var gtia=(document.getElementById('nr-gtia').value||'').trim();
   var desc=(document.getElementById('nr-desc').value||'').trim();
@@ -5337,6 +5317,10 @@ async function nrEmitirRecibo(){
   var nrDescQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
   var nrDesc=nrDescTipo==='valor'?nrDescQtd:(nrDescTipo==='perc'?val*(nrDescQtd/100):0);
   var valorFinal=Math.max(0,val-nrDesc);
+  condPagamentoDefinirValorTotal('nr-pgto-cond',valorFinal);
+  var condicoesPagamento=lerCondicoesPagamento('nr-pgto-cond');
+  if(!condicoesPagamento)return;
+  var pgto=resumoCondicoesPagamento(condicoesPagamento);
   var manual=(document.getElementById('nr-serv-manual').value||'').trim();
   var serv=NR.tpl?NR.tpl.nm:manual;
   var numR=proximoNumRecibo();
@@ -5344,7 +5328,7 @@ async function nrEmitirRecibo(){
 
   // ── Lê status do bloco "Informações de Pagamento" ──
   var finStatus=(document.getElementById('nr-fin-status')||{}).value||'pendente';
-  var finForma=(document.getElementById('nr-fin-forma')||{}).value||pgto;
+  var finForma=(document.getElementById('nr-fin-forma')||{}).value||condPagamentoTipoPrincipal('nr-pgto-cond');
   var finValorPago=parseFloat((document.getElementById('nr-fin-valorpago')||{}).value||0)||null;
   var finDataPgto=(document.getElementById('nr-fin-datapgto')||{}).value||dataRaw;
 
@@ -5364,7 +5348,7 @@ async function nrEmitirRecibo(){
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
 
-  var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,
+  var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,condicoesPagamento:condicoesPagamento,gtia:gtia,
     data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,
     finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec,
     finStatus:finStatus,finForma:finForma,finValorPago:finValorPago||undefined};
@@ -5451,6 +5435,7 @@ function iniciarNovoOrcamento(cliPre){
   document.getElementById('nof-cli-nome').value=NOF.cli?NOF.cli.nm:'';
   document.getElementById('nof-cli-tel').value=NOF.cli?NOF.cli.tel:'';
   document.getElementById('nof-cli-end').value=NOF.cli?NOF.cli.end:'';
+  montarCondicoesPagamento('nof-pgto-cond',0);
   nofSetStep(1);
   ['nof-blk-cli','nof-blk-tpl','nof-blk-mat','nof-blk-orc'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
@@ -5649,8 +5634,7 @@ function nofProxOrc(){
     // Valor = serviço + peças (venda)
     document.getElementById('nof-valor').value=valorComMat>0?valorComMat.toFixed(2):NOF.tpl.val;
     document.getElementById('nof-gtia').value=NOF.tpl.gtia;
-    var pgEl=document.getElementById('nof-pgto');
-    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NOF.tpl.pgto){pgEl.selectedIndex=i;break;}}
+    montarCondicoesPagamento('nof-pgto-cond',valorComMat>0?valorComMat:NOF.tpl.val,{tipoInicial:NOF.tpl.pgto});
     document.getElementById('nof-desc').value=descTxt;
   } else {
     // Serviço manual: se já havia valor digitado, mantém; soma materiais
@@ -5751,7 +5735,6 @@ async function nofSalvarGerarPDF(){
   var data=document.getElementById('nof-data').value;
   var valor=parseFloat(document.getElementById('nof-valor').value||0);
   var gtia=document.getElementById('nof-gtia').value;
-  var pgto=document.getElementById('nof-pgto').value;
   var obs=(document.getElementById('nof-obs').value||'').trim();
   var desloc=parseFloat((document.getElementById('nof-desloc').value)||0);
   var matTotais=recalcMatNof()||{custo:0,venda:0};
@@ -5760,6 +5743,10 @@ async function nofSalvarGerarPDF(){
   var descQtd=parseFloat(document.getElementById('nof-desc-qtd').value||0);
   var descVal=descTipo==='valor'?descQtd:(descTipo==='perc'?valor*(descQtd/100):0);
   var valorFinal=Math.max(0,valor-descVal);
+  condPagamentoDefinirValorTotal('nof-pgto-cond',valorFinal);
+  var condicoesPagamento=lerCondicoesPagamento('nof-pgto-cond');
+  if(!condicoesPagamento)return;
+  var pgto=resumoCondicoesPagamento(condicoesPagamento);
   var serv=NOF.tpl?NOF.tpl.nm:(desc.split('\n')[0]);
   // Coleta lista de peças para persistência
   var matEditNof=nofMatLinhas.map(function(rowId){
@@ -5778,7 +5765,7 @@ async function nofSalvarGerarPDF(){
   }).filter(Boolean);
   // Salva orçamento
   var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
-    val:valorFinal,gtia:gtia,pgto:pgto,status:'pendente',data:data,obs:obs,
+    val:valorFinal,gtia:gtia,pgto:pgto,condicoesPagamento:condicoesPagamento,status:'pendente',data:data,obs:obs,
     descTipo:descTipo,descQtd:descQtd,descBase:descVal>0?valor:0,descV:descVal,
     custoPecas:matTotais.custo,matEdit:matEditNof};
   var oExist=orcamentos.find(function(o){return o.num===num;});
@@ -5798,17 +5785,9 @@ async function nofSalvarGerarPDF(){
   fecharNovoOrcFlow();
   // Garante validade selecionada no PDF
   nofAtualizarValidade();
-  // Gera PDF usando form intermediário
-  document.getElementById('f-num').value=num;
-  document.getElementById('f-data').value=data;
-  document.getElementById('f-cli').value=nome;
-  document.getElementById('f-tel').value=tel;
-  document.getElementById('f-end').value=end.replace(' — ',' - ');
-  document.getElementById('f-desc').value=desc||manual;
-  document.getElementById('f-valor').value=valorFinal;
-  document.getElementById('f-gtia').value=gtia;
-  document.getElementById('f-obs').value=obs;
-  setTimeout(function(){gerarPDF();},150);
+  // Gera o PDF direto a partir do orçamento recém-salvo (não usa o form
+  // "Modo Campo" — evita imprimir uma condição de pagamento desatualizada)
+  setTimeout(function(){gerarPDF(num);},150);
   alert('✅ Orçamento #'+num+' salvo! PDF sendo gerado.');
   renderOrcTable();
 }
@@ -5984,13 +5963,13 @@ function salvarEGerarPDFOrc(){
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,
+      gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],data:f.data,obs:f.obs,
       custoPecas:matTotais.custo,matEdit:matEditOrc});
   } else {
     orcamentos.unshift({
       num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,status:'pendente',data:f.data,
+      gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],status:'pendente',data:f.data,
       obs:f.obs,custoPecas:matTotais.custo,matEdit:matEditOrc
     });
   }
@@ -6397,6 +6376,9 @@ async function salvarAtualizacaoPgto(){
   obj.finForma=novaForma;
   obj.finValorPago=valorPago;
   obj.pgto=novaForma;
+  // Edição via campo único: sobrescreve condicoesPagamento com 1 condição
+  // para não deixar o PDF imprimindo uma condição antiga desatualizada.
+  obj.condicoesPagamento=[{tipo:novaForma,valor:obj.val}];
 
   // Atualiza lançamento financeiro existente ou cria novo
   var lancExist=financeiro.find(function(f){return f.num===obj.num;});
@@ -6604,6 +6586,9 @@ function salvarEdicaoOrc(){
   o.descV=o.descTipo==='valor'?o.descQtd:(o.descTipo==='perc'?o.val*(o.descQtd/100):0);
   o.descBase=o.descV>0?o.val:0;
   if(o.descV>0){o.val=Math.max(0,o.val-o.descV);}
+  // Edição via campo único: sobrescreve condicoesPagamento com 1 condição
+  // para não deixar o PDF imprimindo uma condição antiga desatualizada.
+  o.condicoesPagamento=[{tipo:o.pgto,valor:o.val}];
   o.data=dataRaw;
   o.status=novoStatus;
 
@@ -6835,6 +6820,9 @@ async function salvarEdicaoRec(){
   r.descV=r.descTipo==='valor'?r.descQtd:(r.descTipo==='perc'?r.val*(r.descQtd/100):0);
   r.descBase=r.descV>0?r.val:0;
   if(r.descV>0){r.val=Math.max(0,r.val-r.descV);}
+  // Edição via campo único: sobrescreve condicoesPagamento com 1 condição
+  // para não deixar o PDF imprimindo uma condição antiga desatualizada.
+  r.condicoesPagamento=[{tipo:r.pgto,valor:r.val}];
   r.dataRaw=dataRaw;
   r.data=dataRaw?fmtDateBr(dataRaw):r.data;
   // Materiais
@@ -8897,6 +8885,7 @@ function abrirSerrOrc(){
   ['so-valor','so-desloc','so-desc-qtd'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='0';
   });
+  montarCondicoesPagamento('so-pgto-cond',0);
   var dtEl=document.getElementById('so-desc-tipo');if(dtEl)dtEl.value='';
   var dpEl=document.getElementById('so-desc-preview');if(dpEl)dpEl.style.display='none';
   // Data e validade
@@ -9072,7 +9061,10 @@ async function serrEmitirRecibo(){
   var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
   var valorFinal=Math.max(0,val-descVal);
   var dataRaw=document.getElementById('so-data').value;
-  var pgto=document.getElementById('so-pgto').value;
+  condPagamentoDefinirValorTotal('so-pgto-cond',valorFinal);
+  var condicoesPagamento=lerCondicoesPagamento('so-pgto-cond');
+  if(!condicoesPagamento)return;
+  var pgto=resumoCondicoesPagamento(condicoesPagamento);
   var desloc=parseFloat(document.getElementById('so-desloc').value||0);
   var matTotais=serrGetMatTotais();
   // Coleta lista de peças para persistência
@@ -9094,7 +9086,7 @@ async function serrEmitirRecibo(){
   var numR=proximoNumRecibo();
   var novoRec={num:numR,cli:cli,tel:(document.getElementById('so-tel').value||'').trim(),
     end:(document.getElementById('so-end').value||'').trim(),
-    serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
+    serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,condicoesPagamento:condicoesPagamento,
     gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,finLancado:false,
     custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr};
   recibos.unshift(novoRec);
@@ -9144,8 +9136,10 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   if(r.end){y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);doc.setFont('helvetica','normal');var endLines=doc.splitTextToSize(r.end,CW-24);doc.text(endLines,ML+24,y);y+=(endLines.length-1)*5;}
   y+=10;doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Servi\xe7os realizados:',ML,y);
   y+=6;(descFull||r.desc||'').split('\n').forEach(function(ln){if(ln.trim()){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('\u2022 '+ln.trim(),ML+3,y);y+=6;}});
-  y+=6;doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('Forma de pagamento: ',ML,y);doc.setFont('helvetica','normal');doc.text(r.pgto||'',ML+52,y);
-  y+=10;doc.setFillColor(0,120,0);doc.rect(ML,y,CW,10,'F');
+  y+=6;doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('Forma de pagamento:',ML,y);y+=7;
+  var _condsRecSerr=condicoesPagamentoOuFallback(r.condicoesPagamento,r.pgto,r.val);
+  y=imprimirCondicoesPagamento(doc,_condsRecSerr,ML+2,y);
+  y+=4;doc.setFillColor(0,120,0);doc.rect(ML,y,CW,10,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(255,255,255);
   doc.text('TOTAL RECEBIDO: R$ '+parseFloat(r.val||0).toLocaleString('pt-BR',{minimumFractionDigits:2}),PW/2,y+7,{align:'center'});
   doc.setTextColor(0,0,0);y+=20;
@@ -9200,7 +9194,10 @@ async function gerarPDFSerrOrc(){
   var num=document.getElementById('so-num').value;
   var tel=document.getElementById('so-tel').value.trim();
   var end=document.getElementById('so-end').value.trim();
-  var pgto=document.getElementById('so-pgto').value;
+  condPagamentoDefinirValorTotal('so-pgto-cond',valorFinal);
+  var condicoesPagamento=lerCondicoesPagamento('so-pgto-cond');
+  if(!condicoesPagamento)return;
+  var pgto=resumoCondicoesPagamento(condicoesPagamento);
   var obs=document.getElementById('so-obs').value.trim();
   var dataRaw=document.getElementById('so-data').value;
   var validade=document.getElementById('so-val').value;
@@ -9222,7 +9219,7 @@ async function gerarPDFSerrOrc(){
   var novoOrc={
     num:num,cli:cli,tel:tel,end:end,
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,
-    pgto:pgto,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
+    pgto:pgto,condicoesPagamento:condicoesPagamento,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
     validade:validade,obs:obs,status:'pendente',
     descTipo:tipo,descQtd:qtd,descBase:desc_val>0?val:0,descV:desc_val,
     custoPecas:matTotais.custo,matEdit:matEditSerr,
@@ -9270,14 +9267,8 @@ async function gerarPDFSerrOrc(){
   var vl=doc.splitTextToSize(vfmt,CW-6);doc.setFont('helvetica',desc_val>0?'bold':'normal');doc.text(vl,ML+4,y);y+=vl.length*6+4;
   doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
   doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
-  doc.setFont('helvetica','normal');
-  if(pgto==='Parcelado'||pgto==='Sinal de 50% / Restante 50%'){
-    doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
-    doc.text('Sendo Pix ads.pg@hotmail.com ou Banco Itau AG 0466 CC 60864-3',ML+2,y);y+=6;
-  } else if(pgto==='Pix'){doc.text('Pix: ads.pg@hotmail.com',ML+2,y);y+=6;}
-  else if(pgto==='Dinheiro'){doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;}
-  else {doc.text('Pagamento via '+pgto+'.',ML+2,y);y+=6;}
-  doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
+  y=imprimirCondicoesPagamento(doc,condicoesPagamento,ML+2,y);
+  y-=2;
   if(obs){doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y+3,PW-MR,y+3);y+=8;doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(0,0,0);doc.text('Observa\xe7\xf5es:',ML,y);y+=6;doc.setFont('helvetica','normal');var ol=doc.splitTextToSize(obs,CW-4);doc.text(ol,ML+2,y);y+=ol.length*6;}
   y+=10;
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
@@ -9415,8 +9406,7 @@ nofProxOrc = function(){
     document.getElementById('nof-gtia').value  = gtia||'—';
     document.getElementById('nof-desc').value  = desc;
     document.getElementById('nof-desloc').value= desloc.toFixed(2);
-    var pgEl = document.getElementById('nof-pgto');
-    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===pgto){pgEl.selectedIndex=i;break;}}
+    montarCondicoesPagamento('nof-pgto-cond',valorFinal,{tipoInicial:pgto});
     // Desconto já foi aplicado no valor, zera desconto do form final
     document.getElementById('nof-desc-tipo').value = '';
     document.getElementById('nof-desc-qtd').value  = '0';
@@ -9518,8 +9508,7 @@ nrProxRecibo = function(){
     document.getElementById('nr-valor').value  = valorFinal.toFixed(2);
     document.getElementById('nr-desc').value   = desc;
     document.getElementById('nr-desloc').value = desloc.toFixed(2);
-    var pgEl = document.getElementById('nr-pgto');
-    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===pgto){pgEl.selectedIndex=i;break;}}
+    montarCondicoesPagamento('nr-pgto-cond',valorFinal,{tipoInicial:pgto,onChange:nrSincFormaFin});
     document.getElementById('nr-desc-tipo').value = '';
     document.getElementById('nr-desc-qtd').value  = '0';
     document.getElementById('nr-blk-mat').style.display = 'none';
@@ -10511,7 +10500,7 @@ function togglePixInfo(selectId, infoBoxId){
   if(mesOrcEl){var mo=new Date().getMonth()+1;mesOrcEl.value=String(mo);}
   // Inicializa info Pix nos selects que já estão com Pix selecionado por padrão
   setTimeout(function(){
-    [['f-pgto','pix-info-orc'],['nof-pgto','pix-info-nof'],['so-pgto','pix-info-so'],['eo-pgto','pix-info-eo']]
+    [['f-pgto','pix-info-orc'],['eo-pgto','pix-info-eo']]
     .forEach(function(p){togglePixInfo(p[0],p[1]);});
   },500);
 })();
