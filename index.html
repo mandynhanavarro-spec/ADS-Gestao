@@ -2987,11 +2987,12 @@ async function carregarTodosDados() {
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
         // Campos de status de pagamento
         finStatus: r.fin_status||'pendente',
-        // Com 2+ condições de pagamento, não cai no fallback ||r.pagamento
-        // (que traria o resumo em texto "Múltiplas formas") — senão
-        // gerarPDFRecibo voltaria a priorizar o branch legado de finForma
-        // em vez de imprimir o detalhamento de condicoesPagamento.
-        finForma: (r.condicoes_pagamento&&r.condicoes_pagamento.length>1) ? '' : (r.fin_forma||r.pagamento||''),
+        // Com condicoes_pagamento presente (pipeline novo, 1+ condições), não
+        // cai no fallback ||r.pagamento (que traria o resumo em texto, ex.
+        // "Cartão Crédito" sem a modalidade/parcelas, ou "Múltiplas formas")
+        // — senão gerarPDFRecibo voltaria a priorizar o branch legado de
+        // finForma em vez de imprimir o detalhamento de condicoesPagamento.
+        finForma: (r.condicoes_pagamento&&r.condicoes_pagamento.length>0) ? '' : (r.fin_forma||r.pagamento||''),
         finValorPago: r.fin_valor_pago||null,
         finVencimento: r.fin_vencimento||null,
         finLancado: r.fin_lancado||false
@@ -3263,12 +3264,13 @@ async function sbDeletarOrcamento(sbId) {
 // ── SALVAR RECIBO ────────────────────────────────────────────
 async function sbSalvarRecibo(r) {
   if (!SUPABASE_ATIVO) return;
-  // Recibo com 2+ condições de pagamento: fin_forma precisa ficar null de
-  // verdade no banco (não cair no fallback ||r.pgto, que seria o resumo em
-  // texto "Múltiplas formas") — senão, ao recarregar do Supabase, fin_forma
-  // volta truthy e gerarPDFRecibo cai no branch legado em vez de imprimir o
-  // detalhamento de condicoesPagamento.
-  const temMultiplasCondicoes = r.condicoesPagamento && r.condicoesPagamento.length>1;
+  // Recibo com condicoesPagamento (pipeline novo, 1+ condições — salvarEdicaoRec
+  // zera r.finForma sempre, mesmo com 1 condição só): fin_forma precisa ficar
+  // null de verdade no banco (não cair no fallback ||r.pgto) — senão, ao
+  // recarregar do Supabase, fin_forma volta truthy e gerarPDFRecibo cai no
+  // branch legado em vez de imprimir o detalhamento de condicoesPagamento
+  // (perdendo modalidade/parcelas/valorParcela de Cartão Crédito parcelado).
+  const temPipelineNovo = r.condicoesPagamento && r.condicoesPagamento.length>0;
   const payload = {
     numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
     cliente_end: r.end||'', descricao: r.desc||r.serv||'',
@@ -3283,7 +3285,7 @@ async function sbSalvarRecibo(r) {
     desc_base: r.descBase||0, desc_val: r.descV||0,
     desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
     fin_status: r.finStatus||'pendente',
-    fin_forma: temMultiplasCondicoes ? null : (r.finForma||r.pgto||null),
+    fin_forma: temPipelineNovo ? null : (r.finForma||r.pgto||null),
     fin_valor_pago: r.finValorPago||null,
     fin_vencimento: r.finVencimento||null,
     fin_lancado: r.finLancado||false
@@ -6361,8 +6363,13 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
 
   if(tipo==='recibo'){
     var numR=proximoNumRecibo();
+    // Preserva as condições de pagamento do orçamento original (múltiplas,
+    // se houver) — espelha o mesmo tratamento já aplicado em showAprov.
+    // Sem isso, um orçamento com 2+ condições virava um recibo de forma
+    // única (Pix) ao aprovar pela aba Orçamentos.
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:forma,
+      condicoesPagamento:condicoesPagamentoOuFallback(o.condicoesPagamento,forma,o.val),
       gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
       finStatus:statusFin,finValorPago:valorPago,finVencimento:vencimento,finLancado:false};
 
@@ -6484,10 +6491,16 @@ async function salvarAtualizacaoPgto(){
   obj.finStatus=novoStatus;
   obj.finForma=novaForma;
   obj.finValorPago=valorPago;
-  obj.pgto=novaForma;
-  // Edição via campo único: sobrescreve condicoesPagamento com 1 condição
-  // para não deixar o PDF imprimindo uma condição antiga desatualizada.
-  obj.condicoesPagamento=[{tipo:novaForma,valor:obj.val}];
+  // Este modal só tem 1 <select> de forma — não representa "Múltiplas
+  // formas". Só sobrescreve pgto/condicoesPagamento quando o registro já
+  // era de condição única (ou não tinha nenhuma); com 2+ condições
+  // preserva o que já estava configurado, senão usar este modal só pra
+  // trocar o status (ex: Pendente→Pago) apagaria silenciosamente as
+  // alternativas de pagamento configuradas no wizard de emissão.
+  if(!obj.condicoesPagamento || obj.condicoesPagamento.length<=1){
+    obj.pgto=novaForma;
+    obj.condicoesPagamento=[{tipo:novaForma,valor:obj.val}];
+  }
 
   // Atualiza lançamento financeiro existente ou cria novo
   var lancExist=financeiro.find(function(f){return f.num===obj.num;});
