@@ -97,15 +97,6 @@ function condPagamentoSincronizarValor(containerId, valorTotal){
   }
 }
 
-// Tipo da 1ª condição — usado por fluxos legados que precisam de "uma forma
-// representativa" para sugerir campos relacionados (ex: forma de recebimento
-// no Financeiro do Recibo Portões).
-function condPagamentoTipoPrincipal(containerId){
-  var st = _condPagState[containerId];
-  if(!st || !st.condicoes.length) return 'Pix';
-  return st.condicoes[0].tipo;
-}
-
 function lerCondicoesPagamento(containerId){
   var st = _condPagState[containerId];
   if(!st || !st.condicoes.length) return null;
@@ -245,7 +236,17 @@ function imprimirCondicoesPagamento(doc, condicoes, x, y, valorTotal){
 
 function _condPagRowHtml(containerId, cond, showValor, showRemove){
   var rowDomId = 'cp-row-'+cond._rowId;
-  var tipoOpts = TIPOS_PAGAMENTO_COND.map(function(t){
+  // Tipos legados (ex: "Parcelado"/"Pendente", removidos do dropdown pra
+  // condições novas) podem chegar aqui em registros antigos, via
+  // condicoesPagamentoOuFallback. Sem injetar o tipo atual como opção
+  // extra quando ele não está em TIPOS_PAGAMENTO_COND, nenhuma <option>
+  // fica "selected" e o <select> mostra a 1ª opção (Pix) por padrão do
+  // navegador — visualmente errado, e some com o tipo original se o
+  // usuário salvar sem mexer no campo (o state continua "Parcelado" mas
+  // parece "Pix" na tela) ou o perde de vez ao trocar o select.
+  var tiposParaExibir = TIPOS_PAGAMENTO_COND.slice();
+  if(cond.tipo && tiposParaExibir.indexOf(cond.tipo)<0) tiposParaExibir.push(cond.tipo);
+  var tipoOpts = tiposParaExibir.map(function(t){
     return '<option value="'+t+'"'+(t===cond.tipo?' selected':'')+'>'+t+'</option>';
   }).join('');
   var html = '<div id="'+rowDomId+'" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:8px">';

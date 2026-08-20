@@ -6949,13 +6949,12 @@ async function salvarEdicaoRec(){
   r.condicoesPagamento=erCondicoesPagamento;
   r.pgto=resumoCondicoesPagamento(erCondicoesPagamento);
   // gerarPDFRecibo prioriza r.finForma sobre r.condicoesPagamento (bloco
-  // "Forma de Pagamento" do PDF) — com 2+ condições editadas aqui, limpa
-  // r.finForma pra impressão cair no branch que lê condicoesPagamento.
-  // Com 1 condição só (equivalente ao comportamento legado), mantém como
-  // está — não precisa limpar.
-  if(erCondicoesPagamento.length>1){
-    r.finForma=null;
-  }
+  // "Forma de Pagamento" do PDF) — r.finForma quase sempre vem preenchido
+  // (toda emissão nova grava finForma), então sempre limpa aqui, mesmo com
+  // 1 condição só: senão trocar o tipo (ex: Dinheiro→Pix) ou mudar Cartão
+  // Crédito para parcelado com N parcelas fica sem efeito no PDF, que
+  // continuaria imprimindo o finForma antigo em vez do detalhe atualizado.
+  r.finForma=null;
   r.dataRaw=dataRaw;
   r.data=dataRaw?fmtDateBr(dataRaw):r.data;
   // Materiais
