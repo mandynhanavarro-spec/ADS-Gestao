@@ -2987,7 +2987,11 @@ async function carregarTodosDados() {
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
         // Campos de status de pagamento
         finStatus: r.fin_status||'pendente',
-        finForma: r.fin_forma||r.pagamento||'',
+        // Com 2+ condições de pagamento, não cai no fallback ||r.pagamento
+        // (que traria o resumo em texto "Múltiplas formas") — senão
+        // gerarPDFRecibo voltaria a priorizar o branch legado de finForma
+        // em vez de imprimir o detalhamento de condicoesPagamento.
+        finForma: (r.condicoes_pagamento&&r.condicoes_pagamento.length>1) ? '' : (r.fin_forma||r.pagamento||''),
         finValorPago: r.fin_valor_pago||null,
         finVencimento: r.fin_vencimento||null,
         finLancado: r.fin_lancado||false
@@ -3259,6 +3263,12 @@ async function sbDeletarOrcamento(sbId) {
 // ── SALVAR RECIBO ────────────────────────────────────────────
 async function sbSalvarRecibo(r) {
   if (!SUPABASE_ATIVO) return;
+  // Recibo com 2+ condições de pagamento: fin_forma precisa ficar null de
+  // verdade no banco (não cair no fallback ||r.pgto, que seria o resumo em
+  // texto "Múltiplas formas") — senão, ao recarregar do Supabase, fin_forma
+  // volta truthy e gerarPDFRecibo cai no branch legado em vez de imprimir o
+  // detalhamento de condicoesPagamento.
+  const temMultiplasCondicoes = r.condicoesPagamento && r.condicoesPagamento.length>1;
   const payload = {
     numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
     cliente_end: r.end||'', descricao: r.desc||r.serv||'',
@@ -3273,7 +3283,7 @@ async function sbSalvarRecibo(r) {
     desc_base: r.descBase||0, desc_val: r.descV||0,
     desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
     fin_status: r.finStatus||'pendente',
-    fin_forma: r.finForma||r.pgto||null,
+    fin_forma: temMultiplasCondicoes ? null : (r.finForma||r.pgto||null),
     fin_valor_pago: r.finValorPago||null,
     fin_vencimento: r.finVencimento||null,
     fin_lancado: r.finLancado||false
