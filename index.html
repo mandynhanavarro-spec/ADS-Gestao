@@ -1289,7 +1289,7 @@ td.bold{color:var(--white);font-weight:700}
           </div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc();condPagamentoSincronizarValor('so-pgto-cond',this.value);serrSincFormaFin()"></div>
+          <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc();condPagamentoSincronizarValor('so-pgto-cond',this.value);serrCalcSaldoFin()"></div>
           <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="so-desloc" placeholder="0,00" step="0.01" value="0" oninput="calcSerrOrc()"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
@@ -6938,6 +6938,14 @@ async function salvarEdicaoRec(){
   if(!erCondicoesPagamento)return;
   r.condicoesPagamento=erCondicoesPagamento;
   r.pgto=resumoCondicoesPagamento(erCondicoesPagamento);
+  // gerarPDFRecibo prioriza r.finForma sobre r.condicoesPagamento (bloco
+  // "Forma de Pagamento" do PDF) — com 2+ condições editadas aqui, limpa
+  // r.finForma pra impressão cair no branch que lê condicoesPagamento.
+  // Com 1 condição só (equivalente ao comportamento legado), mantém como
+  // está — não precisa limpar.
+  if(erCondicoesPagamento.length>1){
+    r.finForma=null;
+  }
   r.dataRaw=dataRaw;
   r.data=dataRaw?fmtDateBr(dataRaw):r.data;
   // Materiais

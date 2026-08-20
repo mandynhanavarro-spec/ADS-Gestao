@@ -55,6 +55,20 @@ function montarCondicoesPagamento(containerId, valorInicial, opts){
   _condPagRender(containerId);
 }
 
+// valorTotal chega de dois jeitos diferentes conforme o chamador:
+// - Number puro, dos fluxos internos que já calcularam o valor em JS
+//   (nofSalvarGerarPDF, salvarEdicaoOrc, salvarEdicaoRec, gerarPDFSerrOrc)
+//   — NUNCA passar por desmascarar() aqui: desmascarar() remove todo "."
+//   assumindo separador de milhar, e destruiria o ponto decimal de um
+//   Number (ex: 100.5 → "1005").
+// - String mascarada em pt-BR (ex: "5.000,00"), vinda do oninput de um
+//   campo com máscara de moeda — aí sim precisa de desmascarar() antes do
+//   parseFloat.
+function _condPagParseValorTotal(valorTotal){
+  if(typeof valorTotal==='number') return valorTotal||0;
+  return parseFloat(desmascarar(valorTotal))||0;
+}
+
 // Mantém a condição única sincronizada com o valor total do documento
 // (o campo de valor só aparece na UI quando há 2+ condições — com 1 única
 // condição ela representa 100% do valor, então precisa ser mantida em dia
@@ -62,10 +76,7 @@ function montarCondicoesPagamento(containerId, valorInicial, opts){
 function condPagamentoDefinirValorTotal(containerId, valorTotal){
   var st = _condPagState[containerId];
   if(!st || st.condicoes.length!==1) return;
-  // valorTotal pode chegar como número puro (fluxos internos) ou como string
-  // mascarada em pt-BR (ex: "5.000,00", vinda do oninput de um campo com
-  // máscara de moeda) — desmascarar() lida com os dois casos.
-  st.condicoes[0].valor = parseFloat(desmascarar(valorTotal))||0;
+  st.condicoes[0].valor = _condPagParseValorTotal(valorTotal);
 }
 
 // Mesma sincronização de condPagamentoDefinirValorTotal, mas para uso "ao
@@ -73,13 +84,12 @@ function condPagamentoDefinirValorTotal(containerId, valorTotal){
 // além de atualizar o estado, recalcula e reflete na tela o valor da
 // parcela quando a condição única já está em Cartão Crédito parcelado
 // (sem isso, o valor da parcela só era recalculado no momento do salvar).
+// Aqui valorTotal sempre vem de this.value de um input mascarado (string).
 function condPagamentoSincronizarValor(containerId, valorTotal){
   var st = _condPagState[containerId];
   if(!st || st.condicoes.length!==1) return;
   var c = st.condicoes[0];
-  // valorTotal pode chegar como número puro ou string mascarada em pt-BR
-  // (ex: "5.000,00", vinda do oninput de um campo com máscara de moeda).
-  c.valor = parseFloat(desmascarar(valorTotal))||0;
+  c.valor = _condPagParseValorTotal(valorTotal);
   if(c.tipo==='Cartão Crédito' && c.modalidade==='parcelado' && c.parcelas){
     c.valorParcela = _condPagCalcParcela(c.valor, c.parcelas);
     var vpEl = document.getElementById('cp-valorparcela-'+c._rowId);
