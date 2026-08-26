@@ -925,7 +925,7 @@ td.bold{color:var(--white);font-weight:700}
           <strong style="color:var(--blue3)">Cliente:</strong> <span id="nr-show-cli" style="color:var(--white)"></span>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="nr-valor" placeholder="0,00" step="0.01" oninput="calcTotalRecibo()"></div>
+          <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="nr-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);calcTotalRecibo()"></div>
           <div><div class="fl">Data</div><input class="fi" type="date" id="nr-data"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
@@ -1180,18 +1180,12 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">Data</div><input class="fi" type="date" id="nof-data"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Valor do serviço (R$)</div><input class="fi" type="number" id="nof-valor" placeholder="0,00" step="0.01"></div>
+          <div><div class="fl">Valor do serviço (R$)</div><input class="fi" type="text" inputmode="decimal" id="nof-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);condPagamentoSincronizarValor('nof-pgto-cond',this.value)"></div>
           <div><div class="fl">Garantia</div><input class="fi" id="nof-gtia" placeholder="Ex: 12 meses"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Pagamento</div>
-            <select class="fs" id="nof-pgto" onchange="togglePixInfo('nof-pgto','pix-info-nof')">
-              <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
-              <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
-            </select>
-            <div id="pix-info-nof" style="display:none;margin-top:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--green2)">
-              💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-nof-key" style="color:var(--white)"></span>
-            </div>
+          <div><div class="fl">Condições de Pagamento</div>
+            <div id="nof-pgto-cond"></div>
           </div>
           <div>
             <div class="fl">Validade do Orçamento</div>
@@ -1295,21 +1289,70 @@ td.bold{color:var(--white);font-weight:700}
           </div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="number" id="so-valor" placeholder="0,00" step="0.01" oninput="calcSerrOrc()"></div>
+          <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc();condPagamentoSincronizarValor('so-pgto-cond',this.value);serrCalcSaldoFin()"></div>
           <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="so-desloc" placeholder="0,00" step="0.01" value="0" oninput="calcSerrOrc()"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
-          <div><div class="fl">Pagamento</div>
-            <select class="fs" id="so-pgto" onchange="togglePixInfo('so-pgto','pix-info-so')">
+          <div id="so-pgto-cond-wrap"><div class="fl">Condições de Pagamento</div>
+            <div id="so-pgto-cond"></div>
+          </div>
+          <div id="so-pgto-rec-wrap" style="display:none">
+            <div class="fl">Pagamento</div>
+            <select class="fs" id="so-pgto-rec" onchange="serrSincFormaFin()">
               <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
               <option>Sinal de 50% / Restante 50%</option>
               <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
             </select>
-            <div id="pix-info-so" style="display:none;margin-top:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--green2)">
-              💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-so-key" style="color:var(--white)"></span>
-            </div>
           </div>
           <div><div class="fl">Validade</div><input class="fi" id="so-val" readonly style="color:var(--green2);cursor:default"></div>
+        </div>
+        <!-- ══ INFORMAÇÕES DE PAGAMENTO (só modo Recibo) ══ -->
+        <div id="so-fin-wrap" style="display:none;background:rgba(37,99,235,.07);border:1.5px solid rgba(59,130,246,.3);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
+            <span style="font-size:15px">💳</span>
+            <span style="font-size:11px;font-weight:800;color:var(--blue3);text-transform:uppercase;letter-spacing:1px">Informações de Pagamento</span>
+            <span id="so-fin-badge" style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(120,120,140,.18);color:#a8bacf;border:1px solid rgba(120,120,140,.3)">⚪ Pendente</span>
+          </div>
+          <div class="fgrid fg2" style="margin-bottom:10px">
+            <div>
+              <div class="fl">Status do Pagamento</div>
+              <select class="fs" id="so-fin-status" onchange="serrAtualizarFinBadge()">
+                <option value="pago">✅ Pago — lançar no financeiro</option>
+                <option value="parcial">🟡 Pago Parcial — aguardando saldo</option>
+                <option value="aguardando_pix">🔵 Aguardando Pix</option>
+                <option value="pendente" selected>⚪ Pendente — não lançar ainda</option>
+              </select>
+            </div>
+            <div>
+              <div class="fl">Forma de Recebimento</div>
+              <select class="fs" id="so-fin-forma">
+                <option>Pix</option><option>Dinheiro</option><option>Cartão Crédito</option>
+                <option>Cartão Débito</option><option>Parcelado</option>
+                <option>Sinal de 50% / Restante 50%</option><option>Pendente</option>
+              </select>
+            </div>
+          </div>
+          <!-- Valor recebido (visível só para pago/parcial) -->
+          <div id="so-fin-valorpago-wrap" style="display:none;margin-bottom:10px">
+            <div class="fgrid fg2">
+              <div>
+                <div class="fl">Valor Recebido (R$)</div>
+                <input class="fi" type="number" id="so-fin-valorpago" placeholder="0,00" step="0.01" oninput="serrCalcSaldoFin()">
+              </div>
+              <div id="so-fin-saldo-wrap" style="display:none">
+                <div class="fl">Saldo Restante</div>
+                <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:7px;padding:8px 12px;font-size:13px;font-weight:800;color:var(--amber)" id="so-fin-saldo-val">R$ 0,00</div>
+              </div>
+            </div>
+          </div>
+          <!-- Data do pagamento -->
+          <div id="so-fin-data-wrap" style="display:none;margin-bottom:10px">
+            <div><div class="fl">Data do Pagamento</div><input class="fi" type="date" id="so-fin-datapgto"></div>
+          </div>
+          <!-- Aviso informativo -->
+          <div id="so-fin-aviso" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--amber)">
+            ⚠️ Status <strong>Pendente</strong> — o recibo será salvo mas <strong>não será contabilizado</strong> no financeiro até confirmar o recebimento.
+          </div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
           <div><div class="fl">Observações (opcional)</div><input class="fi" id="so-obs" placeholder="Ex: Aguardando aprovação"></div>
@@ -2361,7 +2404,7 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
       <div class="fgrid fg3" style="margin-bottom:10px">
-        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="eo-val" step="0.01" oninput="calcResumoEO()"></div>
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="eo-val" placeholder="0,00" oninput="mascarearInputMoeda(this);calcResumoEO();condPagamentoSincronizarValor('eo-pgto-cond',this.value)"></div>
         <div><div class="fl">Custo peças (R$)</div><input class="fi" type="number" id="eo-custo" step="0.01" value="0" oninput="calcResumoEO()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="eo-data"></div>
       </div>
@@ -2370,14 +2413,8 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Validade do Orçamento (dias)</div><input class="fi" type="number" id="eo-validade" placeholder="Ex: 30" min="1" step="1"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Pagamento</div>
-          <select class="fs" id="eo-pgto" onchange="togglePixInfo('eo-pgto','pix-info-eo')">
-            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option><option>Sinal de 50% / Restante 50%</option>
-            <option>Cartão Crédito</option><option>Cartão Débito</option>
-          </select>
-          <div id="pix-info-eo" style="display:none;margin-top:6px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--green2)">
-            💚 <strong>Pagamento via Pix</strong><br><span id="pix-info-eo-key" style="color:var(--white)"></span>
-          </div>
+        <div><div class="fl">Condições de Pagamento</div>
+          <div id="eo-pgto-cond"></div>
         </div>
         <div><div class="fl">Status</div>
           <select class="fs" id="eo-status" onchange="calcResumoEO()">
@@ -2468,7 +2505,7 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
       <div class="fgrid fg3" style="margin-bottom:10px">
-        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="er-val" step="0.01" oninput="calcResumoER()"></div>
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-val" placeholder="0,00" oninput="mascarearInputMoeda(this);calcResumoER();condPagamentoSincronizarValor('er-pgto-cond',this.value)"></div>
         <div><div class="fl">Custo peças (R$)</div><input class="fi" type="number" id="er-custo" step="0.01" value="0" oninput="calcResumoER()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="er-data"></div>
       </div>
@@ -2477,12 +2514,8 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="er-desloc" step="0.01" value="0" placeholder="0,00"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Pagamento</div>
-          <select class="fs" id="er-pgto">
-            <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
-            <option>Sinal de 50% / Restante 50%</option>
-            <option>Cartão Crédito</option><option>Cartão Débito</option><option>Pendente</option>
-          </select>
+        <div><div class="fl">Condições de Pagamento</div>
+          <div id="er-pgto-cond"></div>
         </div>
         <div><div class="fl">Desconto — Tipo</div>
           <select class="fs" id="er-desc-tipo" onchange="calcDescontoER()">
@@ -2692,6 +2725,7 @@ td.bold{color:var(--white);font-weight:700}
   </div>
 </div>
 
+<script src="condicoes-pagamento.js"></script>
 <script>
 // ════════════ DATA STORE ════════════
 var templates = [
@@ -2918,6 +2952,7 @@ async function carregarTodosDados() {
         serv: (o.descricao||'').split('\n')[0], desc: o.descricao||'',
         val: parseFloat(o.valor||0), gtia: o.garantia||'',
         pgto: o.pagamento||'Pix', status: o.status||'pendente',
+        condicoesPagamento: o.condicoes_pagamento||null,
         data: o.data_emissao||'', obs: o.observacoes||'',
         custoPecas: parseFloat(o.custo_pecas||0),
         matEdit: matEdit,
@@ -2946,12 +2981,18 @@ async function carregarTodosDados() {
         tel: r.cliente_tel||'', end: r.cliente_end||'',
         serv: r.servico||'', desc: r.descricao||'',
         val: parseFloat(r.valor||0), pgto: r.pagamento||'',
+        condicoesPagamento: r.condicoes_pagamento||null,
         gtia: r.garantia||'', data: r.data_emissao||'',
         dataRaw: r.data_raw||'',
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
         // Campos de status de pagamento
         finStatus: r.fin_status||'pendente',
-        finForma: r.fin_forma||r.pagamento||'',
+        // Com condicoes_pagamento presente (pipeline novo, 1+ condições), não
+        // cai no fallback ||r.pagamento (que traria o resumo em texto, ex.
+        // "Cartão Crédito" sem a modalidade/parcelas, ou "Múltiplas formas")
+        // — senão gerarPDFRecibo voltaria a priorizar o branch legado de
+        // finForma em vez de imprimir o detalhamento de condicoesPagamento.
+        finForma: (r.condicoes_pagamento&&r.condicoes_pagamento.length>0) ? '' : (r.fin_forma||r.pagamento||''),
         finValorPago: r.fin_valor_pago||null,
         finVencimento: r.fin_vencimento||null,
         finLancado: r.fin_lancado||false
@@ -3164,7 +3205,9 @@ async function sbSalvarOrcamento(o) {
   const payload = {
     numero: o.num, cliente_nome: o.cli, cliente_tel: o.tel||'',
     cliente_end: o.end||'', descricao: o.desc, valor: o.val,
-    garantia: o.gtia, pagamento: o.pgto, status: o.status,
+    garantia: o.gtia, pagamento: o.pgto,
+    condicoes_pagamento: o.condicoesPagamento&&o.condicoesPagamento.length>0 ? o.condicoesPagamento : null,
+    status: o.status,
     data_emissao: fmtDateSB(o.data, o.dataRaw), observacoes: o.obs||'',
     custo_pecas: parseFloat(o.custoPecas||0),
     mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null,
@@ -3221,10 +3264,19 @@ async function sbDeletarOrcamento(sbId) {
 // ── SALVAR RECIBO ────────────────────────────────────────────
 async function sbSalvarRecibo(r) {
   if (!SUPABASE_ATIVO) return;
+  // Recibo com condicoesPagamento (pipeline novo, 1+ condições — salvarEdicaoRec
+  // zera r.finForma sempre, mesmo com 1 condição só): fin_forma precisa ficar
+  // null de verdade no banco (não cair no fallback ||r.pgto) — senão, ao
+  // recarregar do Supabase, fin_forma volta truthy e gerarPDFRecibo cai no
+  // branch legado em vez de imprimir o detalhamento de condicoesPagamento
+  // (perdendo modalidade/parcelas/valorParcela de Cartão Crédito parcelado).
+  const temPipelineNovo = r.condicoesPagamento && r.condicoesPagamento.length>0;
   const payload = {
     numero: r.num, cliente_nome: r.cli, cliente_tel: r.tel||'',
     cliente_end: r.end||'', descricao: r.desc||r.serv||'',
-    valor: r.val, pagamento: r.pgto, garantia: r.gtia||'',
+    valor: r.val, pagamento: r.pgto,
+    condicoes_pagamento: r.condicoesPagamento&&r.condicoesPagamento.length>0 ? r.condicoesPagamento : null,
+    garantia: r.gtia||'',
     data_emissao: fmtDateSB(r.data, r.dataRaw),
     data_raw: r.dataRaw||'',
     custo_pecas: parseFloat(r.custoPecas||0),
@@ -3233,7 +3285,7 @@ async function sbSalvarRecibo(r) {
     desc_base: r.descBase||0, desc_val: r.descV||0,
     desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
     fin_status: r.finStatus||'pendente',
-    fin_forma: r.finForma||r.pgto||null,
+    fin_forma: temPipelineNovo ? null : (r.finForma||r.pgto||null),
     fin_valor_pago: r.finValorPago||null,
     fin_vencimento: r.finVencimento||null,
     fin_lancado: r.finLancado||false
@@ -3411,6 +3463,50 @@ function setStep(n){
 
 // ════════════ HELPERS ════════════
 function fmtVal(v){return 'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});}
+
+// ── Máscara de moeda brasileira (milhar com ponto, decimal com vírgula) ──
+// Usada nos campos de valor (type="text" inputmode="decimal") pra exibir
+// "5.000,00" em vez do "5000" cru do type="number". O valor salvo no
+// Supabase continua numeric puro — toda leitura desses campos passa por
+// desmascarar() antes do parseFloat.
+
+// Number → "5.000,00"
+function aplicarMascaraMoeda(valorNumerico){
+  var v = parseFloat(valorNumerico||0)||0;
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+// Chamada no oninput do campo — trata os dígitos puros digitados como
+// centavos (padrão comum de máscara de moeda: "500000" vira "5.000,00")
+// e escreve de volta em el.value já formatado, com o cursor no fim.
+function mascarearInputMoeda(el){
+  var digitos = (el.value||'').replace(/\D/g,'');
+  if(!digitos){ el.value=''; return; }
+  var valor = parseInt(digitos,10)/100;
+  el.value = aplicarMascaraMoeda(valor);
+  if(el.setSelectionRange){ var len=el.value.length; el.setSelectionRange(len,len); }
+}
+
+// "5.000,00" → "5000.00" (pronto pra parseFloat) — remove pontos de milhar
+// e troca a vírgula decimal por ponto.
+function desmascarar(valorString){
+  if(valorString==null) return '';
+  return String(valorString).replace(/\./g,'').replace(',','.');
+}
+
+// Normaliza frações Unicode (comuns em autocomplete de teclado de celular,
+// ex: digitar "1/2" vira "½") para texto ASCII equivalente antes de imprimir
+// no PDF — a fonte padrão Helvetica do jsPDF não desenha esses glyphs
+// corretamente, causando texto corrompido/espaçado. Usada só na hora de
+// gerar o PDF; o texto salvo no Supabase permanece intacto.
+function normalizarFracoes(texto){
+  var mapa = {
+    '½':'1/2', '¼':'1/4', '¾':'3/4',
+    '⅓':'1/3', '⅔':'2/3',
+    '⅛':'1/8', '⅜':'3/8', '⅝':'5/8', '⅞':'7/8'
+  };
+  return (texto||'').replace(/[½¼¾⅓⅔⅛⅜⅝⅞]/g, function(ch){ return mapa[ch]||ch; });
+}
 
 // Converte data para formato ISO (aaaa-mm-dd) aceito pelo Supabase
 // Aceita: 'dd/mm/aaaa', 'aaaa-mm-dd', ou objeto Date
@@ -4136,14 +4232,14 @@ function showAprov(){
   var oExist=orcamentos.find(function(o){return o.num===f.numero;});
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,desc:f.descricao,
-      val:f.valor,gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,status:'aprovado',
+      val:f.valor,gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],data:f.data,obs:f.obs,status:'aprovado',
       custoPecas:matTotais.custo,matEdit:matEditOrc});
     // sbId já está em oExist — o UPDATE vai funcionar corretamente
     sbSalvarOrcamento(oExist);
   } else {
     var novoOrc={num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,status:'aprovado',data:f.data,obs:f.obs,
+      gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],status:'aprovado',data:f.data,obs:f.obs,
       custoPecas:matTotais.custo,matEdit:matEditOrc};
     orcamentos.unshift(novoOrc);
     sbSalvarOrcamento(novoOrc);
@@ -4200,7 +4296,7 @@ async function emitirDoc(){
     var finStatusDoc=f.pagamento==='Dinheiro'||f.pagamento==='Cartão Crédito'||f.pagamento==='Cartão Débito'?'pago':(f.pagamento==='Pix'?'aguardando_pix':'pendente');
     var recibo={num:numR,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,
-      val:f.valor,pgto:f.pagamento,data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0,
+      val:f.valor,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],data:fmtDateBr(f.data),dataRaw:f.data,descBase:0,descV:0,
       finStatus:finStatusDoc,finForma:f.pagamento,finLancado:true};
     recibos.unshift(recibo);
     if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
@@ -4243,18 +4339,6 @@ function _pgtoOpts(current){
   return lista.map(function(p){
     return '<option value="'+p+'"'+(p===current?' selected':'')+'>'+p+'</option>';
   }).join('');
-}
-
-function atualizarPgtoRecibo(){
-  var sel=document.getElementById('pgto-rec-sel');
-  if(!sel)return;
-  var novoPgto=sel.value;
-  if(recibos.length>0){
-    recibos[0].pgto=novoPgto;
-    salvarLocal();
-    if(SUPABASE_ATIVO)sbSalvarRecibo(recibos[0]);
-  }
-  gerarPDFRecibo(0);
 }
 
 // ════════════ PDF RECIBO (jsPDF) ════════════
@@ -4573,11 +4657,15 @@ function gerarPDF(numOrc){
     if(!o){alert('Orçamento não encontrado.');return;}
     f={numero:o.num,cliente:o.cli,tel:o.tel||'',endereco:o.end||'',
        descricao:o.desc||o.serv||'',valor:o.val,garantia:o.gtia||'',
-       pagamento:o.pgto,data:o.data,obs:o.obs||'',desloc:o.desloc||0,
+       pagamento:o.pgto,condicoesPagamento:o.condicoesPagamento||null,data:o.data,obs:o.obs||'',desloc:o.desloc||0,
        validade:o.validade||null,descTipo:o.descTipo||'',descQtd:o.descQtd||0};
   } else {
     f=getFormData();
   }
+  f.cliente=normalizarFracoes(f.cliente);
+  f.endereco=normalizarFracoes(f.endereco);
+  f.descricao=normalizarFracoes(f.descricao);
+  f.obs=normalizarFracoes(f.obs);
   if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -4689,23 +4777,8 @@ function gerarPDF(numOrc){
     } else if(b.id==='pagamento'){
       doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);
       doc.line(ML,y-2,PW-MR,y-2);y+=4;
-      doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
-      doc.setFont('helvetica','normal');
-      if(pg==='Parcelado'||pg==='Sinal de 50% / Restante 50%'){
-        doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
-        doc.text('Sendo Pix '+pixKey+' ou '+bancoInfo,ML+2,y);y+=6;
-      } else if(pg==='Pix'){
-        doc.text('via Pix: '+pixKey,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfo,ML+2,y);y+=6;
-      } else if(pg==='Pendente'){
-        doc.text('Pagamento Pendente \u2014 via Pix: '+pixKey,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfo,ML+2,y);y+=6;
-      } else if(pg==='Dinheiro'){
-        doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;
-      } else {
-        doc.text('Pagamento via '+pg+'.',ML+2,y);y+=6;
-      }
-      doc.text(respNome,ML+2,y);y+=6;
+      var _condsOrc=condicoesPagamentoOuFallback(f.condicoesPagamento,pg,valorFinal);
+      y=imprimirCondicoesPagamento(doc,_condsOrc,ML+2,y,valorFinal);
 
     } else if(b.id==='obs'){
       if(f.obs){
@@ -4746,6 +4819,11 @@ function gerarPDFRecibo(idx){
   var r=recibos[idx];
   if(!r){alert('Recibo não encontrado.');return;}
   if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
+  // Cópias normalizadas p/ impressão — não mutam r (referência direta ao
+  // array recibos), mantendo o texto original intacto no Supabase.
+  var _rCliNorm=normalizarFracoes(r.cli);
+  var _rEndNorm=normalizarFracoes(r.end);
+  var _rDescNorm=normalizarFracoes(r.desc||r.serv);
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,PH=297,ML=22,MR=20,MT=18,CW=PW-ML-MR;
@@ -4814,19 +4892,19 @@ function gerarPDFRecibo(idx){
 
     } else if(b.id==='cliente'){
       doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Recebi de:',ML,y);
-      doc.setFont('helvetica','normal');doc.text(' '+r.cli,ML+28,y);
+      doc.setFont('helvetica','normal');doc.text(' '+_rCliNorm,ML+28,y);
       y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);
       doc.setFont('helvetica','normal');doc.text(' '+(r.tel||''),ML+24,y);
       y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);
       doc.setFont('helvetica','normal');
-      var endLines=doc.splitTextToSize(' '+(r.end||''),CW-30);
+      var endLines=doc.splitTextToSize(' '+(_rEndNorm||''),CW-30);
       doc.text(endLines,ML+24,y);y+=endLines.length*5+6;
 
     } else if(b.id==='servico'){
       doc.setFont('helvetica','bold');doc.setFontSize(10);
       doc.text('Referente a:',ML,y);y+=7;
       doc.setFont('helvetica','normal');
-      var items=(r.desc||r.serv).split('\n').filter(function(l){return l.trim();});
+      var items=_rDescNorm.split('\n').filter(function(l){return l.trim();});
       items.forEach(function(it){
         var lines=doc.splitTextToSize('- '+it.trim(),CW-12);
         doc.text(lines,ML+7,y);y+=lines.length*6;
@@ -4876,19 +4954,24 @@ function gerarPDFRecibo(idx){
 
     } else if(b.id==='pagamento'){
       doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
-      doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
-      doc.setFont('helvetica','normal');
-      var pgtoLabel=r.finForma||r.pgto;
-      if(pgtoLabel==='Pix'||pgtoLabel==='Aguardando Pix'){
-        doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
-        doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
-        doc.text(respNomeR,ML+2,y);y+=6;
-      } else if(pgtoLabel==='Parcelado'||pgtoLabel==='Sinal de 50% / Restante 50%'){
-        doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
-        doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
-        doc.text(respNomeR,ML+2,y);y+=6;
+      if(r.finForma){
+        doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
+        doc.setFont('helvetica','normal');
+        var pgtoLabel=r.finForma;
+        if(pgtoLabel==='Pix'||pgtoLabel==='Aguardando Pix'){
+          doc.text('via Pix: '+pixKeyR,ML+2,y);y+=6;
+          doc.text('ou '+bancoInfoR,ML+2,y);y+=6;
+          doc.text(respNomeR,ML+2,y);y+=6;
+        } else if(pgtoLabel==='Parcelado'||pgtoLabel==='Sinal de 50% / Restante 50%'){
+          doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
+          doc.text('Sendo Pix '+pixKeyR+' ou '+bancoInfoR,ML+2,y);y+=6;
+          doc.text(respNomeR,ML+2,y);y+=6;
+        } else {
+          doc.text(pgtoLabel,ML+2,y);y+=6;
+        }
       } else {
-        doc.text(pgtoLabel,ML+2,y);y+=6;
+        var _condsRec=condicoesPagamentoOuFallback(r.condicoesPagamento,r.pgto,r.val);
+        y=imprimirCondicoesPagamento(doc,_condsRec,ML+2,y,r.val);
       }
       doc.line(ML,y-2,PW-MR,y-2);y+=4;
     }
@@ -5117,7 +5200,7 @@ function nrProxRecibo(){
   document.getElementById('nr-show-serv').textContent=servTxt;
   document.getElementById('nr-show-cli').textContent=nome;
   if(NR.tpl){
-    document.getElementById('nr-valor').value=NR.tpl.val;
+    document.getElementById('nr-valor').value=aplicarMascaraMoeda(NR.tpl.val);
     document.getElementById('nr-gtia').value=NR.tpl.gtia;
     var pgEl=document.getElementById('nr-pgto');
     for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NR.tpl.pgto){pgEl.selectedIndex=i;break;}}
@@ -5126,8 +5209,8 @@ function nrProxRecibo(){
   // Adiciona valor de venda de materiais ao valor total
   var matVenda=getNrMatTotais().venda;
   if(matVenda>0&&NR.tpl){
-    var baseVal=parseFloat(document.getElementById('nr-valor').value||0);
-    document.getElementById('nr-valor').value=(baseVal+matVenda).toFixed(2);
+    var baseVal=parseFloat(desmascarar(document.getElementById('nr-valor').value)||0);
+    document.getElementById('nr-valor').value=aplicarMascaraMoeda(baseVal+matVenda);
   }
   document.getElementById('nr-blk-mat').style.display='none';
   document.getElementById('nr-blk-rec').style.display='block';
@@ -5243,7 +5326,7 @@ function getNrMatTotais(){
 }
 
 function calcTotalRecibo(){
-  var val=parseFloat(document.getElementById('nr-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('nr-valor').value)||0);
   var descTipo=(document.getElementById('nr-desc-tipo')||{}).value||'';
   var descQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
   var desc=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
@@ -5306,7 +5389,7 @@ function nrAtualizarFinBadge(){
 }
 
 function nrCalcSaldoFin(){
-  var val=parseFloat(document.getElementById('nr-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('nr-valor').value)||0);
   var descTipo=(document.getElementById('nr-desc-tipo')||{}).value||'';
   var descQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
   var descV=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
@@ -5327,7 +5410,7 @@ async function nrEmitirRecibo(){
   var nome=(document.getElementById('nr-cli-nome').value||'').trim();
   var tel=(document.getElementById('nr-cli-tel').value||'').trim();
   var end=(document.getElementById('nr-cli-end').value||'').trim();
-  var val=parseFloat(document.getElementById('nr-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('nr-valor').value)||0);
   var pgto=document.getElementById('nr-pgto').value;
   var dataRaw=document.getElementById('nr-data').value;
   var gtia=(document.getElementById('nr-gtia').value||'').trim();
@@ -5451,6 +5534,7 @@ function iniciarNovoOrcamento(cliPre){
   document.getElementById('nof-cli-nome').value=NOF.cli?NOF.cli.nm:'';
   document.getElementById('nof-cli-tel').value=NOF.cli?NOF.cli.tel:'';
   document.getElementById('nof-cli-end').value=NOF.cli?NOF.cli.end:'';
+  montarCondicoesPagamento('nof-pgto-cond',0);
   nofSetStep(1);
   ['nof-blk-cli','nof-blk-tpl','nof-blk-mat','nof-blk-orc'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
@@ -5647,16 +5731,15 @@ function nofProxOrc(){
   var valorComMat=valorServico+matTotais.venda;
   if(NOF.tpl){
     // Valor = serviço + peças (venda)
-    document.getElementById('nof-valor').value=valorComMat>0?valorComMat.toFixed(2):NOF.tpl.val;
+    document.getElementById('nof-valor').value=aplicarMascaraMoeda(valorComMat>0?valorComMat:NOF.tpl.val);
     document.getElementById('nof-gtia').value=NOF.tpl.gtia;
-    var pgEl=document.getElementById('nof-pgto');
-    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===NOF.tpl.pgto){pgEl.selectedIndex=i;break;}}
+    montarCondicoesPagamento('nof-pgto-cond',valorComMat>0?valorComMat:NOF.tpl.val,{tipoInicial:NOF.tpl.pgto});
     document.getElementById('nof-desc').value=descTxt;
   } else {
     // Serviço manual: se já havia valor digitado, mantém; soma materiais
-    var valAtual=parseFloat(document.getElementById('nof-valor').value||0);
+    var valAtual=parseFloat(desmascarar(document.getElementById('nof-valor').value)||0);
     if(matTotais.venda>0&&valAtual===0){
-      document.getElementById('nof-valor').value=matTotais.venda.toFixed(2);
+      document.getElementById('nof-valor').value=aplicarMascaraMoeda(matTotais.venda);
     } else if(matTotais.venda>0){
       // Mantém o valor que o usuário digitou (não sobrescreve)
     }
@@ -5727,7 +5810,7 @@ function nofAtualizarValidade(){
 }
 
 function calcDescontoNof(){
-  var val=parseFloat(document.getElementById('nof-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('nof-valor').value)||0);
   var tipo=document.getElementById('nof-desc-tipo').value;
   var qtd=parseFloat(document.getElementById('nof-desc-qtd').value||0);
   var desc=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
@@ -5749,9 +5832,8 @@ async function nofSalvarGerarPDF(){
   if(!desc&&!manual){alert('Preencha a descrição do serviço.');return;}
   var num=document.getElementById('nof-num').value;
   var data=document.getElementById('nof-data').value;
-  var valor=parseFloat(document.getElementById('nof-valor').value||0);
+  var valor=parseFloat(desmascarar(document.getElementById('nof-valor').value)||0);
   var gtia=document.getElementById('nof-gtia').value;
-  var pgto=document.getElementById('nof-pgto').value;
   var obs=(document.getElementById('nof-obs').value||'').trim();
   var desloc=parseFloat((document.getElementById('nof-desloc').value)||0);
   var matTotais=recalcMatNof()||{custo:0,venda:0};
@@ -5760,6 +5842,10 @@ async function nofSalvarGerarPDF(){
   var descQtd=parseFloat(document.getElementById('nof-desc-qtd').value||0);
   var descVal=descTipo==='valor'?descQtd:(descTipo==='perc'?valor*(descQtd/100):0);
   var valorFinal=Math.max(0,valor-descVal);
+  condPagamentoDefinirValorTotal('nof-pgto-cond',valorFinal);
+  var condicoesPagamento=lerCondicoesPagamento('nof-pgto-cond');
+  if(!condicoesPagamento)return;
+  var pgto=resumoCondicoesPagamento(condicoesPagamento);
   var serv=NOF.tpl?NOF.tpl.nm:(desc.split('\n')[0]);
   // Coleta lista de peças para persistência
   var matEditNof=nofMatLinhas.map(function(rowId){
@@ -5778,7 +5864,7 @@ async function nofSalvarGerarPDF(){
   }).filter(Boolean);
   // Salva orçamento
   var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
-    val:valorFinal,gtia:gtia,pgto:pgto,status:'pendente',data:data,obs:obs,
+    val:valorFinal,gtia:gtia,pgto:pgto,condicoesPagamento:condicoesPagamento,status:'pendente',data:data,obs:obs,
     descTipo:descTipo,descQtd:descQtd,descBase:descVal>0?valor:0,descV:descVal,
     custoPecas:matTotais.custo,matEdit:matEditNof};
   var oExist=orcamentos.find(function(o){return o.num===num;});
@@ -5798,17 +5884,9 @@ async function nofSalvarGerarPDF(){
   fecharNovoOrcFlow();
   // Garante validade selecionada no PDF
   nofAtualizarValidade();
-  // Gera PDF usando form intermediário
-  document.getElementById('f-num').value=num;
-  document.getElementById('f-data').value=data;
-  document.getElementById('f-cli').value=nome;
-  document.getElementById('f-tel').value=tel;
-  document.getElementById('f-end').value=end.replace(' — ',' - ');
-  document.getElementById('f-desc').value=desc||manual;
-  document.getElementById('f-valor').value=valorFinal;
-  document.getElementById('f-gtia').value=gtia;
-  document.getElementById('f-obs').value=obs;
-  setTimeout(function(){gerarPDF();},150);
+  // Gera o PDF direto a partir do orçamento recém-salvo (não usa o form
+  // "Modo Campo" — evita imprimir uma condição de pagamento desatualizada)
+  setTimeout(function(){gerarPDF(num);},150);
   alert('✅ Orçamento #'+num+' salvo! PDF sendo gerado.');
   renderOrcTable();
 }
@@ -5984,13 +6062,13 @@ function salvarEGerarPDFOrc(){
   if(oExist){
     Object.assign(oExist,{cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,data:f.data,obs:f.obs,
+      gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],data:f.data,obs:f.obs,
       custoPecas:matTotais.custo,matEdit:matEditOrc});
   } else {
     orcamentos.unshift({
       num:f.numero,cli:f.cliente,tel:f.tel,end:f.endereco,
       serv:f.descricao.split('\n')[0],desc:f.descricao,val:f.valor,
-      gtia:f.garantia,pgto:f.pagamento,status:'pendente',data:f.data,
+      gtia:f.garantia,pgto:f.pagamento,condicoesPagamento:[{tipo:f.pagamento,valor:f.valor}],status:'pendente',data:f.data,
       obs:f.obs,custoPecas:matTotais.custo,matEdit:matEditOrc
     });
   }
@@ -6273,8 +6351,13 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
 
   if(tipo==='recibo'){
     var numR=proximoNumRecibo();
+    // Preserva as condições de pagamento do orçamento original (múltiplas,
+    // se houver) — espelha o mesmo tratamento já aplicado em showAprov.
+    // Sem isso, um orçamento com 2+ condições virava um recibo de forma
+    // única (Pix) ao aprovar pela aba Orçamentos.
     var novoRec={num:numR,cli:o.cli,tel:o.tel||'',end:o.end||'',
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:forma,
+      condicoesPagamento:condicoesPagamentoOuFallback(o.condicoesPagamento,forma,o.val),
       gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
       finStatus:statusFin,finValorPago:valorPago,finVencimento:vencimento,finLancado:false};
 
@@ -6396,7 +6479,16 @@ async function salvarAtualizacaoPgto(){
   obj.finStatus=novoStatus;
   obj.finForma=novaForma;
   obj.finValorPago=valorPago;
-  obj.pgto=novaForma;
+  // Este modal só tem 1 <select> de forma — não representa "Múltiplas
+  // formas". Só sobrescreve pgto/condicoesPagamento quando o registro já
+  // era de condição única (ou não tinha nenhuma); com 2+ condições
+  // preserva o que já estava configurado, senão usar este modal só pra
+  // trocar o status (ex: Pendente→Pago) apagaria silenciosamente as
+  // alternativas de pagamento configuradas no wizard de emissão.
+  if(!obj.condicoesPagamento || obj.condicoesPagamento.length<=1){
+    obj.pgto=novaForma;
+    obj.condicoesPagamento=[{tipo:novaForma,valor:obj.val}];
+  }
 
   // Atualiza lançamento financeiro existente ou cria novo
   var lancExist=financeiro.find(function(f){return f.num===obj.num;});
@@ -6453,7 +6545,7 @@ function abrirEditarOrc(num){
   document.getElementById('eo-end').value=o.end||'';
   document.getElementById('eo-desc').value=o.desc||o.serv||'';
   // Se o orçamento já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
-  document.getElementById('eo-val').value=(o.descBase&&o.descBase>0?o.descBase:o.val)||0;
+  document.getElementById('eo-val').value=aplicarMascaraMoeda((o.descBase&&o.descBase>0?o.descBase:o.val)||0);
   document.getElementById('eo-custo').value=o.custoPecas||0;
   document.getElementById('eo-gtia').value=o.gtia||'';
   document.getElementById('eo-validade').value=o.validade||CFG.doc.validade||30;
@@ -6465,9 +6557,13 @@ function abrirEditarOrc(num){
     if(p.length===3)dataVal=p[2]+'-'+p[1]+'-'+p[0];
   }
   document.getElementById('eo-data').value=dataVal;
-  // pagamento
-  var pgEl=document.getElementById('eo-pgto');
-  for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===(o.pgto||'')){pgEl.selectedIndex=i;break;}}
+  // pagamento — carrega condições reais do orçamento (múltiplas, se houver);
+  // registros antigos sem condicoesPagamento caem no fallback de 1 condição
+  // a partir do campo legado pgto (mesma lógica usada na impressão do PDF).
+  var eoValBase=(o.descBase&&o.descBase>0?o.descBase:o.val)||0;
+  montarCondicoesPagamento('eo-pgto-cond',eoValBase,{
+    condicoesIniciais: condicoesPagamentoOuFallback(o.condicoesPagamento,o.pgto,eoValBase)
+  });
   // status
   var stEl=document.getElementById('eo-status');
   for(var i=0;i<stEl.options.length;i++){if(stEl.options[i].value===(o.status||'')){stEl.selectedIndex=i;break;}}
@@ -6537,7 +6633,7 @@ function fecharEditarOrc(){
 }
 
 function calcResumoEO(){
-  var val=parseFloat(document.getElementById('eo-val').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('eo-val').value)||0);
   var custo=parseFloat(document.getElementById('eo-custo').value||0);
   document.getElementById('eo-show-val').textContent=fmtVal(val);
   document.getElementById('eo-show-custo').textContent=fmtVal(custo);
@@ -6546,7 +6642,7 @@ function calcResumoEO(){
 }
 
 function calcDescontoEO(){
-  var val=parseFloat(document.getElementById('eo-val').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('eo-val').value)||0);
   var tipo=document.getElementById('eo-desc-tipo').value;
   var qtd=parseFloat(document.getElementById('eo-desc-qtd').value||0);
   var preview=document.getElementById('eo-desc-preview');
@@ -6575,7 +6671,7 @@ function salvarEdicaoOrc(){
   o.end=document.getElementById('eo-end').value.trim();
   o.desc=document.getElementById('eo-desc').value.trim();
   o.serv=o.desc.split('\n')[0];
-  o.val=parseFloat(document.getElementById('eo-val').value||0);
+  o.val=parseFloat(desmascarar(document.getElementById('eo-val').value)||0);
   // Custo: usa materiais selecionados se houver, senão o campo manual
   var eoMatTotais=recalcMatEO()||{custo:0,venda:0};
   o.custoPecas=eoMatTotais.custo>0?eoMatTotais.custo:parseFloat(document.getElementById('eo-custo').value||0);
@@ -6597,13 +6693,20 @@ function salvarEdicaoOrc(){
   o.gtia=document.getElementById('eo-gtia').value.trim();
   o.validade=parseInt(document.getElementById('eo-validade').value||CFG.doc.validade||30);
   o.obs=document.getElementById('eo-obs').value.trim();
-  o.pgto=document.getElementById('eo-pgto').value;
   o.descTipo=document.getElementById('eo-desc-tipo').value;
   o.descQtd=parseFloat(document.getElementById('eo-desc-qtd').value||0);
   // Calcula desconto e atualiza val com o valor final com desconto aplicado
   o.descV=o.descTipo==='valor'?o.descQtd:(o.descTipo==='perc'?o.val*(o.descQtd/100):0);
   o.descBase=o.descV>0?o.val:0;
   if(o.descV>0){o.val=Math.max(0,o.val-o.descV);}
+  // Lê o componente de condições de pagamento — preserva múltiplas condições
+  // normalmente, igual aos fluxos de criação (não sobrescreve mais com 1
+  // condição única).
+  condPagamentoDefinirValorTotal('eo-pgto-cond',o.val);
+  var eoCondicoesPagamento=lerCondicoesPagamento('eo-pgto-cond');
+  if(!eoCondicoesPagamento)return;
+  o.condicoesPagamento=eoCondicoesPagamento;
+  o.pgto=resumoCondicoesPagamento(eoCondicoesPagamento);
   o.data=dataRaw;
   o.status=novoStatus;
 
@@ -6632,7 +6735,7 @@ function abrirEditarRec(num){
   document.getElementById('er-serv').value=r.serv||'';
   document.getElementById('er-desc').value=r.desc||r.serv||'';
   // Se o recibo já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
-  document.getElementById('er-val').value=(r.descBase&&r.descBase>0?r.descBase:r.val)||0;
+  document.getElementById('er-val').value=aplicarMascaraMoeda((r.descBase&&r.descBase>0?r.descBase:r.val)||0);
   document.getElementById('er-custo').value=r.custoPecas||0;
   document.getElementById('er-gtia').value=r.gtia||'';
   document.getElementById('er-desloc').value=r.desloc||0;
@@ -6644,9 +6747,13 @@ function abrirEditarRec(num){
     if(p.length===3)dataVal=p[2]+'-'+p[1]+'-'+p[0];
   }
   document.getElementById('er-data').value=dataVal;
-  // pagamento
-  var pgEl=document.getElementById('er-pgto');
-  for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===(r.pgto||'')||pgEl.options[i].value===(r.pgto||'')){pgEl.selectedIndex=i;break;}}
+  // pagamento — carrega condições reais do recibo (múltiplas, se houver);
+  // registros antigos sem condicoesPagamento caem no fallback de 1 condição
+  // a partir do campo legado pgto (mesma lógica usada na impressão do PDF).
+  var erValBase=(r.descBase&&r.descBase>0?r.descBase:r.val)||0;
+  montarCondicoesPagamento('er-pgto-cond',erValBase,{
+    condicoesIniciais: condicoesPagamentoOuFallback(r.condicoesPagamento,r.pgto,erValBase)
+  });
   // desconto
   var dTipoEl=document.getElementById('er-desc-tipo');
   dTipoEl.value=r.descTipo||'';
@@ -6708,7 +6815,7 @@ function fecharEditarRec(){
 }
 
 function calcResumoER(){
-  var val=parseFloat(document.getElementById('er-val').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
   var custo=parseFloat(document.getElementById('er-custo').value||0);
   document.getElementById('er-show-val').textContent=fmtVal(val);
   document.getElementById('er-show-custo').textContent=fmtVal(custo);
@@ -6716,7 +6823,7 @@ function calcResumoER(){
 }
 
 function calcDescontoER(){
-  var val=parseFloat(document.getElementById('er-val').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
   var tipo=document.getElementById('er-desc-tipo').value;
   var qtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
   var preview=document.getElementById('er-desc-preview');
@@ -6826,15 +6933,29 @@ async function salvarEdicaoRec(){
   r.end=document.getElementById('er-end').value.trim();
   r.serv=document.getElementById('er-serv').value.trim();
   r.desc=document.getElementById('er-desc').value.trim();
-  r.val=parseFloat(document.getElementById('er-val').value||0);
+  r.val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
   r.gtia=document.getElementById('er-gtia').value.trim();
   r.desloc=parseFloat(document.getElementById('er-desloc').value||0);
-  r.pgto=document.getElementById('er-pgto').value;
   r.descTipo=document.getElementById('er-desc-tipo').value;
   r.descQtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
   r.descV=r.descTipo==='valor'?r.descQtd:(r.descTipo==='perc'?r.val*(r.descQtd/100):0);
   r.descBase=r.descV>0?r.val:0;
   if(r.descV>0){r.val=Math.max(0,r.val-r.descV);}
+  // Lê o componente de condições de pagamento — preserva múltiplas condições
+  // normalmente, igual aos fluxos de criação (não sobrescreve mais com 1
+  // condição única).
+  condPagamentoDefinirValorTotal('er-pgto-cond',r.val);
+  var erCondicoesPagamento=lerCondicoesPagamento('er-pgto-cond');
+  if(!erCondicoesPagamento)return;
+  r.condicoesPagamento=erCondicoesPagamento;
+  r.pgto=resumoCondicoesPagamento(erCondicoesPagamento);
+  // gerarPDFRecibo prioriza r.finForma sobre r.condicoesPagamento (bloco
+  // "Forma de Pagamento" do PDF) — r.finForma quase sempre vem preenchido
+  // (toda emissão nova grava finForma), então sempre limpa aqui, mesmo com
+  // 1 condição só: senão trocar o tipo (ex: Dinheiro→Pix) ou mudar Cartão
+  // Crédito para parcelado com N parcelas fica sem efeito no PDF, que
+  // continuaria imprimindo o finForma antigo em vez do detalhe atualizado.
+  r.finForma=null;
   r.dataRaw=dataRaw;
   r.data=dataRaw?fmtDateBr(dataRaw):r.data;
   // Materiais
@@ -8689,21 +8810,40 @@ async function fazerLogin(){
   if(el)el.textContent=(d.getDate()<10?'0':'')+d.getDate()+'/'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1)+'/'+d.getFullYear();
 })();
 
-document.getElementById('modal-tpl').addEventListener('click',function(e){if(e.target===this)closeTplModal();});
-document.getElementById('modal-cli').addEventListener('click',function(e){if(e.target===this)fecharModalCli();});
-document.getElementById('modal-fin').addEventListener('click',function(e){if(e.target===this)fecharModalFin();});
-document.getElementById('modal-mat').addEventListener('click',function(e){if(e.target===this)fecharModalMat();});
-document.getElementById('modal-novo-recibo').addEventListener('click',function(e){if(e.target===this)fecharNovoRecibo();});
-document.getElementById('modal-lancamento').addEventListener('click',function(e){if(e.target===this)fecharLancamentoManual();});
-document.getElementById('modal-edit-orc').addEventListener('click',function(e){if(e.target===this)fecharEditarOrc();});
-document.getElementById('modal-edit-rec').addEventListener('click',function(e){if(e.target===this)fecharEditarRec();});
-document.getElementById('modal-aprovacao').addEventListener('click',function(e){if(e.target===this)fecharAprovacaoModal();});
-document.getElementById('modal-qual-documento').addEventListener('click',function(e){if(e.target===this)fecharModalQualDocumento();});
-document.getElementById('modal-serr-orc').addEventListener('click',function(e){if(e.target===this)fecharSerrOrc();});
+// Fecha o modal ao clicar no fundo (backdrop) — exige que TANTO o mousedown
+// quanto o click tenham alvo literal no próprio fundo. Um clique isolado
+// com target===modalEl não é suficiente: conteúdo dinâmico dentro do modal
+// (ex.: os campos extras de condicoes-pagamento.js ao trocar para Cartão de
+// Crédito → Parcelado, que são inseridos via outerHTML no meio da interação)
+// pode fazer o navegador reportar erroneamente o "click" como tendo
+// acontecido no backdrop mesmo quando o usuário clicou visualmente dentro
+// de um campo do formulário. Exigir que o mousedown TAMBÉM tenha sido no
+// backdrop garante que só fecha quando o gesto inteiro (pressionar + soltar)
+// realmente começou fora do conteúdo do modal.
+function _fecharModalAoClicarFundo(modalEl, fecharFn){
+  if(!modalEl) return;
+  var mousedownNoFundo = false;
+  modalEl.addEventListener('mousedown', function(e){ mousedownNoFundo = (e.target === modalEl); });
+  modalEl.addEventListener('click', function(e){
+    if(mousedownNoFundo && e.target === modalEl) fecharFn();
+    mousedownNoFundo = false;
+  });
+}
+_fecharModalAoClicarFundo(document.getElementById('modal-tpl'), closeTplModal);
+_fecharModalAoClicarFundo(document.getElementById('modal-cli'), fecharModalCli);
+_fecharModalAoClicarFundo(document.getElementById('modal-fin'), fecharModalFin);
+_fecharModalAoClicarFundo(document.getElementById('modal-mat'), fecharModalMat);
+_fecharModalAoClicarFundo(document.getElementById('modal-novo-recibo'), fecharNovoRecibo);
+_fecharModalAoClicarFundo(document.getElementById('modal-lancamento'), fecharLancamentoManual);
+_fecharModalAoClicarFundo(document.getElementById('modal-edit-orc'), fecharEditarOrc);
+_fecharModalAoClicarFundo(document.getElementById('modal-edit-rec'), fecharEditarRec);
+_fecharModalAoClicarFundo(document.getElementById('modal-aprovacao'), fecharAprovacaoModal);
+_fecharModalAoClicarFundo(document.getElementById('modal-qual-documento'), fecharModalQualDocumento);
+_fecharModalAoClicarFundo(document.getElementById('modal-serr-orc'), fecharSerrOrc);
 // modal-serr-rec é stub de compatibilidade — sem listener adicional
-document.getElementById('modal-cli-opcoes').addEventListener('click',function(e){if(e.target===this)fecharCliOpcoes();});
-document.getElementById('modal-usuario').addEventListener('click',function(e){if(e.target===this)fecharModalUsuario();});
-document.getElementById('modal-novo-orc-flow').addEventListener('click',function(e){if(e.target===this)fecharNovoOrcFlow();});
+_fecharModalAoClicarFundo(document.getElementById('modal-cli-opcoes'), fecharCliOpcoes);
+_fecharModalAoClicarFundo(document.getElementById('modal-usuario'), fecharModalUsuario);
+_fecharModalAoClicarFundo(document.getElementById('modal-novo-orc-flow'), fecharNovoOrcFlow);
 
 
 
@@ -8819,7 +8959,7 @@ function getDesconto(idTipo,idQtd,val){
 function calcDescontoRec(){
   var tipo=document.getElementById('nr-desc-tipo').value;
   var qtd=parseFloat(document.getElementById('nr-desc-qtd').value||0);
-  var val=parseFloat(document.getElementById('nr-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('nr-valor').value)||0);
   var prev=document.getElementById('nr-desc-preview');
   var final=document.getElementById('nr-desc-final');
   if(!tipo||qtd<=0){if(prev)prev.style.display='none';return;}
@@ -8894,9 +9034,14 @@ function abrirSerrOrc(){
   ['so-cli','so-tel','so-end','so-desc','so-obs'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='';
   });
-  ['so-valor','so-desloc','so-desc-qtd'].forEach(function(id){
+  ['so-desloc','so-desc-qtd'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='0';
   });
+  var soValEl=document.getElementById('so-valor');if(soValEl)soValEl.value='';
+  montarCondicoesPagamento('so-pgto-cond',0);
+  var condWrapEl=document.getElementById('so-pgto-cond-wrap');if(condWrapEl)condWrapEl.style.display='';
+  var recWrapEl=document.getElementById('so-pgto-rec-wrap');if(recWrapEl)recWrapEl.style.display='none';
+  var finWrapEl=document.getElementById('so-fin-wrap');if(finWrapEl)finWrapEl.style.display='none';
   var dtEl=document.getElementById('so-desc-tipo');if(dtEl)dtEl.value='';
   var dpEl=document.getElementById('so-desc-preview');if(dpEl)dpEl.style.display='none';
   // Data e validade
@@ -8944,7 +9089,7 @@ function serrVoltarCli(){serrMostrarStep(1);serrSetStep(1);}
 
 function serrProxMateriais(){
   var desc=(document.getElementById('so-desc').value||'').trim();
-  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
   if(!desc){alert('Informe a descrição do serviço.');return;}
   if(!val||val<=0){alert('Informe o valor de venda.');return;}
   serrMostrarStep(3);
@@ -9030,7 +9175,7 @@ function serrRecalcMat(){
   // Atualiza resumo descrição
   var soShowCusto=document.getElementById('so-show-custo');
   if(soShowCusto)soShowCusto.textContent=fmtVal(totalCusto);
-  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
   var tipo=document.getElementById('so-desc-tipo')?document.getElementById('so-desc-tipo').value:'';
   var qtd2=parseFloat(document.getElementById('so-desc-qtd')?document.getElementById('so-desc-qtd').value||0:0);
   var desc2=tipo==='valor'?qtd2:(tipo==='perc'?val*(qtd2/100):0);
@@ -9045,7 +9190,7 @@ function serrGetMatTotais(){return serrRecalcMat()||{custo:0,venda:0};}
 function serrProxPDF(){
   var nome=(document.getElementById('so-cli').value||'').trim();
   var desc=(document.getElementById('so-desc').value||'').trim();
-  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
   var tipo=document.getElementById('so-desc-tipo').value;
   var qtd=parseFloat(document.getElementById('so-desc-qtd').value||0);
   var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
@@ -9063,7 +9208,7 @@ function serrVoltarMat(){serrMostrarStep(3);serrSetStep(3);}
 async function serrEmitirRecibo(){
   var cli=document.getElementById('so-cli').value.trim();
   var desc=document.getElementById('so-desc').value.trim();
-  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
   if(!cli){alert('Informe o nome do cliente.');return;}
   if(!desc){alert('Informe a descrição do serviço.');return;}
   if(!val||val<=0){alert('Informe o valor.');return;}
@@ -9072,9 +9217,14 @@ async function serrEmitirRecibo(){
   var descVal=tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
   var valorFinal=Math.max(0,val-descVal);
   var dataRaw=document.getElementById('so-data').value;
-  var pgto=document.getElementById('so-pgto').value;
+  var pgto=document.getElementById('so-pgto-rec').value;
   var desloc=parseFloat(document.getElementById('so-desloc').value||0);
   var matTotais=serrGetMatTotais();
+  // ── Lê o bloco "Informações de Pagamento" (mesma cascata de 4 estados do nrEmitirRecibo) ──
+  var finStatus=(document.getElementById('so-fin-status')||{}).value||'pendente';
+  var finForma=(document.getElementById('so-fin-forma')||{}).value||pgto;
+  var finValorPago=parseFloat((document.getElementById('so-fin-valorpago')||{}).value||0)||null;
+  var finDataPgto=(document.getElementById('so-fin-datapgto')||{}).value||dataRaw;
   // Coleta lista de peças para persistência
   var matEditSerr=SERR.matLinhas.map(function(rowId){
     var selEl=document.getElementById('serrsel-'+rowId);
@@ -9096,32 +9246,54 @@ async function serrEmitirRecibo(){
     end:(document.getElementById('so-end').value||'').trim(),
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
     gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,finLancado:false,
-    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr};
+    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr,tipo:'serralheria',
+    finStatus:finStatus,finForma:finForma,finValorPago:finValorPago||undefined};
   recibos.unshift(novoRec);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(novoRec);
-  // Só lança no financeiro se pagamento NÃO for Pendente
-  if(pgto!=='Pendente'){
-    var lancFin={
-      nome:cli,desc:'Serralheria — '+cli,cli:cli,val:valorFinal,pgto:pgto,
-      data:fmtDateBr(dataRaw),dataRaw:dataRaw,
-      pecas:matTotais.custo,desloc:desloc,num:'SERR'+Date.now()
-    };
+  // ── Lança no financeiro SOMENTE se pago ou parcial ──
+  // Pendente e aguardando_pix ficam como a_receber (nenhum dos dois lança agora)
+  if(finStatus==='pago'){
+    // Pago total — lança como recebido com valor final
+    var valLanc=finValorPago&&finValorPago>0?finValorPago:valorFinal;
+    var lancFin={nome:cli,desc:'Serralheria — '+cli,cli:cli,val:valLanc,pgto:finForma,
+      data:fmtDateBr(finDataPgto),dataRaw:finDataPgto,pecas:matTotais.custo,desloc:desloc,
+      num:numR,finStatus:'pago',tipoLanc:'recebido'};
+    financeiro.unshift(lancFin);
+    if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
+    novoRec.finLancado=true;
+  } else if(finStatus==='parcial'){
+    // Pago parcial — lança apenas o valor recebido como a_receber
+    var valParcial=finValorPago&&finValorPago>0?finValorPago:valorFinal;
+    var lancFin={nome:cli,desc:'Serralheria — '+cli+' (Parcial)',cli:cli,val:valParcial,pgto:finForma,
+      data:fmtDateBr(finDataPgto),dataRaw:finDataPgto,pecas:matTotais.custo,desloc:desloc,
+      num:numR,finStatus:'parcial',tipoLanc:'a_receber'};
     financeiro.unshift(lancFin);
     if(SUPABASE_ATIVO)await sbSalvarFinanceiro(lancFin);
     novoRec.finLancado=true;
   }
+  // aguardando_pix e pendente: NÃO lançam no financeiro agora — ficam pendentes no recibo
   salvarLocal();
   atualizarContadores();
   fecharSerrOrc();
   // Gera PDF do recibo
   setTimeout(function(){gerarPDFSerrRec_novo(novoRec,desloc,desc);},200);
-  var aviso=pgto==='Pendente'?' ⚠️ Pagamento pendente — confirme o pagamento na lista.':'';
-  alert('✅ Recibo de Serralheria emitido!'+aviso);
+  var avisoMap={
+    pago:'',
+    parcial:' 🟡 Pagamento parcial registrado — confirme o saldo na aba Recibos quando receber o restante.',
+    aguardando_pix:' 🔵 Aguardando confirmação do Pix — confirme na aba Recibos.',
+    pendente:' ⚪ Pagamento pendente — confirme na aba Recibos quando receber.'
+  };
+  alert('✅ Recibo de Serralheria emitido!'+(avisoMap[finStatus]||''));
 }
 
 // PDF Recibo Serralheria (novo — usa dados diretos)
 function gerarPDFSerrRec_novo(r,desloc,descFull){
   if(!window.jspdf){alert('Biblioteca PDF carregando...');return;}
+  // Cópias normalizadas p/ impressão — não mutam r (referência direta ao
+  // array recibos), mantendo o texto original intacto no Supabase.
+  var _rCli=normalizarFracoes(r.cli);
+  var _rEnd=normalizarFracoes(r.end);
+  var _rDesc=normalizarFracoes(descFull||r.desc||'');
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
@@ -9139,13 +9311,15 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
   doc.setTextColor(0,0,0);
   var y=MT+47;
   doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Nome:',ML,y);
-  doc.setFont('helvetica','normal');doc.text(r.cli,ML+18,y);
+  doc.setFont('helvetica','normal');doc.text(_rCli,ML+18,y);
   if(r.tel){y+=7;doc.setFont('helvetica','bold');doc.text('Telefone:',ML,y);doc.setFont('helvetica','normal');doc.text(r.tel,ML+24,y);}
-  if(r.end){y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);doc.setFont('helvetica','normal');var endLines=doc.splitTextToSize(r.end,CW-24);doc.text(endLines,ML+24,y);y+=(endLines.length-1)*5;}
+  if(_rEnd){y+=7;doc.setFont('helvetica','bold');doc.text('Endere\xe7o:',ML,y);doc.setFont('helvetica','normal');var endLines=doc.splitTextToSize(_rEnd,CW-24);doc.text(endLines,ML+24,y);y+=(endLines.length-1)*5;}
   y+=10;doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Servi\xe7os realizados:',ML,y);
-  y+=6;(descFull||r.desc||'').split('\n').forEach(function(ln){if(ln.trim()){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('\u2022 '+ln.trim(),ML+3,y);y+=6;}});
-  y+=6;doc.setFontSize(11);doc.setFont('helvetica','bold');doc.text('Forma de pagamento: ',ML,y);doc.setFont('helvetica','normal');doc.text(r.pgto||'',ML+52,y);
-  y+=10;doc.setFillColor(0,120,0);doc.rect(ML,y,CW,10,'F');
+  y+=6;_rDesc.split('\n').forEach(function(ln){if(ln.trim()){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('\u2022 '+ln.trim(),ML+3,y);y+=6;}});
+  y+=6;doc.setFontSize(11);
+  var _condsRecSerr=condicoesPagamentoOuFallback(r.condicoesPagamento,r.pgto,r.val);
+  y=imprimirCondicoesPagamento(doc,_condsRecSerr,ML+2,y,r.val);
+  y+=4;doc.setFillColor(0,120,0);doc.rect(ML,y,CW,10,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(255,255,255);
   doc.text('TOTAL RECEBIDO: R$ '+parseFloat(r.val||0).toLocaleString('pt-BR',{minimumFractionDigits:2}),PW/2,y+7,{align:'center'});
   doc.setTextColor(0,0,0);y+=20;
@@ -9166,7 +9340,7 @@ function gerarPDFSerrRec_novo(r,desloc,descFull){
 }
 
 function calcSerrOrc(){
-  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
   var matTotais=(typeof serrGetMatTotais==='function')?serrGetMatTotais():{custo:0,venda:0};
   var custo=matTotais.custo||0;
   var tipo=document.getElementById('so-desc-tipo')?document.getElementById('so-desc-tipo').value:'';
@@ -9184,10 +9358,81 @@ function calcSerrOrc(){
   } else {if(prev)prev.style.display='none';}
 }
 
+// ════ INFORMAÇÕES DE PAGAMENTO (Recibo Serralheria) — espelha
+// nrSincFormaFin/nrAtualizarFinBadge/nrCalcSaldoFin, mas lê so-pgto-rec (não
+// so-pgto-cond, que é do modo Orçamento) e so-valor com desmascarar (o
+// campo usa máscara de moeda). ════
+function serrSincFormaFin(){
+  var pgtoEl=document.getElementById('so-pgto-rec');
+  var finFormaEl=document.getElementById('so-fin-forma');
+  if(!pgtoEl||!finFormaEl)return;
+  var pgto=pgtoEl.value;
+  // Pré-seleciona a forma de recebimento igual ao pagamento escolhido
+  for(var i=0;i<finFormaEl.options.length;i++){
+    if(finFormaEl.options[i].text===pgto){finFormaEl.selectedIndex=i;break;}
+  }
+  // Pré-sugere status baseado na forma de pagamento
+  var statusEl=document.getElementById('so-fin-status');
+  if(!statusEl)return;
+  var sugestao='pendente';
+  if(pgto==='Dinheiro')sugestao='pago';
+  else if(pgto==='Pix')sugestao='aguardando_pix';
+  else if(pgto==='Cartão Crédito'||pgto==='Cartão Débito')sugestao='pago';
+  else if(pgto==='Sinal de 50% / Restante 50%')sugestao='parcial';
+  else if(pgto==='Parcelado')sugestao='parcial';
+  statusEl.value=sugestao;
+  serrAtualizarFinBadge();
+}
+
+function serrAtualizarFinBadge(){
+  var status=(document.getElementById('so-fin-status')||{}).value||'pendente';
+  var badge=document.getElementById('so-fin-badge');
+  var avisoEl=document.getElementById('so-fin-aviso');
+  var valorWrap=document.getElementById('so-fin-valorpago-wrap');
+  var dataWrap=document.getElementById('so-fin-data-wrap');
+  var map={
+    pago:       {cls:'background:rgba(16,185,129,.2);color:#34d399;border:1px solid rgba(16,185,129,.4)',txt:'✅ Pago',aviso:'✅ Status <strong>Pago</strong> — será lançado no financeiro como <strong>recebido</strong>.',avisoStyle:'background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);color:var(--green2)'},
+    parcial:    {cls:'background:rgba(245,158,11,.2);color:#f59e0b;border:1px solid rgba(245,158,11,.4)',txt:'🟡 Pago Parcial',aviso:'🟡 Status <strong>Pago Parcial</strong> — o valor recebido entra no financeiro como <strong>a receber</strong>. O saldo fica pendente.',avisoStyle:'background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);color:var(--amber)'},
+    aguardando_pix:{cls:'background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.4)',txt:'🔵 Aguardando Pix',aviso:'🔵 Status <strong>Aguardando Pix</strong> — ficará pendente no financeiro até confirmar o recebimento.',avisoStyle:'background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);color:var(--blue3)'},
+    pendente:   {cls:'background:rgba(120,120,140,.18);color:#a8bacf;border:1px solid rgba(120,120,140,.3)',txt:'⚪ Pendente',aviso:'⚠️ Status <strong>Pendente</strong> — o recibo será salvo mas <strong>não será contabilizado</strong> no financeiro até confirmar o recebimento.',avisoStyle:'background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:var(--amber)'}
+  };
+  var cfg=map[status]||map.pendente;
+  if(badge){badge.style.cssText='margin-left:auto;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;'+cfg.cls;badge.textContent=cfg.txt;}
+  if(avisoEl){avisoEl.style.cssText=cfg.avisoStyle+';border-radius:7px;padding:8px 12px;font-size:11px;';avisoEl.innerHTML=cfg.aviso;}
+  // Mostra/oculta campo de valor pago e data
+  var showVal=(status==='pago'||status==='parcial');
+  if(valorWrap)valorWrap.style.display=showVal?'block':'none';
+  if(dataWrap)dataWrap.style.display=showVal?'block':'none';
+  // Preenche data com hoje se vazia
+  if(showVal){
+    var dpEl=document.getElementById('so-fin-datapgto');
+    if(dpEl&&!dpEl.value){var h=new Date();dpEl.value=h.getFullYear()+'-'+(h.getMonth()+1<10?'0':'')+(h.getMonth()+1)+'-'+(h.getDate()<10?'0':'')+h.getDate();}
+  }
+  serrCalcSaldoFin();
+}
+
+function serrCalcSaldoFin(){
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
+  var descTipo=(document.getElementById('so-desc-tipo')||{}).value||'';
+  var descQtd=parseFloat((document.getElementById('so-desc-qtd')||{}).value||0);
+  var descV=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
+  var totalRecibo=Math.max(0,val-descV);
+  var valorPago=parseFloat((document.getElementById('so-fin-valorpago')||{}).value||0);
+  var saldoWrap=document.getElementById('so-fin-saldo-wrap');
+  var saldoVal=document.getElementById('so-fin-saldo-val');
+  if(valorPago>0&&totalRecibo>0){
+    var saldo=Math.max(0,totalRecibo-valorPago);
+    if(saldoWrap)saldoWrap.style.display='block';
+    if(saldoVal)saldoVal.textContent=fmtVal(saldo);
+  } else {
+    if(saldoWrap)saldoWrap.style.display='none';
+  }
+}
+
 async function gerarPDFSerrOrc(){
   var cli=document.getElementById('so-cli').value.trim();
   var desc=document.getElementById('so-desc').value.trim();
-  var val=parseFloat(document.getElementById('so-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('so-valor').value)||0);
   if(!cli){alert('Informe o nome do cliente.');return;}
   if(!desc){alert('Informe a descrição do serviço.');return;}
   if(!val||val<=0){alert('Informe o valor de venda.');return;}
@@ -9200,7 +9445,10 @@ async function gerarPDFSerrOrc(){
   var num=document.getElementById('so-num').value;
   var tel=document.getElementById('so-tel').value.trim();
   var end=document.getElementById('so-end').value.trim();
-  var pgto=document.getElementById('so-pgto').value;
+  condPagamentoDefinirValorTotal('so-pgto-cond',valorFinal);
+  var condicoesPagamento=lerCondicoesPagamento('so-pgto-cond');
+  if(!condicoesPagamento)return;
+  var pgto=resumoCondicoesPagamento(condicoesPagamento);
   var obs=document.getElementById('so-obs').value.trim();
   var dataRaw=document.getElementById('so-data').value;
   var validade=document.getElementById('so-val').value;
@@ -9222,7 +9470,7 @@ async function gerarPDFSerrOrc(){
   var novoOrc={
     num:num,cli:cli,tel:tel,end:end,
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,
-    pgto:pgto,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
+    pgto:pgto,condicoesPagamento:condicoesPagamento,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
     validade:validade,obs:obs,status:'pendente',
     descTipo:tipo,descQtd:qtd,descBase:desc_val>0?val:0,descV:desc_val,
     custoPecas:matTotais.custo,matEdit:matEditSerr,
@@ -9235,6 +9483,12 @@ async function gerarPDFSerrOrc(){
   fecharSerrOrc();
   renderOrcTable();
   // ── GERAR PDF ─────────────────────────────────────────────────────────────
+  // Normaliza frações Unicode só a partir daqui (a gravação acima já usou o
+  // texto original) — mantém o dado salvo no Supabase intacto.
+  cli=normalizarFracoes(cli);
+  end=normalizarFracoes(end);
+  desc=normalizarFracoes(desc);
+  obs=normalizarFracoes(obs);
   var {jsPDF}=window.jspdf;
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   var PW=210,ML=22,MR=20,MT=18,CW=PW-ML-MR;
@@ -9269,15 +9523,8 @@ async function gerarPDFSerrOrc(){
   var vfmt='R$ '+valorFinal.toLocaleString('pt-BR',{minimumFractionDigits:2})+' ('+numExtenso(valorFinal)+').';
   var vl=doc.splitTextToSize(vfmt,CW-6);doc.setFont('helvetica',desc_val>0?'bold':'normal');doc.text(vl,ML+4,y);y+=vl.length*6+4;
   doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y-2,PW-MR,y-2);y+=4;
-  doc.setFont('helvetica','bold');doc.text('Forma de Pagamento:',ML,y);y+=7;
-  doc.setFont('helvetica','normal');
-  if(pgto==='Parcelado'||pgto==='Sinal de 50% / Restante 50%'){
-    doc.text('Sinal de 50% / Restante 50% na entrega do servi\xe7o.',ML+2,y);y+=6;
-    doc.text('Sendo Pix ads.pg@hotmail.com ou Banco Itau AG 0466 CC 60864-3',ML+2,y);y+=6;
-  } else if(pgto==='Pix'){doc.text('Pix: ads.pg@hotmail.com',ML+2,y);y+=6;}
-  else if(pgto==='Dinheiro'){doc.text('Pagamento em dinheiro na entrega do servi\xe7o.',ML+2,y);y+=6;}
-  else {doc.text('Pagamento via '+pgto+'.',ML+2,y);y+=6;}
-  doc.text('Ananias Antonio dos Santos',ML+2,y);y+=4;
+  y=imprimirCondicoesPagamento(doc,condicoesPagamento,ML+2,y,valorFinal);
+  y-=2;
   if(obs){doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y+3,PW-MR,y+3);y+=8;doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(0,0,0);doc.text('Observa\xe7\xf5es:',ML,y);y+=6;doc.setFont('helvetica','normal');var ol=doc.splitTextToSize(obs,CW-4);doc.text(ol,ML+2,y);y+=ol.length*6;}
   y+=10;
   if(CFG.doc.qrWpp){doc.addImage(CFG.doc.qrWpp,_getImgFmt(CFG.doc.qrWpp),ML,y-6,22,22);}
@@ -9303,6 +9550,19 @@ function abrirSerrRec(){
   var btnRec=document.getElementById('serr-btn-rec');
   if(btnOrc)btnOrc.style.display='none';
   if(btnRec)btnRec.style.display='block';
+  // Recibo: pagamento já efetivado, não é oferta de opções — troca o bloco
+  // de condições de pagamento (múltiplas) por um select único.
+  var condWrapEl=document.getElementById('so-pgto-cond-wrap');if(condWrapEl)condWrapEl.style.display='none';
+  var recWrapEl=document.getElementById('so-pgto-rec-wrap');if(recWrapEl)recWrapEl.style.display='';
+  var pgtoRecEl=document.getElementById('so-pgto-rec');if(pgtoRecEl)pgtoRecEl.selectedIndex=0;
+  // Mostra o bloco de Informações de Pagamento e reseta pro padrão 'pendente'
+  // (igual ao Novo Recibo — não chama serrSincFormaFin() aqui de propósito,
+  // senão o status seria imediatamente sobrescrito pela sugestão do Pix)
+  var finWrapEl=document.getElementById('so-fin-wrap');if(finWrapEl)finWrapEl.style.display='';
+  var finStatusEl=document.getElementById('so-fin-status');if(finStatusEl)finStatusEl.value='pendente';
+  var finValorPagoEl=document.getElementById('so-fin-valorpago');if(finValorPagoEl)finValorPagoEl.value='';
+  var finDataPgtoEl=document.getElementById('so-fin-datapgto');if(finDataPgtoEl)finDataPgtoEl.value='';
+  serrAtualizarFinBadge();
   // Número do recibo
   var maxNumR=recibos.reduce(function(mx,r){return Math.max(mx,parseInt((r.num||'R0').replace(/\D/g,'')||0));},0);
   var soNumEl=document.getElementById('so-num');if(soNumEl)soNumEl.value=String(maxNumR+1).padStart(3,'0');
@@ -9411,12 +9671,11 @@ nofProxOrc = function(){
     var fmtShow=function(x){return (x.getDate()<10?'0':'')+x.getDate()+'/'+(x.getMonth()+1<10?'0':'')+(x.getMonth()+1)+'/'+x.getFullYear();};
     document.getElementById('nof-data').value = fmtD(d);
     document.getElementById('nof-val').value  = '30 dias — até '+fmtShow(dv);
-    document.getElementById('nof-valor').value = valorFinal.toFixed(2);
+    document.getElementById('nof-valor').value = aplicarMascaraMoeda(valorFinal);
     document.getElementById('nof-gtia').value  = gtia||'—';
     document.getElementById('nof-desc').value  = desc;
     document.getElementById('nof-desloc').value= desloc.toFixed(2);
-    var pgEl = document.getElementById('nof-pgto');
-    for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===pgto){pgEl.selectedIndex=i;break;}}
+    montarCondicoesPagamento('nof-pgto-cond',valorFinal,{tipoInicial:pgto});
     // Desconto já foi aplicado no valor, zera desconto do form final
     document.getElementById('nof-desc-tipo').value = '';
     document.getElementById('nof-desc-qtd').value  = '0';
@@ -9515,7 +9774,7 @@ nrProxRecibo = function(){
     var nome = (document.getElementById('nr-cli-nome').value||'').trim();
     document.getElementById('nr-show-serv').textContent = 'Serralheria — '+desc.split('\n')[0];
     document.getElementById('nr-show-cli').textContent  = nome;
-    document.getElementById('nr-valor').value  = valorFinal.toFixed(2);
+    document.getElementById('nr-valor').value  = aplicarMascaraMoeda(valorFinal);
     document.getElementById('nr-desc').value   = desc;
     document.getElementById('nr-desloc').value = desloc.toFixed(2);
     var pgEl = document.getElementById('nr-pgto');
@@ -10511,7 +10770,7 @@ function togglePixInfo(selectId, infoBoxId){
   if(mesOrcEl){var mo=new Date().getMonth()+1;mesOrcEl.value=String(mo);}
   // Inicializa info Pix nos selects que já estão com Pix selecionado por padrão
   setTimeout(function(){
-    [['f-pgto','pix-info-orc'],['nof-pgto','pix-info-nof'],['so-pgto','pix-info-so'],['eo-pgto','pix-info-eo']]
+    [['f-pgto','pix-info-orc']]
     .forEach(function(p){togglePixInfo(p[0],p[1]);});
   },500);
 })();
