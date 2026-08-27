@@ -10697,7 +10697,7 @@ function _getImgFmt(b64){
 function _cfgToast(msg){
   var t=document.getElementById('cfg-toast');
   if(!t){t=document.createElement('div');t.id='cfg-toast';
-    t.style.cssText='position:fixed;bottom:24px;right:24px;background:rgba(16,185,129,.95);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s';
+    t.style.cssText='position:fixed;bottom:24px;right:24px;background:rgba(16,185,129,.95);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.4);transition:opacity .3s;pointer-events:none';
     document.body.appendChild(t);}
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._timer);t._timer=setTimeout(function(){t.style.opacity='0';},3000);
