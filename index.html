@@ -517,7 +517,7 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
       <div class="fgrid fg4" style="margin-bottom:10px">
-        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="f-valor" placeholder="0,00" step="0.01"></div>
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="f-valor" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
         <div><div class="fl">Garantia</div><input class="fi" id="f-gtia" placeholder="Ex: 12 meses"></div>
         <div><div class="fl">Pagamento</div>
           <select class="fs" id="f-pgto" onchange="togglePixInfo('f-pgto','pix-info-orc')">
@@ -531,7 +531,7 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Validade</div><input class="fi" id="f-val" readonly style="color:var(--green2);cursor:default"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="number" id="f-desloc" placeholder="0,00" step="0.01" value="0"></div>
+        <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="text" inputmode="decimal" id="f-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
         <div style="display:flex;align-items:flex-end"><div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:7px;padding:8px 12px;font-size:11px;color:var(--silver2);flex:1">💡 O valor de deslocamento será deduzido do lucro líquido no Financeiro.</div></div>
       </div>
       <div class="fgrid" style="margin-bottom:12px">
@@ -847,11 +847,11 @@ td.bold{color:var(--white);font-weight:700}
             </div>
           </div>
           <div class="fgrid fg2" style="margin-bottom:10px">
-            <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="number" id="nr-serr-valor" placeholder="0,00" step="0.01"></div>
-            <div><div class="fl">Custo de peças (R$)</div><input class="fi" type="number" id="nr-serr-custo" placeholder="0,00" step="0.01" value="0"></div>
+            <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="nr-serr-valor" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
+            <div><div class="fl">Custo de peças (R$)</div><input class="fi" type="text" inputmode="decimal" id="nr-serr-custo" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
           </div>
           <div class="fgrid fg2" style="margin-bottom:10px">
-            <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="nr-serr-desloc" placeholder="0,00" step="0.01" value="0"></div>
+            <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="nr-serr-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
             <div><div class="fl">Pagamento</div>
               <select class="fs" id="nr-serr-pgto">
                 <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
@@ -941,7 +941,7 @@ td.bold{color:var(--white);font-weight:700}
           </div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
-          <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="number" id="nr-desloc" placeholder="0,00" step="0.01" value="0"></div>
+          <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="text" inputmode="decimal" id="nr-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
           <div><div class="fl">Descrição completa (uma linha = um item)</div>
@@ -979,7 +979,7 @@ td.bold{color:var(--white);font-weight:700}
             <div class="fgrid fg2">
               <div>
                 <div class="fl">Valor Recebido (R$)</div>
-                <input class="fi" type="number" id="nr-fin-valorpago" placeholder="0,00" step="0.01" oninput="nrCalcSaldoFin()">
+                <input class="fi" type="text" inputmode="decimal" id="nr-fin-valorpago" placeholder="0,00" oninput="mascarearInputMoeda(this);nrCalcSaldoFin()">
               </div>
               <div id="nr-fin-saldo-wrap" style="display:none">
                 <div class="fl">Saldo Restante</div>
@@ -1094,11 +1094,11 @@ td.bold{color:var(--white);font-weight:700}
             </div>
           </div>
           <div class="fgrid fg2" style="margin-bottom:10px">
-            <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="number" id="nof-serr-valor" placeholder="0,00" step="0.01"></div>
-            <div><div class="fl">Custo de peças (R$)</div><input class="fi" type="number" id="nof-serr-custo" placeholder="0,00" step="0.01" value="0"></div>
+            <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="nof-serr-valor" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
+            <div><div class="fl">Custo de peças (R$)</div><input class="fi" type="text" inputmode="decimal" id="nof-serr-custo" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
           </div>
           <div class="fgrid fg2" style="margin-bottom:10px">
-            <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="nof-serr-desloc" placeholder="0,00" step="0.01" value="0"></div>
+            <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="nof-serr-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
             <div><div class="fl">Pagamento</div>
               <select class="fs" id="nof-serr-pgto">
                 <option>Pix</option><option>Dinheiro</option><option>Parcelado</option>
@@ -1203,7 +1203,7 @@ td.bold{color:var(--white);font-weight:700}
           </div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
-          <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="number" id="nof-desloc" placeholder="0,00" step="0.01" value="0"></div>
+          <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="text" inputmode="decimal" id="nof-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
           <div><div class="fl">Descrição do serviço (uma linha = um item no PDF)</div>
@@ -1293,7 +1293,7 @@ td.bold{color:var(--white);font-weight:700}
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
           <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc();condPagamentoSincronizarValor('so-pgto-cond',this.value);serrCalcSaldoFin()"></div>
-          <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="so-desloc" placeholder="0,00" step="0.01" value="0" oninput="calcSerrOrc()"></div>
+          <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc()"></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
           <div id="so-pgto-cond-wrap"><div class="fl">Condições de Pagamento</div>
@@ -1340,7 +1340,7 @@ td.bold{color:var(--white);font-weight:700}
             <div class="fgrid fg2">
               <div>
                 <div class="fl">Valor Recebido (R$)</div>
-                <input class="fi" type="number" id="so-fin-valorpago" placeholder="0,00" step="0.01" oninput="serrCalcSaldoFin()">
+                <input class="fi" type="text" inputmode="decimal" id="so-fin-valorpago" placeholder="0,00" oninput="mascarearInputMoeda(this);serrCalcSaldoFin()">
               </div>
               <div id="so-fin-saldo-wrap" style="display:none">
                 <div class="fl">Saldo Restante</div>
@@ -1594,7 +1594,7 @@ td.bold{color:var(--white);font-weight:700}
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Data</div><input class="fi" type="date" id="lf-data"></div>
-        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" id="lf-valor" placeholder="0,00" step="0.01" value="0"></div>
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="lf-valor" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
       </div>
       <div class="fgrid" style="margin-bottom:10px" id="lf-blk-km">
         <div><div class="fl">Km atual</div><input class="fi" type="number" id="lf-km" placeholder="0" min="0" step="1"></div>
@@ -2086,7 +2086,7 @@ td.bold{color:var(--white);font-weight:700}
     <div class="modal-bd">
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Data</div><input class="fi" type="date" id="nf-edit-data"></div>
-        <div><div class="fl">Valor (R$)</div><input class="fi" type="number" step="0.01" id="nf-edit-valor"></div>
+        <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="nf-edit-valor" oninput="mascarearInputMoeda(this)"></div>
       </div>
       <div style="margin-bottom:10px"><div class="fl">Cliente</div><input class="fi" id="nf-edit-cliente"></div>
       <div style="margin-bottom:10px"><div class="fl">Descrição do Serviço</div><textarea class="fi" id="nf-edit-desc" rows="2" style="resize:none"></textarea></div>
@@ -2166,7 +2166,7 @@ td.bold{color:var(--white);font-weight:700}
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Quantidade em estoque</div><input class="fi" type="number" id="mm-qtd" placeholder="0" min="0" step="1" value="0" oninput="calcVendaMat()"></div>
-        <div><div class="fl">Valor de custo unitário (R$)</div><input class="fi" type="number" id="mm-custo" placeholder="0,00" step="0.01" oninput="calcVendaMat()"></div>
+        <div><div class="fl">Valor de custo unitário (R$)</div><input class="fi" type="text" inputmode="decimal" id="mm-custo" placeholder="0,00" oninput="mascarearInputMoeda(this);calcVendaMat()"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div>
@@ -2193,7 +2193,7 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
       <div class="fgrid" style="margin-bottom:10px">
-        <div><div class="fl">Valor de venda (editável)</div><input class="fi" type="number" id="mm-venda" placeholder="0,00" step="0.01" oninput="atualizarMargemMat()"></div>
+        <div><div class="fl">Valor de venda (editável)</div><input class="fi" type="text" inputmode="decimal" id="mm-venda" placeholder="0,00" oninput="mascarearInputMoeda(this);atualizarMargemMat()"></div>
       </div>
     </div>
     <div class="modal-ft">
@@ -2284,7 +2284,7 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div>
           <div class="fl">Valor Pago (R$) — opcional</div>
-          <input class="fi" type="number" id="aprov-valor-pago" placeholder="0,00" step="0.01" value="" oninput="calcSaldoAprov()">
+          <input class="fi" type="text" inputmode="decimal" id="aprov-valor-pago" placeholder="0,00" value="" oninput="mascarearInputMoeda(this);calcSaldoAprov()">
         </div>
         <div>
           <div class="fl">Data de Vencimento — opcional</div>
@@ -2396,7 +2396,7 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div>
           <div class="fl">Valor Pago (R$) — opcional</div>
-          <input class="fi" type="number" id="pi-valor-pago" placeholder="0,00" step="0.01" value="" oninput="calcSaldoPendente()">
+          <input class="fi" type="text" inputmode="decimal" id="pi-valor-pago" placeholder="0,00" value="" oninput="mascarearInputMoeda(this);calcSaldoPendente()">
         </div>
         <div>
           <div class="fl">Data de Vencimento — opcional</div>
@@ -2456,7 +2456,7 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div>
           <div class="fl">Valor Pago (R$) — opcional</div>
-          <input class="fi" type="number" id="ap-valor-pago" placeholder="0,00" step="0.01" value="">
+          <input class="fi" type="text" inputmode="decimal" id="ap-valor-pago" placeholder="0,00" value="" oninput="mascarearInputMoeda(this)">
         </div>
         <div>
           <div class="fl">Data do Pagamento</div>
@@ -2493,7 +2493,7 @@ td.bold{color:var(--white);font-weight:700}
       </div>
       <div class="fgrid fg3" style="margin-bottom:10px">
         <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="eo-val" placeholder="0,00" oninput="mascarearInputMoeda(this);calcResumoEO();condPagamentoSincronizarValor('eo-pgto-cond',this.value)"></div>
-        <div><div class="fl">Custo peças (R$)</div><input class="fi" type="number" id="eo-custo" step="0.01" value="0" oninput="calcResumoEO()"></div>
+        <div><div class="fl">Custo peças (R$)</div><input class="fi" type="text" inputmode="decimal" id="eo-custo" value="0,00" oninput="mascarearInputMoeda(this);calcResumoEO()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="eo-data"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
@@ -2594,12 +2594,12 @@ td.bold{color:var(--white);font-weight:700}
       </div>
       <div class="fgrid fg3" style="margin-bottom:10px">
         <div><div class="fl">Valor (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-val" placeholder="0,00" oninput="mascarearInputMoeda(this);calcResumoER();condPagamentoSincronizarValor('er-pgto-cond',this.value)"></div>
-        <div><div class="fl">Custo peças (R$)</div><input class="fi" type="number" id="er-custo" step="0.01" value="0" oninput="calcResumoER()"></div>
+        <div><div class="fl">Custo peças (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-custo" value="0,00" oninput="mascarearInputMoeda(this);calcResumoER()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="er-data"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Garantia</div><input class="fi" id="er-gtia" placeholder="Ex: 12 meses"></div>
-        <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="number" id="er-desloc" step="0.01" value="0" placeholder="0,00"></div>
+        <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-desloc" value="0,00" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Condições de Pagamento</div>
@@ -2690,11 +2690,11 @@ td.bold{color:var(--white);font-weight:700}
         </div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Valor do serviço (R$)</div><input class="fi" type="number" id="lanc-val" placeholder="0,00" step="0.01"></div>
-        <div><div class="fl">Custo de peças (R$)</div><input class="fi" type="number" id="lanc-pecas" placeholder="0,00" step="0.01" value="0"></div>
+        <div><div class="fl">Valor do serviço (R$)</div><input class="fi" type="text" inputmode="decimal" id="lanc-val" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
+        <div><div class="fl">Custo de peças (R$)</div><input class="fi" type="text" inputmode="decimal" id="lanc-pecas" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
-        <div><div class="fl">Deslocamento / combustível (R$)</div><input class="fi" type="number" id="lanc-desloc" placeholder="0,00" step="0.01" value="0"></div>
+        <div><div class="fl">Deslocamento / combustível (R$)</div><input class="fi" type="text" inputmode="decimal" id="lanc-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
         <div><div class="fl">Observações (opcional)</div><input class="fi" id="lanc-obs" placeholder="Anotação interna"></div>
       </div>
     </div>
@@ -2730,7 +2730,7 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Descrição do Serviço</div><input class="fi" id="fin-desc-edit" placeholder="Ex: Manutenção preventiva"></div>
       </div>
       <div class="fgrid fg3" style="margin-bottom:10px">
-        <div><div class="fl">Valor do Serviço (R$)</div><input class="fi" type="number" id="fin-val-edit" placeholder="0,00" step="0.01" min="0" oninput="calcLiquidoFin()"></div>
+        <div><div class="fl">Valor do Serviço (R$)</div><input class="fi" type="text" inputmode="decimal" id="fin-val-edit" placeholder="0,00" oninput="mascarearInputMoeda(this);calcLiquidoFin()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="fin-data-edit"></div>
         <div><div class="fl">Pagamento</div>
           <select class="fs" id="fin-pgto-edit">
@@ -2761,7 +2761,7 @@ td.bold{color:var(--white);font-weight:700}
         <div class="fgrid fg2">
           <div>
             <div class="fl">Valor Pago (R$) — opcional</div>
-            <input class="fi" type="number" id="fin-val-pago-edit" placeholder="0,00" step="0.01" value="" oninput="calcSaldoFinEdit()">
+            <input class="fi" type="text" inputmode="decimal" id="fin-val-pago-edit" placeholder="0,00" value="" oninput="mascarearInputMoeda(this);calcSaldoFinEdit()">
           </div>
           <div>
             <div class="fl">Saldo Pendente</div>
@@ -2772,11 +2772,11 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div>
           <div class="fl">Custo das peças (R$)</div>
-          <input class="fi" type="number" id="fin-pecas" placeholder="0,00" step="0.01" value="0" oninput="calcLiquidoFin()">
+          <input class="fi" type="text" inputmode="decimal" id="fin-pecas" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this);calcLiquidoFin()">
         </div>
         <div>
           <div class="fl">Deslocamento / combustível (R$)</div>
-          <input class="fi" type="number" id="fin-desloc" placeholder="0,00" step="0.01" value="0" oninput="calcLiquidoFin()">
+          <input class="fi" type="text" inputmode="decimal" id="fin-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this);calcLiquidoFin()">
         </div>
       </div>
       <div style="background:rgba(37,99,235,.08);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px">
@@ -4305,7 +4305,7 @@ function preencherForm(){
   }
   if(t){
     document.getElementById('f-desc').value=t.desc;
-    document.getElementById('f-valor').value=t.val;
+    document.getElementById('f-valor').value=aplicarMascaraMoeda(t.val);
     document.getElementById('f-gtia').value=t.gtia;
     var pgEl=document.getElementById('f-pgto');
     for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].value===t.pgto||pgEl.options[i].text===t.pgto){pgEl.selectedIndex=i;break;}}
@@ -4320,11 +4320,11 @@ function getFormData(){
     tel:document.getElementById('f-tel').value,
     endereco:document.getElementById('f-end').value,
     descricao:document.getElementById('f-desc').value,
-    valor:parseFloat(document.getElementById('f-valor').value||0),
+    valor:parseFloat(desmascarar(document.getElementById('f-valor').value)||0),
     garantia:document.getElementById('f-gtia').value,
     pagamento:document.getElementById('f-pgto').value,
     obs:document.getElementById('f-obs').value,
-    desloc:parseFloat((document.getElementById('f-desloc')||{}).value||0),
+    desloc:parseFloat(desmascarar((document.getElementById('f-desloc')||{}).value)||0),
   };
 }
 
@@ -5387,9 +5387,9 @@ function adicionarLinhaMatRec(){
       '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="nrcusto-'+rowId+'" placeholder="0,00" oninput="recalcMatRec()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="nrcusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatRec()"></div>'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="nrvenda-'+rowId+'" placeholder="0,00" oninput="recalcMatRec()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="nrvenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatRec()"></div>'+
       '</div>'+
     '</div>';
   document.getElementById('nr-mat-linhas').appendChild(div);
@@ -5409,7 +5409,7 @@ function nrAutoFillEdit(rowId){
   var m=materiais.find(function(x){return x.id===matId;});
   var cEl=document.getElementById('nrcusto-'+rowId);
   var vEl=document.getElementById('nrvenda-'+rowId);
-  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  if(m){if(cEl)cEl.value=aplicarMascaraMoeda(m.custo);if(vEl)vEl.value=aplicarMascaraMoeda(m.venda);}
   else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   recalcMatRec();
 }
@@ -5432,8 +5432,8 @@ function recalcMatRec(){
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
     var custoOverEl=document.getElementById('nrcusto-'+rowId);
     var vendaOverEl=document.getElementById('nrvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:m.venda;
     totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
     if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
@@ -5452,8 +5452,8 @@ function getNrMatTotais(){
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
     var custoOverEl=document.getElementById('nrcusto-'+rowId);
     var vendaOverEl=document.getElementById('nrvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:m.venda;
     totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
   });
   return{custo:totalCusto,venda:totalVenda};
@@ -5528,7 +5528,7 @@ function nrCalcSaldoFin(){
   var descQtd=parseFloat((document.getElementById('nr-desc-qtd')||{}).value||0);
   var descV=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
   var totalRecibo=Math.max(0,val-descV);
-  var valorPago=parseFloat((document.getElementById('nr-fin-valorpago')||{}).value||0);
+  var valorPago=parseFloat(desmascarar((document.getElementById('nr-fin-valorpago')||{}).value)||0);
   var saldoWrap=document.getElementById('nr-fin-saldo-wrap');
   var saldoVal=document.getElementById('nr-fin-saldo-val');
   if(valorPago>0&&totalRecibo>0){
@@ -5562,7 +5562,7 @@ async function nrEmitirRecibo(){
   // ── Lê status do bloco "Informações de Pagamento" ──
   var finStatus=(document.getElementById('nr-fin-status')||{}).value||'pendente';
   var finForma=(document.getElementById('nr-fin-forma')||{}).value||pgto;
-  var finValorPago=parseFloat((document.getElementById('nr-fin-valorpago')||{}).value||0)||null;
+  var finValorPago=parseFloat(desmascarar((document.getElementById('nr-fin-valorpago')||{}).value)||0)||null;
   var finDataPgto=(document.getElementById('nr-fin-datapgto')||{}).value||dataRaw;
 
   // Coleta lista de peças para persistência
@@ -5576,8 +5576,8 @@ async function nrEmitirRecibo(){
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('nrcusto-'+rowId);
     var vendaOverEl=document.getElementById('nrvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:(m?m.venda:0);
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
 
@@ -5589,7 +5589,7 @@ async function nrEmitirRecibo(){
   recibos.unshift(recibo);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
 
-  var deslocR=parseFloat((document.getElementById('nr-desloc')||{}).value||0);
+  var deslocR=parseFloat(desmascarar((document.getElementById('nr-desloc')||{}).value)||0);
 
   // ── Lança no financeiro SOMENTE se pago ou parcial ──
   // Pendente e aguardando_pix ficam como a_receber (pendente = não lança, aguardando = não lança)
@@ -5783,9 +5783,9 @@ function adicionarLinhaMatNof(){
       '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="nofcusto-'+rowId+'" placeholder="0,00" oninput="recalcMatNof()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="nofcusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatNof()"></div>'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="nofvenda-'+rowId+'" placeholder="0,00" oninput="recalcMatNof()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="nofvenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatNof()"></div>'+
       '</div>'+
     '</div>';
   document.getElementById('nof-mat-linhas').appendChild(div);
@@ -5805,7 +5805,7 @@ function nofAutoFillEdit(rowId){
   var m=materiais.find(function(x){return x.id===matId;});
   var cEl=document.getElementById('nofcusto-'+rowId);
   var vEl=document.getElementById('nofvenda-'+rowId);
-  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  if(m){if(cEl)cEl.value=aplicarMascaraMoeda(m.custo);if(vEl)vEl.value=aplicarMascaraMoeda(m.venda);}
   else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   recalcMatNof();
 }
@@ -5826,8 +5826,8 @@ function recalcMatNof(){
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
     var custoOverEl=document.getElementById('nofcusto-'+rowId);
     var vendaOverEl=document.getElementById('nofvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:m.venda;
     totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
     if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
@@ -5969,7 +5969,7 @@ async function nofSalvarGerarPDF(){
   var valor=parseFloat(desmascarar(document.getElementById('nof-valor').value)||0);
   var gtia=document.getElementById('nof-gtia').value;
   var obs=(document.getElementById('nof-obs').value||'').trim();
-  var desloc=parseFloat((document.getElementById('nof-desloc').value)||0);
+  var desloc=parseFloat(desmascarar(document.getElementById('nof-desloc').value)||0);
   var matTotais=recalcMatNof()||{custo:0,venda:0};
   // Desconto
   var descTipo=document.getElementById('nof-desc-tipo').value;
@@ -5992,8 +5992,8 @@ async function nofSalvarGerarPDF(){
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('nofcusto-'+rowId);
     var vendaOverEl=document.getElementById('nofvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:(m?m.venda:0);
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva orçamento
@@ -6273,7 +6273,7 @@ function calcSaldoAprov(){
   if(!num)return;
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
-  var valorPago=parseFloat(document.getElementById('aprov-valor-pago').value||0);
+  var valorPago=parseFloat(desmascarar(document.getElementById('aprov-valor-pago').value)||0);
   var saldoBox=document.getElementById('aprov-saldo-box');
   if(valorPago>0){
     var saldo=Math.max(0,o.val-valorPago);
@@ -6294,7 +6294,7 @@ function apenasAprovarOrc(){
   if(!o)return;
   var forma=document.getElementById('aprov-forma').value;
   var statusFin=document.getElementById('aprov-status').value;
-  var valorPago=parseFloat(document.getElementById('aprov-valor-pago').value||0)||null;
+  var valorPago=parseFloat(desmascarar(document.getElementById('aprov-valor-pago').value)||0)||null;
   var vencimento=document.getElementById('aprov-vencimento').value;
   o.status='aprovado';
   o.finStatus=statusFin;
@@ -6318,7 +6318,7 @@ function aprovarEAbrirDocumento(){
   // Persiste infos de pagamento no orçamento temporariamente (antes de emitir)
   window._aprovForma=document.getElementById('aprov-forma').value;
   window._aprovStatusFin=document.getElementById('aprov-status').value;
-  window._aprovValorPago=parseFloat(document.getElementById('aprov-valor-pago').value||0)||null;
+  window._aprovValorPago=parseFloat(desmascarar(document.getElementById('aprov-valor-pago').value)||0)||null;
   window._aprovVencimento=document.getElementById('aprov-vencimento').value;
   fecharAprovacaoModal();
   setTimeout(function(){ abrirModalQualDocumento(num); }, 150);
@@ -6443,7 +6443,7 @@ function calcSaldoPendente(){
   if(!num)return;
   var o=orcamentos.find(function(x){return x.num===num;});
   if(!o)return;
-  var valorPago=parseFloat(document.getElementById('pi-valor-pago').value||0);
+  var valorPago=parseFloat(desmascarar(document.getElementById('pi-valor-pago').value)||0);
   var saldoBox=document.getElementById('pi-saldo-box');
   if(valorPago>0){
     var saldo=Math.max(0,o.val-valorPago);
@@ -6465,7 +6465,7 @@ async function confirmarPgtoInfo(){
 
   var forma=document.getElementById('pi-forma').value;
   var statusFin=document.getElementById('pi-status').value;
-  var valorPago=parseFloat(document.getElementById('pi-valor-pago').value||0)||null;
+  var valorPago=parseFloat(desmascarar(document.getElementById('pi-valor-pago').value)||0)||null;
   var vencimento=document.getElementById('pi-vencimento').value;
 
   fecharModalPgtoInfo();
@@ -6587,7 +6587,7 @@ function abrirAtualizarPgto(tipo, idx){
     if(formaEl.options[i].text===formaAtual){formaEl.selectedIndex=i;break;}
   }
   document.getElementById('ap-status').value=statusAtual;
-  document.getElementById('ap-valor-pago').value=obj.finValorPago||'';
+  document.getElementById('ap-valor-pago').value=obj.finValorPago?aplicarMascaraMoeda(obj.finValorPago):'';
   var hoje=new Date().toISOString().split('T')[0];
   document.getElementById('ap-data-pgto').value=hoje;
   document.getElementById('modal-atualizar-pgto').classList.add('open');
@@ -6608,7 +6608,7 @@ async function salvarAtualizacaoPgto(){
 
   var novoStatus=document.getElementById('ap-status').value;
   var novaForma=document.getElementById('ap-forma').value;
-  var valorPago=parseFloat(document.getElementById('ap-valor-pago').value||0)||null;
+  var valorPago=parseFloat(desmascarar(document.getElementById('ap-valor-pago').value)||0)||null;
   var dataPgto=document.getElementById('ap-data-pgto').value;
 
   // Atualiza o objeto
@@ -6683,7 +6683,7 @@ function abrirEditarOrc(num){
   document.getElementById('eo-desc').value=o.desc||o.serv||'';
   // Se o orçamento já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
   document.getElementById('eo-val').value=aplicarMascaraMoeda((o.descBase&&o.descBase>0?o.descBase:o.val)||0);
-  document.getElementById('eo-custo').value=o.custoPecas||0;
+  document.getElementById('eo-custo').value=aplicarMascaraMoeda(o.custoPecas||0);
   document.getElementById('eo-gtia').value=o.gtia||'';
   document.getElementById('eo-validade').value=o.validade||CFG.doc.validade||30;
   document.getElementById('eo-obs').value=o.obs||'';
@@ -6737,9 +6737,9 @@ function abrirEditarOrc(num){
           '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
             '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-            '<input class="fi" type="number" step="0.01" min="0" id="eocusto-'+rowId+'" placeholder="0,00" oninput="recalcMatEO()"></div>'+
+            '<input class="fi" type="text" inputmode="decimal" id="eocusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatEO()"></div>'+
             '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-            '<input class="fi" type="number" step="0.01" min="0" id="eovenda-'+rowId+'" placeholder="0,00" oninput="recalcMatEO()"></div>'+
+            '<input class="fi" type="text" inputmode="decimal" id="eovenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatEO()"></div>'+
           '</div>'+
         '</div>';
       eoMatEl.appendChild(div);
@@ -6750,10 +6750,10 @@ function abrirEditarOrc(num){
       var cEl=document.getElementById('eocusto-'+rowId);
       var vEl=document.getElementById('eovenda-'+rowId);
       var mRef=materiais.find(function(x){return x.id===item.matId;});
-      if(cEl&&item.custo!=null)cEl.value=item.custo.toFixed(2);
-      else if(cEl&&mRef)cEl.value=mRef.custo.toFixed(2);
-      if(vEl&&item.venda!=null)vEl.value=item.venda.toFixed(2);
-      else if(vEl&&mRef)vEl.value=mRef.venda.toFixed(2);
+      if(cEl&&item.custo!=null)cEl.value=aplicarMascaraMoeda(item.custo);
+      else if(cEl&&mRef)cEl.value=aplicarMascaraMoeda(mRef.custo);
+      if(vEl&&item.venda!=null)vEl.value=aplicarMascaraMoeda(item.venda);
+      else if(vEl&&mRef)vEl.value=aplicarMascaraMoeda(mRef.venda);
       eoMatLinhas.push(rowId);
     });
   }
@@ -6771,7 +6771,7 @@ function fecharEditarOrc(){
 
 function calcResumoEO(){
   var val=parseFloat(desmascarar(document.getElementById('eo-val').value)||0);
-  var custo=parseFloat(document.getElementById('eo-custo').value||0);
+  var custo=parseFloat(desmascarar(document.getElementById('eo-custo').value)||0);
   document.getElementById('eo-show-val').textContent=fmtVal(val);
   document.getElementById('eo-show-custo').textContent=fmtVal(custo);
   document.getElementById('eo-show-lucro').textContent=fmtVal(val-custo);
@@ -6811,7 +6811,7 @@ function salvarEdicaoOrc(){
   o.val=parseFloat(desmascarar(document.getElementById('eo-val').value)||0);
   // Custo: usa materiais selecionados se houver, senão o campo manual
   var eoMatTotais=recalcMatEO()||{custo:0,venda:0};
-  o.custoPecas=eoMatTotais.custo>0?eoMatTotais.custo:parseFloat(document.getElementById('eo-custo').value||0);
+  o.custoPecas=eoMatTotais.custo>0?eoMatTotais.custo:parseFloat(desmascarar(document.getElementById('eo-custo').value)||0);
   // Persiste a lista de materiais para recarregar ao reabrir
   o.matEdit=eoMatLinhas.map(function(rowId){
     var selEl=document.getElementById('eosel-'+rowId);
@@ -6823,8 +6823,8 @@ function salvarEdicaoOrc(){
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('eocusto-'+rowId);
     var vendaOverEl=document.getElementById('eovenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:(m?m.venda:0);
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   o.gtia=document.getElementById('eo-gtia').value.trim();
@@ -6873,9 +6873,9 @@ function abrirEditarRec(num){
   document.getElementById('er-desc').value=r.desc||r.serv||'';
   // Se o recibo já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
   document.getElementById('er-val').value=aplicarMascaraMoeda((r.descBase&&r.descBase>0?r.descBase:r.val)||0);
-  document.getElementById('er-custo').value=r.custoPecas||0;
+  document.getElementById('er-custo').value=aplicarMascaraMoeda(r.custoPecas||0);
   document.getElementById('er-gtia').value=r.gtia||'';
-  document.getElementById('er-desloc').value=r.desloc||0;
+  document.getElementById('er-desloc').value=aplicarMascaraMoeda(r.desloc||0);
   document.getElementById('er-desc-qtd').value=r.descQtd||r.descV||0;
   // data
   var dataVal=r.dataRaw||'';
@@ -6921,9 +6921,9 @@ function abrirEditarRec(num){
           '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
             '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-            '<input class="fi" type="number" step="0.01" min="0" id="ercusto-'+rowId+'" placeholder="0,00" oninput="recalcMatER()"></div>'+
+            '<input class="fi" type="text" inputmode="decimal" id="ercusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatER()"></div>'+
             '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-            '<input class="fi" type="number" step="0.01" min="0" id="ervenda-'+rowId+'" placeholder="0,00" oninput="recalcMatER()"></div>'+
+            '<input class="fi" type="text" inputmode="decimal" id="ervenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatER()"></div>'+
           '</div>'+
         '</div>';
       erMatEl.appendChild(div);
@@ -6933,10 +6933,10 @@ function abrirEditarRec(num){
       var cEl=document.getElementById('ercusto-'+rowId);
       var vEl=document.getElementById('ervenda-'+rowId);
       var mRef=materiais.find(function(x){return x.id===item.matId;});
-      if(cEl&&item.custo!=null)cEl.value=item.custo.toFixed(2);
-      else if(cEl&&mRef)cEl.value=mRef.custo.toFixed(2);
-      if(vEl&&item.venda!=null)vEl.value=item.venda.toFixed(2);
-      else if(vEl&&mRef)vEl.value=mRef.venda.toFixed(2);
+      if(cEl&&item.custo!=null)cEl.value=aplicarMascaraMoeda(item.custo);
+      else if(cEl&&mRef)cEl.value=aplicarMascaraMoeda(mRef.custo);
+      if(vEl&&item.venda!=null)vEl.value=aplicarMascaraMoeda(item.venda);
+      else if(vEl&&mRef)vEl.value=aplicarMascaraMoeda(mRef.venda);
       erMatLinhas.push(rowId);
     });
   }
@@ -6953,7 +6953,7 @@ function fecharEditarRec(){
 
 function calcResumoER(){
   var val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
-  var custo=parseFloat(document.getElementById('er-custo').value||0);
+  var custo=parseFloat(desmascarar(document.getElementById('er-custo').value)||0);
   document.getElementById('er-show-val').textContent=fmtVal(val);
   document.getElementById('er-show-custo').textContent=fmtVal(custo);
   document.getElementById('er-show-lucro').textContent=fmtVal(val-custo);
@@ -6996,9 +6996,9 @@ function adicionarLinhaMatER(){
       '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="ercusto-'+rowId+'" placeholder="0,00" oninput="recalcMatER()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="ercusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatER()"></div>'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="ervenda-'+rowId+'" placeholder="0,00" oninput="recalcMatER()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="ervenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatER()"></div>'+
       '</div>'+
     '</div>';
   document.getElementById('er-mat-linhas').appendChild(div);
@@ -7018,7 +7018,7 @@ function erAutoFillEdit(rowId){
   var m=materiais.find(function(x){return x.id===matId;});
   var cEl=document.getElementById('ercusto-'+rowId);
   var vEl=document.getElementById('ervenda-'+rowId);
-  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  if(m){if(cEl)cEl.value=aplicarMascaraMoeda(m.custo);if(vEl)vEl.value=aplicarMascaraMoeda(m.venda);}
   else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   recalcMatER();
 }
@@ -7042,8 +7042,8 @@ function recalcMatER(){
     var m=materiais.find(function(x){return x.id==matId;});if(!m)return;
     var custoOverEl=document.getElementById('ercusto-'+rowId);
     var vendaOverEl=document.getElementById('ervenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:m.venda;
     totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
     if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
@@ -7054,7 +7054,7 @@ function recalcMatER(){
   if(vEl)vEl.textContent=fmtVal(totalVenda);
   if(lEl)lEl.textContent=fmtVal(totalVenda-totalCusto);
   var custoCampo=document.getElementById('er-custo');
-  if(custoCampo&&totalCusto>0)custoCampo.value=totalCusto.toFixed(2);
+  if(custoCampo&&totalCusto>0)custoCampo.value=aplicarMascaraMoeda(totalCusto);
   calcResumoER();
   return{custo:totalCusto,venda:totalVenda};
 }
@@ -7072,7 +7072,7 @@ async function salvarEdicaoRec(){
   r.desc=document.getElementById('er-desc').value.trim();
   r.val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
   r.gtia=document.getElementById('er-gtia').value.trim();
-  r.desloc=parseFloat(document.getElementById('er-desloc').value||0);
+  r.desloc=parseFloat(desmascarar(document.getElementById('er-desloc').value)||0);
   r.descTipo=document.getElementById('er-desc-tipo').value;
   r.descQtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
   r.descV=r.descTipo==='valor'?r.descQtd:(r.descTipo==='perc'?r.val*(r.descQtd/100):0);
@@ -7097,7 +7097,7 @@ async function salvarEdicaoRec(){
   r.data=dataRaw?fmtDateBr(dataRaw):r.data;
   // Materiais
   var erMatTotais=recalcMatER()||{custo:0,venda:0};
-  r.custoPecas=erMatTotais.custo>0?erMatTotais.custo:parseFloat(document.getElementById('er-custo').value||0);
+  r.custoPecas=erMatTotais.custo>0?erMatTotais.custo:parseFloat(desmascarar(document.getElementById('er-custo').value)||0);
   r.matEdit=erMatLinhas.map(function(rowId){
     var selEl=document.getElementById('ersel-'+rowId);
     var qtdEl=document.getElementById('erqtd-'+rowId);
@@ -7108,8 +7108,8 @@ async function salvarEdicaoRec(){
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('ercusto-'+rowId);
     var vendaOverEl=document.getElementById('ervenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:(m?m.venda:0);
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   salvarLocal();
@@ -7177,8 +7177,8 @@ function abrirLancamentoManual(){
   document.getElementById('lanc-desc').value='';
   document.getElementById('lanc-val').value='';
   document.getElementById('lanc-data').value=fmtD(today);
-  document.getElementById('lanc-pecas').value='0';
-  document.getElementById('lanc-desloc').value='0';
+  document.getElementById('lanc-pecas').value='0,00';
+  document.getElementById('lanc-desloc').value='0,00';
   document.getElementById('lanc-obs').value='';
   document.getElementById('modal-lancamento').classList.add('open');
 }
@@ -7193,7 +7193,7 @@ function salvarLancamentoManual(){
   }
   var desc=(document.getElementById('lanc-desc').value||'').trim();
   if(!nome&&!desc){alert('Informe o nome ou a descrição.');return;}
-  var val=parseFloat(document.getElementById('lanc-val').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('lanc-val').value)||0);
   if(!val||val<=0){alert('Informe um valor válido.');return;}
   var dataRaw=document.getElementById('lanc-data').value;
   var obs=(document.getElementById('lanc-obs').value||'').trim();
@@ -7203,8 +7203,8 @@ function salvarLancamentoManual(){
     cli:nome||'—', val:val,
     pgto:document.getElementById('lanc-pgto').value,
     data:fmtDateBr(dataRaw), dataRaw:dataRaw,
-    pecas:parseFloat(document.getElementById('lanc-pecas').value||0),
-    desloc:parseFloat(document.getElementById('lanc-desloc').value||0),
+    pecas:parseFloat(desmascarar(document.getElementById('lanc-pecas').value)||0),
+    desloc:parseFloat(desmascarar(document.getElementById('lanc-desloc').value)||0),
     obs:obs,
     num:'MAN'+Date.now(),
     finStatus:'pago',
@@ -7524,7 +7524,7 @@ function editarFinanceiro(i){
     nomeEl.value=f.nome||f.cli||'';
   }
   document.getElementById('fin-desc-edit').value=f.desc||'';
-  document.getElementById('fin-val-edit').value=f.val||0;
+  document.getElementById('fin-val-edit').value=aplicarMascaraMoeda(f.val||0);
   // data para input date (converte dd/mm/aaaa → aaaa-mm-dd)
   var dataVal=f.dataRaw||'';
   if(!dataVal&&f.data&&f.data.includes('/')){var p=f.data.split('/');if(p.length===3)dataVal=p[2]+'-'+p[1]+'-'+p[0];}
@@ -7532,13 +7532,13 @@ function editarFinanceiro(i){
   // pagamento
   var pgEl=document.getElementById('fin-pgto-edit');
   for(var j=0;j<pgEl.options.length;j++){if(pgEl.options[j].text===(f.pgto||'')){pgEl.selectedIndex=j;break;}}
-  document.getElementById('fin-pecas').value=f.pecas||0;
-  document.getElementById('fin-desloc').value=f.desloc||0;
+  document.getElementById('fin-pecas').value=aplicarMascaraMoeda(f.pecas||0);
+  document.getElementById('fin-desloc').value=aplicarMascaraMoeda(f.desloc||0);
   // status financeiro de pagamento
   var stEl=document.getElementById('fin-status-pgto-edit');
   var stAtual=f.finStatus||'pendente';
   for(var k=0;k<stEl.options.length;k++){if(stEl.options[k].value===stAtual){stEl.selectedIndex=k;break;}}
-  document.getElementById('fin-val-pago-edit').value=f.finValorPago||'';
+  document.getElementById('fin-val-pago-edit').value=f.finValorPago?aplicarMascaraMoeda(f.finValorPago):'';
   atualizarBadgeFinEdit();
   calcSaldoFinEdit();
   document.getElementById('fin-show-val').textContent=fmtVal(f.val);
@@ -7569,7 +7569,7 @@ function calcSaldoFinEdit(){
   var saldoEl=document.getElementById('fin-saldo-edit');
   if(!saldoEl||i===null||i===undefined||!financeiro[i])return;
   var valTotal=financeiro[i].val||0;
-  var valPago=parseFloat(document.getElementById('fin-val-pago-edit').value||0);
+  var valPago=parseFloat(desmascarar(document.getElementById('fin-val-pago-edit').value)||0);
   if(valPago>0){
     var saldo=Math.max(0,valTotal-valPago);
     saldoEl.textContent='Saldo: '+fmtVal(saldo);
@@ -7582,11 +7582,12 @@ function calcSaldoFinEdit(){
 function calcLiquidoFin(){
   var valInput=document.getElementById('fin-val-edit');
   var i=STATE.editFinIdx;
-  var val=valInput&&parseFloat(valInput.value||0)>0
-    ? parseFloat(valInput.value)
+  var valInputNum=valInput?parseFloat(desmascarar(valInput.value))||0:0;
+  var val=valInputNum>0
+    ? valInputNum
     : (i!==null&&i!==undefined&&financeiro[i]?financeiro[i].val||0:0);
-  var pecas=parseFloat(document.getElementById('fin-pecas').value||0);
-  var desloc=parseFloat(document.getElementById('fin-desloc').value||0);
+  var pecas=parseFloat(desmascarar(document.getElementById('fin-pecas').value)||0);
+  var desloc=parseFloat(desmascarar(document.getElementById('fin-desloc').value)||0);
   document.getElementById('fin-show-val').textContent=fmtVal(val);
   document.getElementById('fin-show-pecas').textContent='- '+fmtVal(pecas);
   document.getElementById('fin-show-desloc').textContent='- '+fmtVal(desloc);
@@ -7606,7 +7607,7 @@ function salvarFinanceiro(){
   var desc=(document.getElementById('fin-desc-edit').value||'').trim();
   var dataRaw=document.getElementById('fin-data-edit').value;
   var pgto=document.getElementById('fin-pgto-edit').value;
-  var novoVal=parseFloat(document.getElementById('fin-val-edit').value||0);
+  var novoVal=parseFloat(desmascarar(document.getElementById('fin-val-edit').value)||0);
 
   // Atualiza todos os campos — sem condicional para não perder limpeza intencional
   financeiro[i].nome=nome||financeiro[i].nome||'';
@@ -7617,12 +7618,12 @@ function salvarFinanceiro(){
   financeiro[i].pgto=pgto;
   if(dataRaw){financeiro[i].dataRaw=dataRaw;financeiro[i].data=fmtDateBr(dataRaw);}
   if(novoVal>0) financeiro[i].val=novoVal;
-  financeiro[i].pecas=parseFloat(document.getElementById('fin-pecas').value||0);
-  financeiro[i].desloc=parseFloat(document.getElementById('fin-desloc').value||0);
+  financeiro[i].pecas=parseFloat(desmascarar(document.getElementById('fin-pecas').value)||0);
+  financeiro[i].desloc=parseFloat(desmascarar(document.getElementById('fin-desloc').value)||0);
 
   // Status de pagamento + tipoLanc sincronizado
   var novoStatus=document.getElementById('fin-status-pgto-edit').value;
-  var valPago=parseFloat(document.getElementById('fin-val-pago-edit').value||0)||null;
+  var valPago=parseFloat(desmascarar(document.getElementById('fin-val-pago-edit').value)||0)||null;
   financeiro[i].finStatus=novoStatus;
   financeiro[i].tipoLanc=(novoStatus==='pago'||novoStatus==='parcial')?'recebido':'a_receber';
   if(valPago) financeiro[i].finValorPago=valPago;
@@ -7746,7 +7747,7 @@ function renderMateriaisPage(){
 }
 
 function calcVendaMat(){
-  var custo=parseFloat(document.getElementById('mm-custo').value||0);
+  var custo=parseFloat(desmascarar(document.getElementById('mm-custo').value)||0);
   var tipo=document.getElementById('mm-margem-tipo').value;
   var mval=parseFloat(document.getElementById('mm-margem-val').value||0);
   var margemR=tipo==='perc'?(custo*mval/100):mval;
@@ -7754,12 +7755,12 @@ function calcVendaMat(){
   document.getElementById('mm-show-custo').textContent=fmtVal(custo);
   document.getElementById('mm-show-margem').textContent=fmtVal(margemR);
   document.getElementById('mm-show-venda').textContent=fmtVal(venda);
-  document.getElementById('mm-venda').value=venda.toFixed(2);
+  document.getElementById('mm-venda').value=aplicarMascaraMoeda(venda);
 }
 
 function atualizarMargemMat(){
-  var custo=parseFloat(document.getElementById('mm-custo').value||0);
-  var venda=parseFloat(document.getElementById('mm-venda').value||0);
+  var custo=parseFloat(desmascarar(document.getElementById('mm-custo').value)||0);
+  var venda=parseFloat(desmascarar(document.getElementById('mm-venda').value)||0);
   var tipo=document.getElementById('mm-margem-tipo').value;
   var margemR=venda-custo;
   var mval=tipo==='perc'?(custo>0?((margemR/custo)*100):0):margemR;
@@ -7778,10 +7779,10 @@ function abrirModalMaterial(id){
     document.getElementById('modal-mat-title').textContent='Editar Material';
     document.getElementById('mm-titulo').value=m.titulo;
     document.getElementById('mm-qtd').value=m.qtd;
-    document.getElementById('mm-custo').value=m.custo;
+    document.getElementById('mm-custo').value=aplicarMascaraMoeda(m.custo);
     document.getElementById('mm-margem-tipo').value=m.margemTipo;
     document.getElementById('mm-margem-val').value=m.margemVal;
-    document.getElementById('mm-venda').value=m.venda;
+    document.getElementById('mm-venda').value=aplicarMascaraMoeda(m.venda);
     document.getElementById('modal-mat-delete-btn').style.display='inline-flex';
   } else {
     document.getElementById('modal-mat-title').textContent='Novo Material';
@@ -7803,10 +7804,10 @@ function salvarMaterial(){
   var titulo=(document.getElementById('mm-titulo').value||'').trim();
   if(!titulo){alert('Informe o nome do material.');return;}
   var qtd=parseInt(document.getElementById('mm-qtd').value||0);
-  var custo=parseFloat(document.getElementById('mm-custo').value||0);
+  var custo=parseFloat(desmascarar(document.getElementById('mm-custo').value)||0);
   var margemTipo=document.getElementById('mm-margem-tipo').value;
   var margemVal=parseFloat(document.getElementById('mm-margem-val').value||0);
-  var venda=parseFloat(document.getElementById('mm-venda').value||0);
+  var venda=parseFloat(desmascarar(document.getElementById('mm-venda').value)||0);
   if(STATE.editMatId){
     var idx=materiais.findIndex(function(x){return x.id===STATE.editMatId;});
     if(idx>=0){
@@ -7938,7 +7939,7 @@ function abrirModalLancFrota(){
   }).join('');
   document.getElementById('lf-tipo').value='Combustível';
   document.getElementById('lf-data').value=new Date().toISOString().split('T')[0];
-  document.getElementById('lf-valor').value='0';
+  document.getElementById('lf-valor').value='0,00';
   document.getElementById('lf-km').value='';
   document.getElementById('lf-desc').value='';
   atualizarCamposLancFrota();
@@ -7960,7 +7961,7 @@ async function salvarLancamentoFrota(){
   if(!vei){alert('Selecione um veículo.');return;}
   var dataRaw=document.getElementById('lf-data').value;
   if(!dataRaw){alert('Informe a data.');return;}
-  var valor=parseFloat(document.getElementById('lf-valor').value||0);
+  var valor=parseFloat(desmascarar(document.getElementById('lf-valor').value)||0);
   if(!valor||valor<=0){alert('Informe um valor válido.');return;}
 
   var desc;
@@ -8117,7 +8118,7 @@ function abrirModalEditarNF(i){
   var n=notasFiscais[i];
   if(!n)return;
   _cfgSet('nf-edit-data',n.dataRaw||'');
-  _cfgSet('nf-edit-valor',n.val||0);
+  _cfgSet('nf-edit-valor',aplicarMascaraMoeda(n.val||0));
   _cfgSet('nf-edit-cliente',n.cli||'');
   _cfgSet('nf-edit-desc',n.desc||n.serv||'');
   _cfgSet('nf-edit-num',n.num||'');
@@ -8138,7 +8139,7 @@ function salvarEdicaoNF(){
   n.num=num;
   n.cli=cliente;
   n.desc=_cfgGet('nf-edit-desc');
-  n.val=parseFloat(document.getElementById('nf-edit-valor').value||0);
+  n.val=parseFloat(desmascarar(document.getElementById('nf-edit-valor').value)||0);
   if(dataRaw){n.dataRaw=dataRaw;n.data=fmtDateBr(dataRaw);}
   salvarLocal();
   sbSalvarNotaFiscal(n);
@@ -8498,7 +8499,7 @@ var _gerarPDFByNum=function(num){
   document.getElementById('f-tel').value=o.tel;
   document.getElementById('f-end').value=o.end;
   document.getElementById('f-desc').value=o.desc;
-  document.getElementById('f-valor').value=o.val;
+  document.getElementById('f-valor').value=aplicarMascaraMoeda(o.val);
   document.getElementById('f-gtia').value=o.gtia;
   document.getElementById('f-obs').value=o.obs||'';
   gerarPDF();
@@ -9166,9 +9167,9 @@ function adicionarLinhaMatEO(){
       '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="eocusto-'+rowId+'" placeholder="0,00" oninput="recalcMatEO()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="eocusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatEO()"></div>'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="eovenda-'+rowId+'" placeholder="0,00" oninput="recalcMatEO()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="eovenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);recalcMatEO()"></div>'+
       '</div>'+
     '</div>';
   document.getElementById('eo-mat-linhas').appendChild(div);
@@ -9188,7 +9189,7 @@ function eoAutoFillEdit(rowId){
   var m=materiais.find(function(x){return x.id===matId;});
   var cEl=document.getElementById('eocusto-'+rowId);
   var vEl=document.getElementById('eovenda-'+rowId);
-  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  if(m){if(cEl)cEl.value=aplicarMascaraMoeda(m.custo);if(vEl)vEl.value=aplicarMascaraMoeda(m.venda);}
   else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   recalcMatEO();
 }
@@ -9212,8 +9213,8 @@ function recalcMatEO(){
     var m=materiais.find(function(x){return x.id==matId;});if(!m)return;
     var custoOverEl=document.getElementById('eocusto-'+rowId);
     var vendaOverEl=document.getElementById('eovenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:m.venda;
     totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
     if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
@@ -9225,7 +9226,7 @@ function recalcMatEO(){
   if(lEl)lEl.textContent=fmtVal(totalVenda-totalCusto);
   // Atualiza custo no resumo
   var custoCampo=document.getElementById('eo-custo');
-  if(custoCampo&&totalCusto>0)custoCampo.value=totalCusto.toFixed(2);
+  if(custoCampo&&totalCusto>0)custoCampo.value=aplicarMascaraMoeda(totalCusto);
   calcResumoEO();
   return{custo:totalCusto,venda:totalVenda};
 }
@@ -9234,7 +9235,7 @@ function recalcMatEO(){
 function calcDescontoOrc(){
   var tipo=document.getElementById('f-desc-tipo').value;
   var qtd=parseFloat(document.getElementById('f-desc-qtd').value||0);
-  var val=parseFloat(document.getElementById('f-valor').value||0);
+  var val=parseFloat(desmascarar(document.getElementById('f-valor').value)||0);
   var prev=document.getElementById('f-desc-preview');
   var final=document.getElementById('f-desc-final');
   if(!tipo||qtd<=0){if(prev)prev.style.display='none';return;}
@@ -9414,9 +9415,9 @@ function serrAdicionarMat(){
       '<div style="font-size:10px;color:var(--blue3);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">✏️ Editar valores desta peça (sobrepõe o cadastro)</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Custo Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="serrcusto-'+rowId+'" placeholder="0,00" oninput="serrRecalcMat()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="serrcusto-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);serrRecalcMat()"></div>'+
         '<div style="flex:1;min-width:110px"><div style="font-size:10px;color:var(--silver);margin-bottom:3px;text-transform:uppercase;letter-spacing:.7px;font-weight:700">Venda Unit. (R$)</div>'+
-        '<input class="fi" type="number" step="0.01" min="0" id="serrvenda-'+rowId+'" placeholder="0,00" oninput="serrRecalcMat()"></div>'+
+        '<input class="fi" type="text" inputmode="decimal" id="serrvenda-'+rowId+'" placeholder="0,00" oninput="mascarearInputMoeda(this);serrRecalcMat()"></div>'+
       '</div>'+
     '</div>';
   document.getElementById('serr-mat-linhas').appendChild(div);
@@ -9436,7 +9437,7 @@ function serrAutoFillEdit(rowId){
   var m=materiais.find(function(x){return x.id===matId;});
   var cEl=document.getElementById('serrcusto-'+rowId);
   var vEl=document.getElementById('serrvenda-'+rowId);
-  if(m){if(cEl)cEl.value=m.custo.toFixed(2);if(vEl)vEl.value=m.venda.toFixed(2);}
+  if(m){if(cEl)cEl.value=aplicarMascaraMoeda(m.custo);if(vEl)vEl.value=aplicarMascaraMoeda(m.venda);}
   else{if(cEl)cEl.value='';if(vEl)vEl.value='';}
   serrRecalcMat();
 }
@@ -9459,8 +9460,8 @@ function serrRecalcMat(){
     var m=materiais.find(function(x){return x.id===matId;});if(!m)return;
     var custoOverEl=document.getElementById('serrcusto-'+rowId);
     var vendaOverEl=document.getElementById('serrvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:m.custo;
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:m.venda;
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:m.custo;
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:m.venda;
     totalVenda+=vendaUnit*qtd;totalCusto+=custoUnit*qtd;
     if(subEl)subEl.textContent=fmtVal(vendaUnit*qtd);
   });
@@ -9513,12 +9514,12 @@ async function serrEmitirRecibo(){
   var valorFinal=Math.max(0,val-descVal);
   var dataRaw=document.getElementById('so-data').value;
   var pgto=document.getElementById('so-pgto-rec').value;
-  var desloc=parseFloat(document.getElementById('so-desloc').value||0);
+  var desloc=parseFloat(desmascarar(document.getElementById('so-desloc').value)||0);
   var matTotais=serrGetMatTotais();
   // ── Lê o bloco "Informações de Pagamento" (mesma cascata de 4 estados do nrEmitirRecibo) ──
   var finStatus=(document.getElementById('so-fin-status')||{}).value||'pendente';
   var finForma=(document.getElementById('so-fin-forma')||{}).value||pgto;
-  var finValorPago=parseFloat((document.getElementById('so-fin-valorpago')||{}).value||0)||null;
+  var finValorPago=parseFloat(desmascarar((document.getElementById('so-fin-valorpago')||{}).value)||0)||null;
   var finDataPgto=(document.getElementById('so-fin-datapgto')||{}).value||dataRaw;
   // Coleta lista de peças para persistência
   var matEditSerr=SERR.matLinhas.map(function(rowId){
@@ -9531,8 +9532,8 @@ async function serrEmitirRecibo(){
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('serrcusto-'+rowId);
     var vendaOverEl=document.getElementById('serrvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:(m?m.venda:0);
     return{matId:matId,qtd:qtd,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   // Salva recibo
@@ -9712,7 +9713,7 @@ function serrCalcSaldoFin(){
   var descQtd=parseFloat((document.getElementById('so-desc-qtd')||{}).value||0);
   var descV=descTipo==='valor'?descQtd:(descTipo==='perc'?val*(descQtd/100):0);
   var totalRecibo=Math.max(0,val-descV);
-  var valorPago=parseFloat((document.getElementById('so-fin-valorpago')||{}).value||0);
+  var valorPago=parseFloat(desmascarar((document.getElementById('so-fin-valorpago')||{}).value)||0);
   var saldoWrap=document.getElementById('so-fin-saldo-wrap');
   var saldoVal=document.getElementById('so-fin-saldo-val');
   if(valorPago>0&&totalRecibo>0){
@@ -9747,7 +9748,7 @@ async function gerarPDFSerrOrc(){
   var obs=document.getElementById('so-obs').value.trim();
   var dataRaw=document.getElementById('so-data').value;
   var validade=document.getElementById('so-val').value;
-  var desloc=parseFloat(document.getElementById('so-desloc').value||0);
+  var desloc=parseFloat(desmascarar(document.getElementById('so-desloc').value)||0);
   // ── SALVAR ORÇAMENTO ──────────────────────────────────────────────────────
   var matEditSerr=SERR.matLinhas.map(function(rowId){
     var selEl=document.getElementById('serrsel-'+rowId);
@@ -9759,8 +9760,8 @@ async function gerarPDFSerrOrc(){
     var m=materiais.find(function(x){return x.id===matId;});
     var custoOverEl=document.getElementById('serrcusto-'+rowId);
     var vendaOverEl=document.getElementById('serrvenda-'+rowId);
-    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(custoOverEl.value)||0:(m?m.custo:0);
-    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(vendaOverEl.value)||0:(m?m.venda:0);
+    var custoUnit=(custoOverEl&&custoOverEl.value!=='')?parseFloat(desmascarar(custoOverEl.value))||0:(m?m.custo:0);
+    var vendaUnit=(vendaOverEl&&vendaOverEl.value!=='')?parseFloat(desmascarar(vendaOverEl.value))||0:(m?m.venda:0);
     return{matId:matId,qtd:qtdMat,venda:vendaUnit,custo:custoUnit};
   }).filter(Boolean);
   var novoOrc={
@@ -9919,7 +9920,7 @@ function nofToggleSerralheria(){
 }
 
 function calcNofSerrDesc(){
-  var val = parseFloat(document.getElementById('nof-serr-valor').value||0);
+  var val = parseFloat(desmascarar(document.getElementById('nof-serr-valor').value)||0);
   var tipo = document.getElementById('nof-serr-desc-tipo').value;
   var qtd  = parseFloat(document.getElementById('nof-serr-desc-qtd').value||0);
   var desc = tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
@@ -9932,7 +9933,7 @@ function calcNofSerrDesc(){
 
 function nofSerrProxMateriais(){
   var desc = (document.getElementById('nof-serr-desc').value||'').trim();
-  var val  = parseFloat(document.getElementById('nof-serr-valor').value||0);
+  var val  = parseFloat(desmascarar(document.getElementById('nof-serr-valor').value)||0);
   if(!desc){alert('Preencha a descrição do serviço de serralheria.');return;}
   if(!val||val<=0){alert('Informe um valor de venda válido.');return;}
   // Avança para materiais usando o fluxo existente
@@ -9947,9 +9948,9 @@ var _nofProxOrcOriginal = nofProxOrc;
 nofProxOrc = function(){
   if(_nofSerrAtivo){
     var desc  = (document.getElementById('nof-serr-desc').value||'').trim();
-    var val   = parseFloat(document.getElementById('nof-serr-valor').value||0);
-    var custo = parseFloat(document.getElementById('nof-serr-custo').value||0);
-    var desloc= parseFloat(document.getElementById('nof-serr-desloc').value||0);
+    var val   = parseFloat(desmascarar(document.getElementById('nof-serr-valor').value)||0);
+    var custo = parseFloat(desmascarar(document.getElementById('nof-serr-custo').value)||0);
+    var desloc= parseFloat(desmascarar(document.getElementById('nof-serr-desloc').value)||0);
     var pgto  = document.getElementById('nof-serr-pgto').value;
     var gtia  = (document.getElementById('nof-serr-gtia').value||'').trim();
     var descTipo = document.getElementById('nof-serr-desc-tipo').value;
@@ -9970,7 +9971,7 @@ nofProxOrc = function(){
     document.getElementById('nof-valor').value = aplicarMascaraMoeda(valorFinal);
     document.getElementById('nof-gtia').value  = gtia||'—';
     document.getElementById('nof-desc').value  = desc;
-    document.getElementById('nof-desloc').value= desloc.toFixed(2);
+    document.getElementById('nof-desloc').value= aplicarMascaraMoeda(desloc);
     montarCondicoesPagamento('nof-pgto-cond',valorFinal,{tipoInicial:pgto});
     // Desconto já foi aplicado no valor, zera desconto do form final
     document.getElementById('nof-desc-tipo').value = '';
@@ -10032,7 +10033,7 @@ function nrToggleSerralheria(){
 }
 
 function calcNrSerrDesc(){
-  var val  = parseFloat(document.getElementById('nr-serr-valor').value||0);
+  var val  = parseFloat(desmascarar(document.getElementById('nr-serr-valor').value)||0);
   var tipo = document.getElementById('nr-serr-desc-tipo').value;
   var qtd  = parseFloat(document.getElementById('nr-serr-desc-qtd').value||0);
   var desc = tipo==='valor'?qtd:(tipo==='perc'?val*(qtd/100):0);
@@ -10045,7 +10046,7 @@ function calcNrSerrDesc(){
 
 function nrSerrProxMateriais(){
   var desc = (document.getElementById('nr-serr-desc').value||'').trim();
-  var val  = parseFloat(document.getElementById('nr-serr-valor').value||0);
+  var val  = parseFloat(desmascarar(document.getElementById('nr-serr-valor').value)||0);
   if(!desc){alert('Preencha a descrição do serviço de serralheria.');return;}
   if(!val||val<=0){alert('Informe um valor de venda válido.');return;}
   document.getElementById('nr-blk-tpl').style.display = 'none';
@@ -10059,9 +10060,9 @@ var _nrProxReciboOriginal = nrProxRecibo;
 nrProxRecibo = function(){
   if(_nrSerrAtivo){
     var desc  = (document.getElementById('nr-serr-desc').value||'').trim();
-    var val   = parseFloat(document.getElementById('nr-serr-valor').value||0);
-    var custo = parseFloat(document.getElementById('nr-serr-custo').value||0);
-    var desloc= parseFloat(document.getElementById('nr-serr-desloc').value||0);
+    var val   = parseFloat(desmascarar(document.getElementById('nr-serr-valor').value)||0);
+    var custo = parseFloat(desmascarar(document.getElementById('nr-serr-custo').value)||0);
+    var desloc= parseFloat(desmascarar(document.getElementById('nr-serr-desloc').value)||0);
     var pgto  = document.getElementById('nr-serr-pgto').value;
     var descTipo = document.getElementById('nr-serr-desc-tipo').value;
     var descQtd  = parseFloat(document.getElementById('nr-serr-desc-qtd').value||0);
@@ -10072,7 +10073,7 @@ nrProxRecibo = function(){
     document.getElementById('nr-show-cli').textContent  = nome;
     document.getElementById('nr-valor').value  = aplicarMascaraMoeda(valorFinal);
     document.getElementById('nr-desc').value   = desc;
-    document.getElementById('nr-desloc').value = desloc.toFixed(2);
+    document.getElementById('nr-desloc').value = aplicarMascaraMoeda(desloc);
     var pgEl = document.getElementById('nr-pgto');
     for(var i=0;i<pgEl.options.length;i++){if(pgEl.options[i].text===pgto){pgEl.selectedIndex=i;break;}}
     document.getElementById('nr-desc-tipo').value = '';
