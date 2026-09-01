@@ -7344,7 +7344,7 @@ function renderFinanceiroPage(){
     totalPecas+=f.pecas||0;
     totalDesloc+=f.desloc||0;
   });
-  var saldo=totalRec-totalDespesas;
+  var saldo=totalRec-totalDespesas-totalPecas-totalDesloc;
   var _finRev=_finValoresRevelados;
   document.getElementById('fin-receita').textContent=_mascaraValor(totalRec,_finRev);
   document.getElementById('fin-despesas').textContent=_mascaraValor(totalDespesas,_finRev);
@@ -10227,10 +10227,10 @@ function renderRelatorios(){
   var pecasTotal=finAnoEntradas.reduce(function(s,f){return s+(f.pecas||0);},0);
   var deslocTotal=finAnoEntradas.reduce(function(s,f){return s+(f.desloc||0);},0);
   var custoTotal=pecasTotal+deslocTotal;
-  var lucroTotal=receitaTotal-custoTotal;
+  var despesaFrotaTotal=finAnoSaidas.reduce(function(s,f){return s+(f.val||0);},0);
+  var lucroTotal=receitaTotal-custoTotal-despesaFrotaTotal;
   var margemTotal=receitaTotal>0?Math.round(lucroTotal/receitaTotal*100):0;
   var ticketMedio=finAnoEntradas.length>0?receitaTotal/finAnoEntradas.length:0;
-  var despesaFrotaTotal=finAnoSaidas.reduce(function(s,f){return s+(f.val||0);},0);
 
   var _relRev=_relValoresRevelados;
   var BARRA_NEUTRA=35;
@@ -10253,9 +10253,9 @@ function renderRelatorios(){
     var pecas=mFin.reduce(function(s,f){return s+(f.pecas||0);},0);
     var desloc=mFin.reduce(function(s,f){return s+(f.desloc||0);},0);
     var cst=pecas+desloc;
-    var liq=rec-cst;
-    var mg=rec>0?Math.round(liq/rec*100):0;
     var despFrota=mSaidas.reduce(function(s,f){return s+(f.val||0);},0);
+    var liq=rec-cst-despFrota;
+    var mg=rec>0?Math.round(liq/rec*100):0;
     mesesData.push({mes:m,nome:MESES[m-1],nomeShort:MESES_SHORT[m-1],rec:rec,pecas:pecas,desloc:desloc,cst:cst,liq:liq,mg:mg,qtd:mFin.length,despFrota:despFrota});
   }
   var maxRec=Math.max.apply(null,mesesData.map(function(d){return d.rec;}),1);
