@@ -944,6 +944,9 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="text" inputmode="decimal" id="nr-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">🚗 Veículo usado (opcional)</div><select class="fs" id="nr-veiculo"><option value="">— Nenhum —</option></select></div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
           <div><div class="fl">Descrição completa (uma linha = um item)</div>
             <textarea class="ft" id="nr-desc" rows="3" placeholder="Descreva os serviços realizados..."></textarea>
           </div>
@@ -1206,6 +1209,9 @@ td.bold{color:var(--white);font-weight:700}
           <div><div class="fl">🚗 Deslocamento / Combustível (R$)</div><input class="fi" type="text" inputmode="decimal" id="nof-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this)"></div>
         </div>
         <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">🚗 Veículo usado (opcional)</div><select class="fs" id="nof-veiculo"><option value="">— Nenhum —</option></select></div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
           <div><div class="fl">Descrição do serviço (uma linha = um item no PDF)</div>
             <textarea class="ft" id="nof-desc" rows="4" placeholder="Cada linha vira um bullet no orçamento..."></textarea>
           </div>
@@ -1294,6 +1300,9 @@ td.bold{color:var(--white);font-weight:700}
         <div class="fgrid fg2" style="margin-bottom:10px">
           <div><div class="fl">Valor de venda (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-valor" placeholder="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc();condPagamentoSincronizarValor('so-pgto-cond',this.value);serrCalcSaldoFin()"></div>
           <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="so-desloc" placeholder="0,00" value="0,00" oninput="mascarearInputMoeda(this);calcSerrOrc()"></div>
+        </div>
+        <div class="fgrid" style="margin-bottom:10px">
+          <div><div class="fl">🚗 Veículo usado (opcional)</div><select class="fs" id="so-veiculo"><option value="">— Nenhum —</option></select></div>
         </div>
         <div class="fgrid fg2" style="margin-bottom:10px">
           <div id="so-pgto-cond-wrap"><div class="fl">Condições de Pagamento</div>
@@ -2496,6 +2505,9 @@ td.bold{color:var(--white);font-weight:700}
         <div><div class="fl">Custo peças (R$)</div><input class="fi" type="text" inputmode="decimal" id="eo-custo" value="0,00" oninput="mascarearInputMoeda(this);calcResumoEO()"></div>
         <div><div class="fl">Data</div><input class="fi" type="date" id="eo-data"></div>
       </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">🚗 Veículo usado (opcional)</div><select class="fs" id="eo-veiculo"><option value="">— Nenhum —</option></select></div>
+      </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Garantia</div><input class="fi" id="eo-gtia" placeholder="Ex: 12 meses"></div>
         <div><div class="fl">Validade do Orçamento (dias)</div><input class="fi" type="number" id="eo-validade" placeholder="Ex: 30" min="1" step="1"></div>
@@ -2600,6 +2612,9 @@ td.bold{color:var(--white);font-weight:700}
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Garantia</div><input class="fi" id="er-gtia" placeholder="Ex: 12 meses"></div>
         <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-desloc" value="0,00" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
+      </div>
+      <div class="fgrid" style="margin-bottom:10px">
+        <div><div class="fl">🚗 Veículo usado (opcional)</div><select class="fs" id="er-veiculo"><option value="">— Nenhum —</option></select></div>
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Condições de Pagamento</div>
@@ -3051,6 +3066,7 @@ async function carregarTodosDados() {
         data: o.data_emissao||'', obs: o.observacoes||'',
         custoPecas: parseFloat(o.custo_pecas||0),
         desloc: parseFloat(o.deslocamento||0),
+        veiculoId: o.veiculo_id||null,
         matEdit: matEdit,
         // Campos de pagamento/financeiro
         finStatus: o.fin_status||null,
@@ -3091,7 +3107,8 @@ async function carregarTodosDados() {
         finForma: (r.condicoes_pagamento&&r.condicoes_pagamento.length>0) ? '' : (r.fin_forma||r.pagamento||''),
         finValorPago: r.fin_valor_pago||null,
         finVencimento: r.fin_vencimento||null,
-        finLancado: r.fin_lancado||false
+        finLancado: r.fin_lancado||false,
+        veiculoId: r.veiculo_id||null
       };
     });
   }
@@ -3320,6 +3337,7 @@ async function sbSalvarOrcamento(o) {
     data_emissao: fmtDateSB(o.data, o.dataRaw), observacoes: o.obs||'',
     custo_pecas: parseFloat(o.custoPecas||0),
     deslocamento: parseFloat(o.desloc||0),
+    veiculo_id: o.veiculoId||null,
     mat_edit: o.matEdit&&o.matEdit.length>0 ? JSON.stringify(o.matEdit) : null,
     // Campos de pagamento/financeiro
     fin_status: o.finStatus||null,
@@ -3391,6 +3409,7 @@ async function sbSalvarRecibo(r) {
     data_raw: r.dataRaw||'',
     custo_pecas: parseFloat(r.custoPecas||0),
     desloc: parseFloat(r.desloc||0),
+    veiculo_id: r.veiculoId||null,
     mat_edit: r.matEdit&&r.matEdit.length>0 ? JSON.stringify(r.matEdit) : null,
     desc_base: r.descBase||0, desc_val: r.descV||0,
     desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
@@ -5227,6 +5246,7 @@ function iniciarNovoRecibo(cliPre){
   ['nr-blk-cli','nr-blk-tpl','nr-blk-mat','nr-blk-rec'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
+  popularSelectVeiculos('nr-veiculo', true);
   document.getElementById('modal-novo-recibo').classList.add('open');
   if(NR.cli){
     // Cliente já definido: pula Step 1, vai direto para Serviço
@@ -5558,6 +5578,8 @@ async function nrEmitirRecibo(){
   var serv=NR.tpl?NR.tpl.nm:manual;
   var numR=proximoNumRecibo();
   var matTotais=getNrMatTotais();
+  var nrVeiculoEl=document.getElementById('nr-veiculo');
+  var nrVeiculoId=(nrVeiculoEl&&nrVeiculoEl.value)?parseInt(nrVeiculoEl.value):null;
 
   // ── Lê status do bloco "Informações de Pagamento" ──
   var finStatus=(document.getElementById('nr-fin-status')||{}).value||'pendente';
@@ -5583,7 +5605,7 @@ async function nrEmitirRecibo(){
 
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,
     data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,
-    finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec,
+    finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec,veiculoId:nrVeiculoId,
     finStatus:finStatus,finForma:finForma,finValorPago:finValorPago||undefined};
 
   recibos.unshift(recibo);
@@ -5674,6 +5696,7 @@ function iniciarNovoOrcamento(cliPre){
     var el=document.getElementById(id);if(el)el.style.display='none';
   });
   document.getElementById('nof-blk-cli').style.display='block';
+  popularSelectVeiculos('nof-veiculo', true);
   // Se já tem cliente pré-selecionado (vindo do card na aba Clientes), vai direto para serviço
   if(NOF.cli){
     setTimeout(function(){nofProxServico();},100);
@@ -5970,6 +5993,8 @@ async function nofSalvarGerarPDF(){
   var gtia=document.getElementById('nof-gtia').value;
   var obs=(document.getElementById('nof-obs').value||'').trim();
   var desloc=parseFloat(desmascarar(document.getElementById('nof-desloc').value)||0);
+  var veiculoIdEl=document.getElementById('nof-veiculo');
+  var veiculoId=(veiculoIdEl&&veiculoIdEl.value)?parseInt(veiculoIdEl.value):null;
   var matTotais=recalcMatNof()||{custo:0,venda:0};
   // Desconto
   var descTipo=document.getElementById('nof-desc-tipo').value;
@@ -6000,7 +6025,7 @@ async function nofSalvarGerarPDF(){
   var novoOrc={num:num,cli:nome,tel:tel,end:end,serv:serv,desc:desc||manual,
     val:valorFinal,gtia:gtia,pgto:pgto,condicoesPagamento:condicoesPagamento,status:'pendente',data:data,obs:obs,
     descTipo:descTipo,descQtd:descQtd,descBase:descVal>0?valor:0,descV:descVal,
-    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditNof};
+    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditNof,veiculoId:veiculoId};
   var oExist=orcamentos.find(function(o){return o.num===num;});
   // BUG FIX: ao atualizar orçamento existente preservar sbId; ao criar novo
   // aguardar o Supabase para que o sbId retornado seja gravado no objeto em
@@ -6684,6 +6709,8 @@ function abrirEditarOrc(num){
   // Se o orçamento já tem desconto aplicado, carrega o valor base original para evitar duplo desconto
   document.getElementById('eo-val').value=aplicarMascaraMoeda((o.descBase&&o.descBase>0?o.descBase:o.val)||0);
   document.getElementById('eo-custo').value=aplicarMascaraMoeda(o.custoPecas||0);
+  popularSelectVeiculos('eo-veiculo', true);
+  document.getElementById('eo-veiculo').value=o.veiculoId||'';
   document.getElementById('eo-gtia').value=o.gtia||'';
   document.getElementById('eo-validade').value=o.validade||CFG.doc.validade||30;
   document.getElementById('eo-obs').value=o.obs||'';
@@ -6812,6 +6839,8 @@ function salvarEdicaoOrc(){
   // Custo: usa materiais selecionados se houver, senão o campo manual
   var eoMatTotais=recalcMatEO()||{custo:0,venda:0};
   o.custoPecas=eoMatTotais.custo>0?eoMatTotais.custo:parseFloat(desmascarar(document.getElementById('eo-custo').value)||0);
+  var eoVeiculoEl=document.getElementById('eo-veiculo');
+  o.veiculoId=(eoVeiculoEl&&eoVeiculoEl.value)?parseInt(eoVeiculoEl.value):null;
   // Persiste a lista de materiais para recarregar ao reabrir
   o.matEdit=eoMatLinhas.map(function(rowId){
     var selEl=document.getElementById('eosel-'+rowId);
@@ -6876,6 +6905,8 @@ function abrirEditarRec(num){
   document.getElementById('er-custo').value=aplicarMascaraMoeda(r.custoPecas||0);
   document.getElementById('er-gtia').value=r.gtia||'';
   document.getElementById('er-desloc').value=aplicarMascaraMoeda(r.desloc||0);
+  popularSelectVeiculos('er-veiculo', true);
+  document.getElementById('er-veiculo').value=r.veiculoId||'';
   document.getElementById('er-desc-qtd').value=r.descQtd||r.descV||0;
   // data
   var dataVal=r.dataRaw||'';
@@ -7073,6 +7104,8 @@ async function salvarEdicaoRec(){
   r.val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
   r.gtia=document.getElementById('er-gtia').value.trim();
   r.desloc=parseFloat(desmascarar(document.getElementById('er-desloc').value)||0);
+  var erVeiculoEl=document.getElementById('er-veiculo');
+  r.veiculoId=(erVeiculoEl&&erVeiculoEl.value)?parseInt(erVeiculoEl.value):null;
   r.descTipo=document.getElementById('er-desc-tipo').value;
   r.descQtd=parseFloat(document.getElementById('er-desc-qtd').value||0);
   r.descV=r.descTipo==='valor'?r.descQtd:(r.descTipo==='perc'?r.val*(r.descQtd/100):0);
@@ -7930,13 +7963,23 @@ function confirmarExcluirVeiculo(id){
   renderFrotaPage();
 }
 
+// Popula um <select> com a lista de veiculos cadastrados na Frota.
+// opcional=true prefixa uma opção "— Nenhum —" (value=""), usada nos campos
+// de vínculo opcional em Orçamento/Recibo — Frota exige veículo, então chama
+// com opcional=false (sem essa opção).
+function popularSelectVeiculos(selectId, opcional){
+  var sel=document.getElementById(selectId);
+  if(!sel)return;
+  var opts=veiculos.map(function(v){
+    return '<option value="'+v.id+'">'+v.nome+(v.placa?' — '+v.placa:'')+'</option>';
+  }).join('');
+  sel.innerHTML=(opcional?'<option value="">— Nenhum —</option>':'')+opts;
+}
+
 // ── Lançamentos de Frota (Abastecimento / Manutenção → saída no Financeiro) ──
 function abrirModalLancFrota(){
   if(veiculos.length===0){alert('Cadastre um veículo primeiro antes de lançar um abastecimento ou manutenção.');return;}
-  var sel=document.getElementById('lf-veiculo');
-  sel.innerHTML=veiculos.map(function(v){
-    return '<option value="'+v.id+'">'+v.nome+(v.placa?' — '+v.placa:'')+'</option>';
-  }).join('');
+  popularSelectVeiculos('lf-veiculo', false);
   document.getElementById('lf-tipo').value='Combustível';
   document.getElementById('lf-data').value=new Date().toISOString().split('T')[0];
   document.getElementById('lf-valor').value='0,00';
@@ -9333,6 +9376,7 @@ function abrirSerrOrc(){
   ['so-desloc','so-desc-qtd'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.value='0';
   });
+  popularSelectVeiculos('so-veiculo', true);
   var soValEl=document.getElementById('so-valor');if(soValEl)soValEl.value='';
   montarCondicoesPagamento('so-pgto-cond',0);
   var condWrapEl=document.getElementById('so-pgto-cond-wrap');if(condWrapEl)condWrapEl.style.display='';
@@ -9515,6 +9559,8 @@ async function serrEmitirRecibo(){
   var dataRaw=document.getElementById('so-data').value;
   var pgto=document.getElementById('so-pgto-rec').value;
   var desloc=parseFloat(desmascarar(document.getElementById('so-desloc').value)||0);
+  var soVeiculoEl=document.getElementById('so-veiculo');
+  var soVeiculoId=(soVeiculoEl&&soVeiculoEl.value)?parseInt(soVeiculoEl.value):null;
   var matTotais=serrGetMatTotais();
   // ── Lê o bloco "Informações de Pagamento" (mesma cascata de 4 estados do nrEmitirRecibo) ──
   var finStatus=(document.getElementById('so-fin-status')||{}).value||'pendente';
@@ -9542,7 +9588,7 @@ async function serrEmitirRecibo(){
     end:(document.getElementById('so-end').value||'').trim(),
     serv:desc.split('\n')[0],desc:desc,val:valorFinal,pgto:pgto,
     gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:descVal>0?val:0,descV:descVal,finLancado:false,
-    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr,tipo:'serralheria',
+    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr,tipo:'serralheria',veiculoId:soVeiculoId,
     finStatus:finStatus,finForma:finForma,finValorPago:finValorPago||undefined};
   recibos.unshift(novoRec);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(novoRec);
@@ -9749,6 +9795,8 @@ async function gerarPDFSerrOrc(){
   var dataRaw=document.getElementById('so-data').value;
   var validade=document.getElementById('so-val').value;
   var desloc=parseFloat(desmascarar(document.getElementById('so-desloc').value)||0);
+  var soVeiculoEl=document.getElementById('so-veiculo');
+  var soVeiculoId=(soVeiculoEl&&soVeiculoEl.value)?parseInt(soVeiculoEl.value):null;
   // ── SALVAR ORÇAMENTO ──────────────────────────────────────────────────────
   var matEditSerr=SERR.matLinhas.map(function(rowId){
     var selEl=document.getElementById('serrsel-'+rowId);
@@ -9770,7 +9818,7 @@ async function gerarPDFSerrOrc(){
     pgto:pgto,condicoesPagamento:condicoesPagamento,gtia:'',data:fmtDateBr(dataRaw),dataRaw:dataRaw,
     validade:validade,obs:obs,status:'pendente',
     descTipo:tipo,descQtd:qtd,descBase:desc_val>0?val:0,descV:desc_val,
-    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr,
+    custoPecas:matTotais.custo,desloc:desloc,matEdit:matEditSerr,veiculoId:soVeiculoId,
     tipo:'serralheria'
   };
   orcamentos.unshift(novoOrc);
