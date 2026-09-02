@@ -5593,6 +5593,7 @@ async function nrEmitirRecibo(){
   var matTotais=getNrMatTotais();
   var nrVeiculoEl=document.getElementById('nr-veiculo');
   var nrVeiculoId=(nrVeiculoEl&&nrVeiculoEl.value)?parseInt(nrVeiculoEl.value):null;
+  var deslocR=parseFloat(desmascarar((document.getElementById('nr-desloc')||{}).value)||0);
 
   // ── Lê status do bloco "Informações de Pagamento" ──
   var finStatus=(document.getElementById('nr-fin-status')||{}).value||'pendente';
@@ -5618,13 +5619,11 @@ async function nrEmitirRecibo(){
 
   var recibo={num:numR,cli:nome,tel:tel,end:end,serv:serv,desc:desc||serv,val:valorFinal,pgto:pgto,gtia:gtia,
     data:fmtDateBr(dataRaw),dataRaw:dataRaw,descBase:(nrDesc>0?val:0),descV:nrDesc,
-    finLancado:false,custoPecas:matTotais.custo,matEdit:matEditRec,veiculoId:nrVeiculoId,
+    finLancado:false,custoPecas:matTotais.custo,desloc:deslocR,matEdit:matEditRec,veiculoId:nrVeiculoId,
     finStatus:finStatus,finForma:finForma,finValorPago:finValorPago||undefined};
 
   recibos.unshift(recibo);
   if(SUPABASE_ATIVO)await sbSalvarRecibo(recibo);
-
-  var deslocR=parseFloat(desmascarar((document.getElementById('nr-desloc')||{}).value)||0);
 
   // ── Lança no financeiro SOMENTE se pago ou parcial ──
   // Pendente e aguardando_pix ficam como a_receber (pendente = não lança, aguardando = não lança)
