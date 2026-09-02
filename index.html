@@ -3088,6 +3088,12 @@ async function carregarTodosDados() {
   const {data:recs, error:eRec} = await sb.from('recibos').select('*').order('criado_em', {ascending:false});
   if (!eRec && recs && recs.length > 0) {
     recibos = recs.map(function(r) {
+      // matEdit: coluna mat_edit é gravada como string JSON (ou null) por
+      // sbSalvarRecibo — mesmo parse defensivo usado no mapeamento de orçamentos.
+      var matEdit = [];
+      if (r.mat_edit) {
+        try { matEdit = typeof r.mat_edit === 'string' ? JSON.parse(r.mat_edit) : (Array.isArray(r.mat_edit) ? r.mat_edit : []); } catch(e) { matEdit = []; }
+      }
       return {
         sbId: r.id, num: r.numero||'', cli: r.cliente_nome||'',
         tel: r.cliente_tel||'', end: r.cliente_end||'',
@@ -3097,6 +3103,13 @@ async function carregarTodosDados() {
         gtia: r.garantia||'', data: r.data_emissao||'',
         dataRaw: r.data_raw||'',
         descBase: parseFloat(r.desc_base||0), descV: parseFloat(r.desc_val||0),
+        // desloc é a coluna realmente gravada por sbSalvarRecibo; deslocamento
+        // fica como fallback (coluna legada, nunca escrita pelo app hoje).
+        custoPecas: parseFloat(r.custo_pecas||0),
+        desloc: parseFloat(r.desloc||r.deslocamento||0),
+        matEdit: matEdit,
+        descTipo: r.desc_tipo||'',
+        descQtd: parseFloat(r.desc_qtd||0),
         // Campos de status de pagamento
         finStatus: r.fin_status||'pendente',
         // Com condicoes_pagamento presente (pipeline novo, 1+ condições), não
