@@ -2611,7 +2611,7 @@ td.bold{color:var(--white);font-weight:700}
       </div>
       <div class="fgrid fg2" style="margin-bottom:10px">
         <div><div class="fl">Garantia</div><input class="fi" id="er-gtia" placeholder="Ex: 12 meses"></div>
-        <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-desloc" value="0,00" placeholder="0,00" oninput="mascarearInputMoeda(this)"></div>
+        <div><div class="fl">Deslocamento (R$)</div><input class="fi" type="text" inputmode="decimal" id="er-desloc" value="0,00" placeholder="0,00" oninput="mascarearInputMoeda(this);calcResumoER()"></div>
       </div>
       <div class="fgrid" style="margin-bottom:10px">
         <div><div class="fl">🚗 Veículo usado (opcional)</div><select class="fs" id="er-veiculo"><option value="">— Nenhum —</option></select></div>
@@ -6998,9 +6998,10 @@ function fecharEditarRec(){
 function calcResumoER(){
   var val=parseFloat(desmascarar(document.getElementById('er-val').value)||0);
   var custo=parseFloat(desmascarar(document.getElementById('er-custo').value)||0);
+  var desloc=parseFloat(desmascarar(document.getElementById('er-desloc').value)||0);
   document.getElementById('er-show-val').textContent=fmtVal(val);
   document.getElementById('er-show-custo').textContent=fmtVal(custo);
-  document.getElementById('er-show-lucro').textContent=fmtVal(val-custo);
+  document.getElementById('er-show-lucro').textContent=fmtVal(val-custo-desloc);
 }
 
 function calcDescontoER(){
@@ -9534,7 +9535,10 @@ function serrRecalcMat(){
   var desc2=tipo==='valor'?qtd2:(tipo==='perc'?val*(qtd2/100):0);
   var vf=Math.max(0,val-desc2);
   var soShowLucro=document.getElementById('so-show-lucro');
-  if(soShowLucro)soShowLucro.textContent=fmtVal(vf-totalCusto);
+  if(soShowLucro){
+    var soDesloc2=parseFloat(desmascarar(document.getElementById('so-desloc').value)||0);
+    soShowLucro.textContent=fmtVal(vf-totalCusto-soDesloc2);
+  }
   return{custo:totalCusto,venda:totalVenda};
 }
 
@@ -9704,7 +9708,11 @@ function calcSerrOrc(){
   var vf=Math.max(0,val-desc);
   var soShowVal=document.getElementById('so-show-val');if(soShowVal)soShowVal.textContent='R$ '+vf.toLocaleString('pt-BR',{minimumFractionDigits:2});
   var soShowCusto=document.getElementById('so-show-custo');if(soShowCusto)soShowCusto.textContent='R$ '+custo.toLocaleString('pt-BR',{minimumFractionDigits:2});
-  var soShowLucro=document.getElementById('so-show-lucro');if(soShowLucro)soShowLucro.textContent='R$ '+(vf-custo).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  var soShowLucro=document.getElementById('so-show-lucro');
+  if(soShowLucro){
+    var soDesloc=parseFloat(desmascarar(document.getElementById('so-desloc').value)||0);
+    soShowLucro.textContent='R$ '+(vf-custo-soDesloc).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  }
   var prev=document.getElementById('so-desc-preview');
   var fin=document.getElementById('so-desc-final');
   if(tipo&&qtd>0){
