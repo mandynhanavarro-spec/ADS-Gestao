@@ -225,6 +225,7 @@ td.bold{color:var(--white);font-weight:700}
 
 /* STATS */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.stats-row.stats-row-3{grid-template-columns:repeat(3,1fr)}
 .stats-row.stats-row-5{grid-template-columns:repeat(5,1fr)}
 .stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden}
 .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -347,6 +348,7 @@ td.bold{color:var(--white);font-weight:700}
   .mob-card-list{display:flex}
   /* stats grid 2 cols on mobile */
   .stats-row{grid-template-columns:1fr 1fr}
+  .stats-row.stats-row-3{grid-template-columns:1fr 1fr}
   .stats-row.stats-row-5{grid-template-columns:1fr 1fr}
   /* fg4 → 2 cols on mobile */
   .fg4{grid-template-columns:1fr 1fr}
@@ -1557,6 +1559,41 @@ td.bold{color:var(--white);font-weight:700}
         <tbody id="vei-table-body"></tbody>
       </table>
       <div id="vei-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum veículo cadastrado. Clique em "+ Novo veículo" para começar.</div>
+    </div>
+  </div>
+
+  <!-- Relatório: Gasto vs. Cobrado por Veículo -->
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-hd">
+      <div class="panel-title">📊 Gasto vs. Cobrado por Veículo</div>
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:0 10px;height:32px;box-sizing:border-box">
+        <span style="font-size:11px;color:var(--silver2);font-weight:700">📅 Mês:</span>
+        <select class="fs" id="frota-rel-filter-mes" style="background:transparent;border:none;font-size:11px;padding:0;min-width:70px" onchange="_frotaRelOnControlChange()">
+          <option value="">Todos</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select class="fs" id="frota-rel-filter-ano" style="background:transparent;border:none;font-size:11px;padding:0;min-width:60px" onchange="_frotaRelOnControlChange()"></select>
+      </div>
+    </div>
+    <div class="panel-bd" style="padding:16px">
+      <div class="stats-row stats-row-3" style="margin-bottom:16px">
+        <div class="stat sr"><div class="stat-label">Total Gasto</div><div class="stat-val red" id="frota-rel-gasto">R$ 0,00</div><div class="stat-d">combustível + manutenção</div></div>
+        <div class="stat sg"><div class="stat-label">Total Cobrado</div><div class="stat-val green" id="frota-rel-cobrado">R$ 0,00</div><div class="stat-d">orçamentos + recibos vinculados</div></div>
+        <div class="stat sb"><div class="stat-label">Saldo</div><div class="stat-val blue" id="frota-rel-saldo">R$ 0,00</div><div class="stat-d">cobrado − gasto</div></div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Veículo</th>
+          <th style="text-align:right">Gasto</th>
+          <th style="text-align:right">Cobrado</th>
+          <th style="text-align:right">Saldo</th>
+        </tr></thead>
+        <tbody id="frota-rel-tbody"></tbody>
+      </table>
+      <div id="frota-rel-empty" style="text-align:center;padding:20px;color:var(--silver);font-size:13px;display:none">Nenhuma movimentação vinculada a veículo no período.</div>
     </div>
   </div>
 </div>
@@ -3121,7 +3158,8 @@ async function carregarTodosDados() {
         finValorPago: r.fin_valor_pago||null,
         finVencimento: r.fin_vencimento||null,
         finLancado: r.fin_lancado||false,
-        veiculoId: r.veiculo_id||null
+        veiculoId: r.veiculo_id||null,
+        orcamentoId: r.orcamento_id||null
       };
     });
   }
@@ -3423,6 +3461,7 @@ async function sbSalvarRecibo(r) {
     custo_pecas: parseFloat(r.custoPecas||0),
     desloc: parseFloat(r.desloc||0),
     veiculo_id: r.veiculoId||null,
+    orcamento_id: r.orcamentoId||null,
     mat_edit: r.matEdit&&r.matEdit.length>0 ? JSON.stringify(r.matEdit) : null,
     desc_base: r.descBase||0, desc_val: r.descV||0,
     desc_tipo: r.descTipo||null, desc_qtd: r.descQtd||0,
@@ -6530,6 +6569,7 @@ async function _processarEmissaoDoc(o, tipo, forma, statusFin, valorPago, vencim
       serv:o.serv||'',desc:o.desc||'',val:o.val,pgto:forma,
       condicoesPagamento:condicoesPagamentoOuFallback(o.condicoesPagamento,forma,o.val),
       gtia:o.gtia||'',data:dataFormatada,dataRaw:o.data||'',descBase:0,descV:0,
+      veiculoId:o.veiculoId||null,orcamentoId:o.sbId||null,
       finStatus:statusFin,finValorPago:valorPago,finVencimento:vencimento,finLancado:false};
 
     recibos.unshift(novoRec);
@@ -7894,6 +7934,7 @@ function renderFrotaPage(){
   var tb=document.getElementById('vei-table-body');
   var emp=document.getElementById('vei-empty');
   if(!tb)return;
+  renderFrotaRelatorio();
   if(veiculos.length===0){
     tb.innerHTML='';
     if(emp)emp.style.display='block';
@@ -7914,6 +7955,117 @@ function renderFrotaPage(){
       tr.querySelector('[data-vid="del"]').onclick=function(){confirmarExcluirVeiculo(vref.id);};
     })(v);
     tb.appendChild(tr);
+  });
+}
+
+// ── Relatório: Gasto vs. Cobrado por Veículo ──
+function initFrotaRelFiltros(){
+  var anoEl=document.getElementById('frota-rel-filter-ano');
+  if(!anoEl)return;
+  var anosSet=new Set();
+  function addAno(dataRaw,data){
+    if(dataRaw&&dataRaw.includes('-'))anosSet.add(dataRaw.split('-')[0]);
+    else if(data&&data.includes('/')){var p=data.split('/');if(p[2])anosSet.add(p[2]);}
+    else if(data&&data.includes('-'))anosSet.add(data.split('-')[0]);
+  }
+  financeiro.forEach(function(f){addAno(f.dataRaw,f.data);});
+  orcamentos.forEach(function(o){addAno(o.dataRaw,o.data);});
+  recibos.forEach(function(r){addAno(r.dataRaw,r.data);});
+  var anoAtual=new Date().getFullYear().toString();
+  anosSet.add(anoAtual);
+  var anos=Array.from(anosSet).sort().reverse();
+  anoEl.innerHTML='';
+  anos.forEach(function(a){
+    var opt=document.createElement('option');
+    opt.value=a;opt.textContent=a;
+    if(a===anoAtual)opt.selected=true;
+    anoEl.appendChild(opt);
+  });
+}
+
+function _frotaRelOnControlChange(){
+  renderFrotaRelatorio();
+}
+
+// Status de orçamento considerados "cobrado" — mesmos valores usados em
+// Relatórios (statusGrupos): pendente/negociacao/cancelado ficam de fora
+// porque não representam serviço efetivamente realizado/faturado.
+var FROTA_REL_STATUS_COBRADO=['aprovado','execucao','finalizado'];
+
+function renderFrotaRelatorio(){
+  var anoEl=document.getElementById('frota-rel-filter-ano');
+  if(!anoEl)return;
+  if(anoEl.options.length===0)initFrotaRelFiltros();
+
+  var mesFil=(document.getElementById('frota-rel-filter-mes')||{}).value||'';
+  var anoFil=(document.getElementById('frota-rel-filter-ano')||{}).value||'';
+
+  function getAnoMes(item){
+    // Mesmo padrão de normalização de data usado em _orcDataOrdenavel (Orçamentos):
+    // financeiro/recibos têm dataRaw; orçamentos não têm dataRaw e guardam
+    // data_emissao já em AAAA-MM-DD (sem barra) no campo .data.
+    var raw=item.dataRaw||'';
+    if(raw&&raw.includes('-')){var p=raw.split('-');return{ano:p[0],mes:String(parseInt(p[1]))};}
+    if(item.data&&item.data.includes('/')){var p2=item.data.split('/');return{ano:p2[2]||'',mes:String(parseInt(p2[1]||0))};}
+    if(item.data&&item.data.includes('-')){var p3=item.data.split('-');return{ano:p3[0],mes:String(parseInt(p3[1]))};}
+    return{ano:'',mes:''};
+  }
+  function noPeriodo(item){
+    if(!mesFil&&!anoFil)return true;
+    var am=getAnoMes(item);
+    if(mesFil&&am.mes!==mesFil)return false;
+    if(anoFil&&am.ano!==anoFil)return false;
+    return true;
+  }
+
+  var linhas=veiculos.map(function(v){
+    var gasto=financeiro.filter(function(f){
+      return f.tipo==='saida'&&f.veiculoId===v.id&&noPeriodo(f);
+    }).reduce(function(s,f){return s+(f.val||0);},0);
+
+    // (a) orçamentos aprovados/em execução/finalizados com o veículo vinculado
+    var cobradoOrc=orcamentos.filter(function(o){
+      return o.veiculoId===v.id&&FROTA_REL_STATUS_COBRADO.indexOf(o.status)>=0&&noPeriodo(o);
+    }).reduce(function(s,o){return s+(o.val||0);},0);
+
+    // (b) recibos avulsos (sem orcamentoId) com o veículo vinculado — recibos
+    // gerados automaticamente ao aprovar um orçamento (com orcamentoId
+    // preenchido) já foram contados via o orçamento em (a); somar os dois
+    // duplicaria o mesmo serviço.
+    var cobradoRec=recibos.filter(function(r){
+      return r.veiculoId===v.id&&!r.orcamentoId&&noPeriodo(r);
+    }).reduce(function(s,r){return s+(r.val||0);},0);
+
+    var cobrado=cobradoOrc+cobradoRec;
+    return {veiculo:v,gasto:gasto,cobrado:cobrado,saldo:cobrado-gasto};
+  });
+
+  var totalGasto=linhas.reduce(function(s,l){return s+l.gasto;},0);
+  var totalCobrado=linhas.reduce(function(s,l){return s+l.cobrado;},0);
+  var elGasto=document.getElementById('frota-rel-gasto');
+  var elCobrado=document.getElementById('frota-rel-cobrado');
+  var elSaldo=document.getElementById('frota-rel-saldo');
+  if(elGasto)elGasto.textContent=fmtVal(totalGasto);
+  if(elCobrado)elCobrado.textContent=fmtVal(totalCobrado);
+  if(elSaldo)elSaldo.textContent=fmtVal(totalCobrado-totalGasto);
+
+  var tbody=document.getElementById('frota-rel-tbody');
+  var emptyEl=document.getElementById('frota-rel-empty');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  if(linhas.length===0){
+    if(emptyEl)emptyEl.style.display='block';
+    return;
+  }
+  if(emptyEl)emptyEl.style.display='none';
+  linhas.forEach(function(l){
+    var tr=document.createElement('tr');
+    var saldoColor=l.saldo>=0?'var(--green2)':'var(--red)';
+    tr.innerHTML='<td class="bold">'+l.veiculo.nome+(l.veiculo.placa?' <span style="color:var(--silver2);font-weight:400">— '+l.veiculo.placa+'</span>':'')+'</td>'+
+      '<td style="text-align:right;color:var(--red)">'+fmtVal(l.gasto)+'</td>'+
+      '<td style="text-align:right;color:var(--green2)">'+fmtVal(l.cobrado)+'</td>'+
+      '<td style="text-align:right;font-weight:800;color:'+saldoColor+'">'+fmtVal(l.saldo)+'</td>';
+    tbody.appendChild(tr);
   });
 }
 
