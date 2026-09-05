@@ -8026,7 +8026,7 @@ function renderFrotaRelatorio(){
     // (a) orçamentos aprovados/em execução/finalizados com o veículo vinculado
     var cobradoOrc=orcamentos.filter(function(o){
       return o.veiculoId===v.id&&FROTA_REL_STATUS_COBRADO.indexOf(o.status)>=0&&noPeriodo(o);
-    }).reduce(function(s,o){return s+(o.val||0);},0);
+    }).reduce(function(s,o){return s+(o.desloc||0);},0);
 
     // (b) recibos avulsos (sem orcamentoId) com o veículo vinculado — recibos
     // gerados automaticamente ao aprovar um orçamento (com orcamentoId
@@ -8034,7 +8034,7 @@ function renderFrotaRelatorio(){
     // duplicaria o mesmo serviço.
     var cobradoRec=recibos.filter(function(r){
       return r.veiculoId===v.id&&!r.orcamentoId&&noPeriodo(r);
-    }).reduce(function(s,r){return s+(r.val||0);},0);
+    }).reduce(function(s,r){return s+(r.desloc||0);},0);
 
     var cobrado=cobradoOrc+cobradoRec;
     return {veiculo:v,gasto:gasto,cobrado:cobrado,saldo:cobrado-gasto};
