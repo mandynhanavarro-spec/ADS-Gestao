@@ -1549,21 +1549,11 @@ td.bold{color:var(--white);font-weight:700}
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="abrirModalLancFrota()">+ Novo lançamento</button>
-      <button class="btn btn-primary" onclick="abrirModalVeiculo(null)">+ Novo veículo</button>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="panel-bd" style="padding:0 16px">
-      <table>
-        <thead><tr><th>Veículo</th><th>Placa</th><th>Ações</th></tr></thead>
-        <tbody id="vei-table-body"></tbody>
-      </table>
-      <div id="vei-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum veículo cadastrado. Clique em "+ Novo veículo" para começar.</div>
     </div>
   </div>
 
   <!-- Relatório: Gasto vs. Cobrado por Veículo -->
-  <div class="panel" style="margin-top:16px">
+  <div class="panel">
     <div class="panel-hd">
       <div class="panel-title">📊 Gasto vs. Cobrado por Veículo</div>
       <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:0 10px;height:32px;box-sizing:border-box">
@@ -1594,6 +1584,21 @@ td.bold{color:var(--white);font-weight:700}
         <tbody id="frota-rel-tbody"></tbody>
       </table>
       <div id="frota-rel-empty" style="text-align:center;padding:20px;color:var(--silver);font-size:13px;display:none">Nenhuma movimentação vinculada a veículo no período.</div>
+    </div>
+  </div>
+
+  <!-- Cadastro de veículos -->
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-hd">
+      <div class="panel-title" style="font-size:12px;color:var(--silver2)">🚗 Veículos cadastrados</div>
+      <button class="btn btn-ghost btn-sm" onclick="abrirModalVeiculo(null)">+ Novo veículo</button>
+    </div>
+    <div class="panel-bd" style="padding:0 16px">
+      <table>
+        <thead><tr><th>Veículo</th><th>Placa</th><th>Ações</th></tr></thead>
+        <tbody id="vei-table-body"></tbody>
+      </table>
+      <div id="vei-empty" style="text-align:center;padding:30px;color:var(--silver);font-size:13px;display:none">Nenhum veículo cadastrado. Clique em "+ Novo veículo" para começar.</div>
     </div>
   </div>
 </div>
@@ -8019,9 +8024,10 @@ function renderFrotaRelatorio(){
   }
 
   var linhas=veiculos.map(function(v){
-    var gasto=financeiro.filter(function(f){
+    var lancamentos=financeiro.filter(function(f){
       return f.tipo==='saida'&&f.veiculoId===v.id&&noPeriodo(f);
-    }).reduce(function(s,f){return s+(f.val||0);},0);
+    });
+    var gasto=lancamentos.reduce(function(s,f){return s+(f.val||0);},0);
 
     // (a) orçamentos aprovados/em execução/finalizados com o veículo vinculado
     var cobradoOrc=orcamentos.filter(function(o){
@@ -8037,7 +8043,7 @@ function renderFrotaRelatorio(){
     }).reduce(function(s,r){return s+(r.desloc||0);},0);
 
     var cobrado=cobradoOrc+cobradoRec;
-    return {veiculo:v,gasto:gasto,cobrado:cobrado,saldo:cobrado-gasto};
+    return {veiculo:v,gasto:gasto,cobrado:cobrado,saldo:cobrado-gasto,lancamentos:lancamentos};
   });
 
   var totalGasto=linhas.reduce(function(s,l){return s+l.gasto;},0);
@@ -8058,15 +8064,43 @@ function renderFrotaRelatorio(){
     return;
   }
   if(emptyEl)emptyEl.style.display='none';
-  linhas.forEach(function(l){
-    var tr=document.createElement('tr');
+  linhas.forEach(function(l,i){
+    var histId='frota-rel-hist-'+l.veiculo.id;
     var saldoColor=l.saldo>=0?'var(--green2)':'var(--red)';
-    tr.innerHTML='<td class="bold">'+l.veiculo.nome+(l.veiculo.placa?' <span style="color:var(--silver2);font-weight:400">— '+l.veiculo.placa+'</span>':'')+'</td>'+
+    var tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.setAttribute('onclick',"toggleFrotaRelHistorico('"+histId+"')");
+    tr.innerHTML='<td class="bold">▸ '+l.veiculo.nome+(l.veiculo.placa?' <span style="color:var(--silver2);font-weight:400">— '+l.veiculo.placa+'</span>':'')+'</td>'+
       '<td style="text-align:right;color:var(--red)">'+fmtVal(l.gasto)+'</td>'+
       '<td style="text-align:right;color:var(--green2)">'+fmtVal(l.cobrado)+'</td>'+
       '<td style="text-align:right;font-weight:800;color:'+saldoColor+'">'+fmtVal(l.saldo)+'</td>';
     tbody.appendChild(tr);
+
+    var trHist=document.createElement('tr');
+    trHist.id=histId;
+    trHist.style.display='none';
+    var lancsOrdenados=l.lancamentos.slice().sort(function(a,b){return (b.dataRaw||'').localeCompare(a.dataRaw||'');});
+    var histHtml='<div style="background:var(--bg3);padding:10px 14px;border-radius:7px">';
+    if(lancsOrdenados.length===0){
+      histHtml+='<div style="font-size:11px;color:var(--silver);text-align:center">Nenhum lançamento de Frota no período.</div>';
+    } else {
+      histHtml+='<div style="font-size:10px;color:var(--silver2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Histórico de lançamentos</div>';
+      lancsOrdenados.forEach(function(f){
+        histHtml+='<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+          '<span style="color:var(--silver2)">'+(f.data||f.dataRaw||'—')+' · '+(f.categoria||'—')+' — '+(f.desc||'')+'</span>'+
+          '<span style="color:var(--red);font-weight:700;white-space:nowrap">'+fmtVal(f.val)+'</span>'+
+        '</div>';
+      });
+    }
+    histHtml+='</div>';
+    trHist.innerHTML='<td colspan="4" style="padding:6px 0">'+histHtml+'</td>';
+    tbody.appendChild(trHist);
   });
+}
+
+function toggleFrotaRelHistorico(rowId){
+  var el=document.getElementById(rowId);
+  if(el)el.style.display=el.style.display==='none'?'table-row':'none';
 }
 
 function abrirModalVeiculo(id){
