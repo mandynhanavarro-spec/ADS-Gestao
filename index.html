@@ -1630,7 +1630,7 @@ td.bold{color:var(--white);font-weight:700}
 <div class="modal-bg" id="modal-lanc-frota">
   <div class="modal">
     <div class="modal-hd">
-      <span class="modal-title">🚚 Novo Lançamento de Frota</span>
+      <span class="modal-title" id="modal-lanc-frota-title">🚚 Novo Lançamento de Frota</span>
       <button class="modal-x" onclick="fecharModalLancFrota()">✕</button>
     </div>
     <div class="modal-bd">
@@ -2919,7 +2919,7 @@ var _matNextId = 100;
 var veiculos = [];
 var _veiNextId = 100;
 
-var STATE = {tpl:null,cli:null,aprov:null,editTplId:null,editOrcNum:null,selCat:'cm',editCliId:null,editFinIdx:null,editMatId:null,editVeiId:null};
+var STATE = {tpl:null,cli:null,aprov:null,editTplId:null,editOrcNum:null,selCat:'cm',editCliId:null,editFinIdx:null,editMatId:null,editVeiId:null,editLancFrotaIdx:null};
 
 // ════════════ PERSISTÊNCIA LOCAL (localStorage) ════════════
 function salvarLocal(){
@@ -3190,7 +3190,8 @@ async function carregarTodosDados() {
         saldoPendente: parseFloat(f.saldo_pendente||0),
         tipo: f.tipo||'entrada',
         categoria: f.categoria||null,
-        veiculoId: f.veiculo_id||null
+        veiculoId: f.veiculo_id||null,
+        km: f.km!=null?parseFloat(f.km):null
       };
     });
   }
@@ -3511,7 +3512,8 @@ async function sbSalvarFinanceiro(f) {
     saldo_pendente: f.saldoPendente||0,
     tipo: f.tipo||'entrada',
     categoria: f.categoria||null,
-    veiculo_id: f.veiculoId||null
+    veiculo_id: f.veiculoId||null,
+    km: f.km||null
   };
   try {
     if (f.sbId) {
@@ -7542,6 +7544,7 @@ function excluirFinanceiro(i){
   financeiro.splice(i,1);
   salvarLocal();
   renderFinanceiroPage();
+  renderFrotaRelatorio&&renderFrotaRelatorio();
 }
 
 function limparFinanceiro(){
@@ -8086,9 +8089,14 @@ function renderFrotaRelatorio(){
     } else {
       histHtml+='<div style="font-size:10px;color:var(--silver2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Histórico de lançamentos</div>';
       lancsOrdenados.forEach(function(f){
-        histHtml+='<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">'+
+        var realIdx=financeiro.indexOf(f);
+        histHtml+='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">'+
           '<span style="color:var(--silver2)">'+(f.data||f.dataRaw||'—')+' · '+(f.categoria||'—')+' — '+(f.desc||'')+'</span>'+
-          '<span style="color:var(--red);font-weight:700;white-space:nowrap">'+fmtVal(f.val)+'</span>'+
+          '<span style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
+            '<span style="color:var(--red);font-weight:700;white-space:nowrap">'+fmtVal(f.val)+'</span>'+
+            '<button class="btn btn-ghost btn-sm" style="padding:3px 7px" title="Editar" onclick="event.stopPropagation();abrirModalLancFrota('+realIdx+')">✏️</button>'+
+            '<button class="btn btn-red btn-sm" style="padding:3px 7px" title="Excluir" onclick="event.stopPropagation();excluirFinanceiro('+realIdx+')">🗑</button>'+
+          '</span>'+
         '</div>';
       });
     }
@@ -8176,19 +8184,34 @@ function popularSelectVeiculos(selectId, opcional){
 }
 
 // ── Lançamentos de Frota (Abastecimento / Manutenção → saída no Financeiro) ──
-function abrirModalLancFrota(){
+function abrirModalLancFrota(idx){
   if(veiculos.length===0){alert('Cadastre um veículo primeiro antes de lançar um abastecimento ou manutenção.');return;}
   popularSelectVeiculos('lf-veiculo', false);
-  document.getElementById('lf-tipo').value='Combustível';
-  document.getElementById('lf-data').value=new Date().toISOString().split('T')[0];
-  document.getElementById('lf-valor').value='0,00';
-  document.getElementById('lf-km').value='';
-  document.getElementById('lf-desc').value='';
+  var titleEl=document.getElementById('modal-lanc-frota-title');
+  if(idx!==null&&idx!==undefined&&financeiro[idx]){
+    var f=financeiro[idx];
+    STATE.editLancFrotaIdx=idx;
+    if(titleEl)titleEl.textContent='✏️ Editar Lançamento de Frota';
+    document.getElementById('lf-tipo').value=f.categoria||'Combustível';
+    document.getElementById('lf-veiculo').value=f.veiculoId||'';
+    document.getElementById('lf-data').value=f.dataRaw||'';
+    document.getElementById('lf-valor').value=aplicarMascaraMoeda(f.val||0);
+    document.getElementById('lf-km').value=f.km||'';
+    document.getElementById('lf-desc').value=f.categoria==='Manutenção'?(f.desc||''):'';
+  } else {
+    STATE.editLancFrotaIdx=null;
+    if(titleEl)titleEl.textContent='🚚 Novo Lançamento de Frota';
+    document.getElementById('lf-tipo').value='Combustível';
+    document.getElementById('lf-data').value=new Date().toISOString().split('T')[0];
+    document.getElementById('lf-valor').value='0,00';
+    document.getElementById('lf-km').value='';
+    document.getElementById('lf-desc').value='';
+  }
   atualizarCamposLancFrota();
   document.getElementById('modal-lanc-frota').classList.add('open');
 }
 
-function fecharModalLancFrota(){document.getElementById('modal-lanc-frota').classList.remove('open');}
+function fecharModalLancFrota(){document.getElementById('modal-lanc-frota').classList.remove('open');STATE.editLancFrotaIdx=null;}
 
 function atualizarCamposLancFrota(){
   var tipo=document.getElementById('lf-tipo').value;
@@ -8206,19 +8229,37 @@ async function salvarLancamentoFrota(){
   var valor=parseFloat(desmascarar(document.getElementById('lf-valor').value)||0);
   if(!valor||valor<=0){alert('Informe um valor válido.');return;}
 
+  var km=null;
   var desc;
   if(categoria==='Combustível'){
-    var km=document.getElementById('lf-km').value;
-    desc='Abastecimento — '+vei.nome+(km?' · '+parseFloat(km).toLocaleString('pt-BR')+' km':'');
+    var kmField=document.getElementById('lf-km').value;
+    km=parseFloat(kmField)||null;
+    desc='Abastecimento — '+vei.nome+(km?' · '+km.toLocaleString('pt-BR')+' km':'');
   } else {
     desc=(document.getElementById('lf-desc').value||'').trim();
     if(!desc){alert('Informe a descrição da manutenção.');return;}
   }
 
+  var editIdx=STATE.editLancFrotaIdx;
+  if(editIdx!==null&&editIdx!==undefined&&financeiro[editIdx]){
+    var existente=financeiro[editIdx];
+    existente.nome=vei.nome; existente.cli=vei.nome; existente.desc=desc; existente.val=valor;
+    existente.data=fmtDateBr(dataRaw); existente.dataRaw=dataRaw;
+    existente.categoria=categoria; existente.veiculoId=vei.id; existente.km=km;
+    if(SUPABASE_ATIVO) await sbSalvarFinanceiro(existente);
+    salvarLocal();
+    STATE.editLancFrotaIdx=null;
+    fecharModalLancFrota();
+    renderFinanceiroPage&&renderFinanceiroPage();
+    renderFrotaRelatorio&&renderFrotaRelatorio();
+    _cfgToast('✅ Lançamento de Frota atualizado');
+    return;
+  }
+
   var lancFrota={
     nome:vei.nome, cli:vei.nome, desc:desc, val:valor,
     data:fmtDateBr(dataRaw), dataRaw:dataRaw,
-    tipo:'saida', categoria:categoria, veiculoId:vei.id,
+    tipo:'saida', categoria:categoria, veiculoId:vei.id, km:km,
     finStatus:'pago', tipoLanc:'saida'
   };
   financeiro.unshift(lancFrota);
@@ -8226,6 +8267,7 @@ async function salvarLancamentoFrota(){
   salvarLocal();
   fecharModalLancFrota();
   renderFinanceiroPage&&renderFinanceiroPage();
+  renderFrotaRelatorio&&renderFrotaRelatorio();
   _cfgToast('✅ Lançado no Financeiro como Saída · '+categoria);
 }
 
